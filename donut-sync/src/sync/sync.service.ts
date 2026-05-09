@@ -215,6 +215,10 @@ export class SyncService implements OnModuleInit {
     const key = await this.scopeKey(ctx, dto.key);
     this.validateKeyAccess(ctx, key);
     await this.teamService.assertCanWriteKey(ctx, key);
+    await this.teamService.audit(ctx, "profile_object.upload", "object", key, {
+      requestedKey: dto.key,
+      contentType: dto.contentType || "application/octet-stream",
+    });
 
     // Check profile limit for cloud users
     if (ctx.mode === "cloud" && ctx.profileLimit > 0) {
@@ -290,6 +294,15 @@ export class SyncService implements OnModuleInit {
         }),
       );
       deleted = true;
+      await this.teamService.audit(
+        ctx,
+        "profile_object.delete",
+        "object",
+        key,
+        {
+          requestedKey: dto.key,
+        },
+      );
     } catch {
       deleted = false;
     }
@@ -386,6 +399,16 @@ export class SyncService implements OnModuleInit {
         const key = await this.scopeKey(ctx, item.key);
         this.validateKeyAccess(ctx, key);
         await this.teamService.assertCanWriteKey(ctx, key);
+        await this.teamService.audit(
+          ctx,
+          "profile_object.upload",
+          "object",
+          key,
+          {
+            requestedKey: item.key,
+            contentType: item.contentType || "application/octet-stream",
+          },
+        );
 
         const command = new PutCmd({
           Bucket: this.bucket,
@@ -488,6 +511,16 @@ export class SyncService implements OnModuleInit {
             }),
           );
           deletedCount += deleteObjects.length;
+          await this.teamService.audit(
+            ctx,
+            "profile_object.delete_prefix",
+            "object_prefix",
+            prefix,
+            {
+              requestedPrefix: dto.prefix,
+              deletedCount: deleteObjects.length,
+            },
+          );
         }
       }
 

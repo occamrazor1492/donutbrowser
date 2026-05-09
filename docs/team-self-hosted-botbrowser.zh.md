@@ -146,6 +146,15 @@ TOKEN="$(curl -sS http://127.0.0.1:12342/v1/auth/login \
 
 ## 3. 创建团队用户
 
+推荐桌面端操作：
+
+1. 在 Donut Desktop 打开 Sync settings。
+2. 用管理员账号登录 `Self-hosted`。
+3. 点击 `团队管理`。
+4. 打开 `用户`，填写邮箱、临时密码和角色，然后点击 `创建用户`。
+
+CLI 备用方式：
+
 ```bash
 curl -sS http://127.0.0.1:12342/v1/admin/users \
   -H "authorization: Bearer $TOKEN" \
@@ -166,6 +175,15 @@ curl -sS http://127.0.0.1:12342/v1/admin/users \
 ```
 
 ## 4. 上传 BotBrowser `.enc` 模板
+
+推荐桌面端操作：
+
+1. 在 `团队管理` 打开 `BotBrowser 模板`。
+2. 选择本地 `.enc` 文件。
+3. 填写模板名称、浏览器大版本和平台。
+4. 点击 `上传`。
+
+CLI 备用方式：
 
 先把 BotBrowser 加密 profile 放到本地，例如：
 
@@ -217,6 +235,8 @@ COREPACK_HOME=/private/tmp/corepack-cache corepack pnpm tauri dev
 http://127.0.0.1:12342
 ```
 
+管理员登录后会看到 `团队管理` 按钮。这个面板可以管理团队用户、BotBrowser 模板、团队 profile、profile 权限、强制解锁和审计日志。普通成员使用同一个自托管登录入口，但不会看到管理员面板。
+
 4. 使用团队用户登录，例如：
 
 ```text
@@ -226,7 +246,16 @@ password: a-password
 
 ## 7. 创建第一个 BotBrowser profile
 
-在 profile 创建 UI 支持 BotBrowser 前，可以先直接创建 metadata 文件。
+推荐桌面端操作：
+
+1. 点击 `Create Profile`。
+2. 选择 `BotBrowser`。
+3. 输入 profile 名称。
+4. 选择已上传的 `.enc` 模板，或者填写本地 `.enc` 路径。
+5. 可选填写 BotBrowser/Chromium 可执行文件路径；留空会自动探测。
+6. 创建 profile。Donut 会写入本地 metadata、在服务端注册团队 profile，并把 sync mode 设为 `Regular`。
+
+CLI 调试备用方式：
 
 ```bash
 PROFILE_ID="$(uuidgen | tr '[:upper:]' '[:lower:]')"
@@ -276,6 +305,15 @@ Donut 释放 lock
 ```
 
 给用户 B 授权：
+
+推荐桌面端操作：
+
+1. 管理员打开 `Sync settings` → `团队管理`。
+2. 打开 `Profile`。
+3. 在目标 profile 里选择用户 B 和 `Editor`。
+4. 点击 `保存权限`。
+
+CLI 备用方式：
 
 ```bash
 curl -sS http://127.0.0.1:12342/v1/team-profiles/$PROFILE_ID/permissions \

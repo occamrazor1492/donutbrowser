@@ -134,6 +134,15 @@ export class TeamService {
       role: user.role,
       disabledAt: user.disabledAt,
     });
+    if (input.disabled === true && !existing.disabledAt) {
+      await this.audit(ctx, "user.disable", "user", user.id, {
+        email: user.email,
+      });
+    } else if (input.disabled === false && existing.disabledAt) {
+      await this.audit(ctx, "user.enable", "user", user.id, {
+        email: user.email,
+      });
+    }
     return user;
   }
 
@@ -204,8 +213,9 @@ export class TeamService {
       },
       include: { permissions: true, botProfileAsset: true, lock: true },
     });
-    await this.audit(ctx, "profile.create", "profile", profile.id, {
+    await this.audit(ctx, "team_profile.create", "profile", profile.id, {
       engine: profile.engine,
+      botProfileAssetId: profile.botProfileAssetId,
     });
     return profile;
   }
@@ -238,7 +248,7 @@ export class TeamService {
       },
       include: { permissions: true, botProfileAsset: true, lock: true },
     });
-    await this.audit(ctx, "profile.update", "profile", profile.id, input);
+    await this.audit(ctx, "team_profile.update", "profile", profile.id, input);
     return profile;
   }
 
@@ -249,7 +259,7 @@ export class TeamService {
       where: { id: profileId },
       data: { deletedAt: new Date() },
     });
-    await this.audit(ctx, "profile.delete", "profile", profile.id);
+    await this.audit(ctx, "team_profile.delete", "profile", profile.id);
     return { deleted: true };
   }
 
@@ -274,7 +284,7 @@ export class TeamService {
       },
       update: { permission: this.toPermission(permission) },
     });
-    await this.audit(ctx, "profile.permission.set", "profile", profileId, {
+    await this.audit(ctx, "permission.set", "profile", profileId, {
       userId,
       permission,
     });
@@ -291,7 +301,7 @@ export class TeamService {
     await this.prisma.profilePermission.delete({
       where: { profileId_userId: { profileId, userId } },
     });
-    await this.audit(ctx, "profile.permission.delete", "profile", profileId, {
+    await this.audit(ctx, "permission.delete", "profile", profileId, {
       userId,
     });
     return { deleted: true };
@@ -355,6 +365,18 @@ export class TeamService {
     if (!asset || asset.teamId !== ctx.teamId) {
       throw new NotFoundException("Bot profile asset not found");
     }
+    const referenceCount = await this.prisma.teamProfile.count({
+      where: {
+        teamId: ctx.teamId,
+        botProfileAssetId: assetId,
+        deletedAt: null,
+      },
+    });
+    if (referenceCount > 0) {
+      throw new ConflictException(
+        "Bot profile asset is still used by team profiles",
+      );
+    }
     await this.s3Client.send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: asset.s3Key }),
     );
@@ -394,7 +416,9 @@ export class TeamService {
         heartbeatAt: now,
       },
     });
-    await this.audit(ctx, "profile.lock", "profile", profileId);
+    await this.audit(ctx, "lock.acquire", "profile", profileId, {
+      expiresAt,
+    });
     return lock;
   }
 
@@ -407,13 +431,17 @@ export class TeamService {
     if (!lock || lock.lockedByUserId !== ctx.userId) {
       throw new ForbiddenException("Current user does not hold the lock");
     }
-    return this.prisma.profileLock.update({
+    const updated = await this.prisma.profileLock.update({
       where: { profileId },
       data: {
         heartbeatAt: now,
         expiresAt: new Date(now.getTime() + this.lockTtlMs()),
       },
     });
+    await this.audit(ctx, "lock.heartbeat", "profile", profileId, {
+      expiresAt: updated.expiresAt,
+    });
+    return updated;
   }
 
   async unlock(ctx: UserContext, profileId: string) {
@@ -426,7 +454,15 @@ export class TeamService {
       throw new ForbiddenException("Current user does not hold the lock");
     }
     await this.prisma.profileLock.delete({ where: { profileId } });
-    await this.audit(ctx, "profile.unlock", "profile", profileId);
+    await this.audit(
+      ctx,
+      ctx.role === "admin" && lock.lockedByUserId !== ctx.userId
+        ? "lock.admin_unlock"
+        : "lock.unlock",
+      "profile",
+      profileId,
+      { lockedByUserId: lock.lockedByUserId },
+    );
     return { unlocked: true };
   }
 
@@ -536,13 +572,31 @@ export class TeamService {
     });
   }
 
-  async listAuditLogs(ctx: UserContext) {
+  async listAuditLogs(
+    ctx: UserContext,
+    filters?: {
+      limit?: string;
+      action?: string;
+      targetType?: string;
+      targetId?: string;
+    },
+  ) {
     this.requireTeamContext(ctx);
     this.requireAdmin(ctx);
+    const limit = Math.min(
+      Math.max(Number(filters?.limit || 200) || 200, 1),
+      500,
+    );
     return this.prisma.auditLog.findMany({
-      where: { teamId: ctx.teamId },
+      where: {
+        teamId: ctx.teamId,
+        action: filters?.action || undefined,
+        targetType: filters?.targetType || undefined,
+        targetId: filters?.targetId || undefined,
+      },
+      include: { user: { select: this.userSelect() } },
       orderBy: { createdAt: "desc" },
-      take: 200,
+      take: limit,
     });
   }
 

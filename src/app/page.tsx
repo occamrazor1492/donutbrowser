@@ -55,13 +55,14 @@ import {
   showToast,
 } from "@/lib/toast-utils";
 import type {
+  BotBrowserConfig,
   BrowserProfile,
   CamoufoxConfig,
   SyncSettings,
   WayfernConfig,
 } from "@/types";
 
-type BrowserTypeString = "camoufox" | "wayfern";
+type BrowserTypeString = "botbrowser" | "camoufox" | "wayfern";
 
 interface PendingUrl {
   id: string;
@@ -527,6 +528,7 @@ export default function Home() {
       vpnId?: string;
       camoufoxConfig?: CamoufoxConfig;
       wayfernConfig?: WayfernConfig;
+      botbrowserConfig?: BotBrowserConfig;
       groupId?: string;
       extensionGroupId?: string;
       ephemeral?: boolean;
@@ -545,6 +547,7 @@ export default function Home() {
             vpnId: profileData.vpnId,
             camoufoxConfig: profileData.camoufoxConfig,
             wayfernConfig: profileData.wayfernConfig,
+            botbrowserConfig: profileData.botbrowserConfig,
             groupId:
               profileData.groupId ??
               (selectedGroupId !== "default" ? selectedGroupId : undefined),

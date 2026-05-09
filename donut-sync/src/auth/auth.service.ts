@@ -86,6 +86,17 @@ export class AuthService implements OnModuleInit {
       teamId: user.teamId,
     });
 
+    await this.prisma.auditLog.create({
+      data: {
+        teamId: user.teamId,
+        userId: user.id,
+        action: "auth.login",
+        targetType: "user",
+        targetId: user.id,
+        metadata: { email: user.email },
+      },
+    });
+
     return {
       token,
       user: {
@@ -122,7 +133,7 @@ export class AuthService implements OnModuleInit {
     );
   }
 
-  verifyTeamToken(token: string): UserContext {
+  async verifyTeamToken(token: string): Promise<UserContext> {
     const decoded = jwt.verify(token, this.getJwtSecret(), {
       algorithms: ["HS256"],
     }) as jwt.JwtPayload;
@@ -133,11 +144,26 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException("Invalid team token");
     }
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        teamId: true,
+        disabledAt: true,
+      },
+    });
+
+    if (!user || user.teamId !== teamId || user.disabledAt) {
+      throw new UnauthorizedException("Invalid team token");
+    }
+
     return {
       mode: "team",
       userId,
-      email: typeof decoded.email === "string" ? decoded.email : undefined,
-      role: decoded.role === "admin" ? "admin" : "member",
+      email: user.email,
+      role: user.role === "admin" ? "admin" : "member",
       teamId,
       prefix: `users/${userId}/`,
       teamPrefix: `teams/${teamId}/`,

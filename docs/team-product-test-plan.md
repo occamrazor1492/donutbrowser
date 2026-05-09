@@ -46,6 +46,7 @@ pnpm test
 | Admin security | Member calls admin user list | Request is rejected with 403 |
 | BotBrowser assets | Admin uploads `.enc` bytes and lists assets | Asset is stored under `teams/{teamId}/bot_profiles/{id}.enc` |
 | Profile creation | Member A creates a BotBrowser profile referencing asset | Profile engine is `botbrowser`; A receives owner permission |
+| Asset references | Admin deletes a template used by a live profile | Request is rejected with 409 |
 | Isolation | Unshared B lists/gets/downloads/uploads/locks A profile | Profile is hidden or rejected with 403 |
 | Viewer | Admin grants B viewer | B can read profile metadata and download `.enc`; B cannot upload or lock |
 | Asset permissions | Viewer tries to upload `bot_profiles/*.enc` | Request is rejected with 403 |
@@ -53,11 +54,12 @@ pnpm test
 | Editor sync | Editor B locks and uploads metadata through presigned URL | Upload succeeds and `stat` sees the object |
 | Lock conflict | Owner A locks while B holds lock | Request is rejected with 409 |
 | Lock lifecycle | B heartbeats, unlocks; A locks afterward | Heartbeat, unlock, and takeover succeed |
+| Admin unlock | Admin force unlocks another user's lock | Lock is released and another user can acquire it |
 | Download/delete | A downloads B's profile upload and deletes it with tombstone | Downloaded bytes match; object is deleted; tombstone is created |
 | Permission revoke | Admin removes B permission | B can no longer get the profile |
-| Disabled user | Admin disables C | C can no longer log in |
+| Disabled user | Admin disables C | C can no longer log in or reuse an old JWT |
 | Soft delete | A deletes profile | Profile disappears from A's list and direct get is rejected |
-| Audit | Admin reads audit log | Critical actions are present |
+| Audit | Admin reads and filters audit log | Critical actions are present and query filters work |
 
 ## Manual Desktop Acceptance
 
@@ -66,8 +68,9 @@ These cases require the real Donut Desktop app and a real BotBrowser-compatible 
 | Area | Case | Expected result |
 | --- | --- | --- |
 | Desktop login | Open Donut, configure self-hosted URL, email, password | Login survives app restart |
+| Team Admin UI | Admin opens Sync settings and clicks Team Admin | Users, templates, profiles, permissions, locks, and audit logs are manageable in desktop UI |
 | BotBrowser path | Choose or auto-detect BotBrowser/Chromium executable | Profile launch does not ask again |
-| Profile create | Create BotBrowser profile and assign uploaded `.enc` asset | Profile appears in team list |
+| Profile create | Create BotBrowser profile and assign uploaded `.enc` asset | Profile appears locally and in team list |
 | Launch args | Start profile | Process includes `--bot-profile`, `--user-data-dir`, `--remote-debugging-port`, `--disable-blink-features=AutomationControlled` |
 | Lock UI | A starts profile; B starts same profile | B sees conflict and cannot start |
 | State sync | A logs into a test site, closes browser; B starts after unlock | B sees A's persisted login state |

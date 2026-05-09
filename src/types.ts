@@ -55,6 +55,69 @@ export interface BotBrowserConfig {
   network_info_override?: boolean;
 }
 
+export interface SelfHostedTeamUser {
+  id: string;
+  teamId: string;
+  email: string;
+  role: "admin" | "member";
+  disabledAt?: string | null;
+  createdAt: string;
+}
+
+export interface TeamBotProfileAsset {
+  id: string;
+  teamId: string;
+  name: string;
+  s3Key: string;
+  browserMajorVersion?: string | null;
+  platform?: string | null;
+  createdByUserId: string;
+  createdAt: string;
+}
+
+export type TeamProfilePermissionLevel = "owner" | "editor" | "viewer";
+
+export interface TeamProfilePermission {
+  id: string;
+  profileId: string;
+  userId: string;
+  permission: TeamProfilePermissionLevel;
+  user?: SelfHostedTeamUser;
+}
+
+export interface TeamProfileRecord {
+  id: string;
+  teamId: string;
+  ownerUserId: string;
+  name: string;
+  engine: "botbrowser" | "wayfern" | "camoufox";
+  botProfileAssetId?: string | null;
+  syncMode: string;
+  deletedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  permissions: TeamProfilePermission[];
+  botProfileAsset?: TeamBotProfileAsset | null;
+  lock?: {
+    profileId: string;
+    lockedByUserId: string;
+    expiresAt: string;
+    heartbeatAt: string;
+  } | null;
+}
+
+export interface TeamAuditLog {
+  id: string;
+  teamId: string;
+  userId?: string | null;
+  action: string;
+  targetType: string;
+  targetId?: string | null;
+  metadata?: unknown;
+  createdAt: string;
+  user?: SelfHostedTeamUser | null;
+}
+
 export interface Extension {
   id: string;
   name: string;

@@ -27,7 +27,7 @@ export class AuthGuard implements CanActivate {
     }
   }
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers.authorization;
 
@@ -41,7 +41,7 @@ export class AuthGuard implements CanActivate {
 
     if (this.authService.isMultiUserEnabled()) {
       (request as unknown as Record<string, unknown>).user =
-        this.authService.verifyTeamToken(token);
+        await this.authService.verifyTeamToken(token);
       return true;
     }
 

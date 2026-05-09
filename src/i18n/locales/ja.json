@@ -312,7 +312,18 @@
     "firefoxLabel": "Firefox",
     "firefoxSubtitle": "Camoufox搭載",
     "camoufoxWarning": "Firefox（Camoufox）はサードパーティの組織によって管理されています。本番環境での使用にはChromiumをご利用ください。",
-    "platformUnavailable": "{{browser}} はまだお使いのプラットフォームで利用できません。"
+    "platformUnavailable": "{{browser}} はまだお使いのプラットフォームで利用できません。",
+    "botbrowser": {
+      "subtitle": "Chromium fingerprint engine using a shared .enc template",
+      "loginRequired": "Log in to a self-hosted team account before creating BotBrowser profiles.",
+      "template": "BotBrowser template",
+      "templatePlaceholder": "Select a .enc template",
+      "templateHint": "Templates are uploaded by an admin and cached locally before launch.",
+      "localEncPath": "Local .enc path",
+      "localEncPathPlaceholder": "/path/to/profile.enc",
+      "executablePath": "BotBrowser executable path",
+      "executablePathPlaceholder": "Leave empty to auto-detect"
+    }
   },
   "deleteDialog": {
     "title": "プロファイルを削除",
@@ -589,6 +600,80 @@
       "profileSynced": "プロファイル '{{name}}' を同期しました",
       "profileSyncFailed": "プロファイル '{{name}}' の同期に失敗しました",
       "profileSyncFailedWithError": "プロファイル '{{name}}' の同期に失敗しました: {{error}}"
+    },
+    "teamAdmin": {
+      "open": "Team Admin",
+      "title": "Team Admin",
+      "description": "Manage self-hosted team users, BotBrowser templates, profiles, permissions, and audit logs.",
+      "actions": "Actions",
+      "tabs": {
+        "users": "Users",
+        "assets": "BotBrowser Templates",
+        "profiles": "Profiles",
+        "audit": "Audit Logs"
+      },
+      "toasts": {
+        "userCreated": "User created",
+        "userUpdated": "User updated",
+        "assetUploaded": "BotBrowser template uploaded",
+        "assetDeleted": "BotBrowser template deleted",
+        "profileCreated": "Team profile created",
+        "profileUpdated": "Team profile updated",
+        "profileDeleted": "Team profile deleted",
+        "profileUnlocked": "Profile unlocked",
+        "permissionSaved": "Permission saved",
+        "permissionDeleted": "Permission removed"
+      },
+      "users": {
+        "emailPlaceholder": "member@example.com",
+        "passwordPlaceholder": "Temporary password",
+        "create": "Create user",
+        "resetPassword": "Reset password",
+        "newPassword": "New password",
+        "active": "Active",
+        "disabled": "Disabled",
+        "enable": "Enable",
+        "disable": "Disable"
+      },
+      "assets": {
+        "name": "Template name",
+        "namePlaceholder": "Mac Chrome 124 template",
+        "file": ".enc file",
+        "encFile": "BotBrowser encrypted profile",
+        "browserVersion": "Browser version",
+        "platform": "Platform",
+        "platformPlaceholder": "macos",
+        "upload": "Upload",
+        "used": "Used",
+        "inUse": "In use",
+        "notUsed": "Not used",
+        "deleteConfirm": "Delete this BotBrowser template?"
+      },
+      "profiles": {
+        "name": "Profile name",
+        "namePlaceholder": "Team profile",
+        "engine": "Engine",
+        "template": "BotBrowser template",
+        "create": "Create profile",
+        "forceUnlock": "Force unlock",
+        "deleteConfirm": "Delete this team profile?"
+      },
+      "permissions": {
+        "user": "User",
+        "owner": "Owner",
+        "editor": "Editor",
+        "viewer": "Viewer",
+        "save": "Save permission",
+        "remove": "Remove permission"
+      },
+      "audit": {
+        "action": "Action",
+        "targetType": "Target type",
+        "targetId": "Target ID",
+        "time": "Time",
+        "user": "User",
+        "target": "Target"
+      }
     }
   },
   "integrations": {

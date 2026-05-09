@@ -148,6 +148,15 @@ TOKEN="$(curl -sS http://127.0.0.1:12342/v1/auth/login \
 
 ## 3. Create Team Users
 
+Recommended desktop path:
+
+1. In Donut Desktop, open Sync settings.
+2. Log in to `Self-hosted` with the admin account.
+3. Click `Team Admin`.
+4. Open `Users`, enter email, temporary password, and role, then click `Create user`.
+
+CLI fallback:
+
 ```bash
 curl -sS http://127.0.0.1:12342/v1/admin/users \
   -H "authorization: Bearer $TOKEN" \
@@ -168,6 +177,15 @@ curl -sS http://127.0.0.1:12342/v1/admin/users \
 ```
 
 ## 4. Upload A BotBrowser `.enc` Template
+
+Recommended desktop path:
+
+1. In `Team Admin`, open `BotBrowser Templates`.
+2. Select a local `.enc` file.
+3. Add template name, browser major version, and platform.
+4. Click `Upload`.
+
+CLI fallback:
 
 Put your BotBrowser encrypted profile somewhere local, for example:
 
@@ -219,6 +237,8 @@ In Donut Desktop:
 http://127.0.0.1:12342
 ```
 
+Admin users will see a `Team Admin` button after login. That panel manages team users, BotBrowser templates, team profiles, profile permissions, force unlock, and audit logs. Non-admin members use the same self-hosted login but do not see the admin panel.
+
 4. Login with a team user, for example:
 
 ```text
@@ -228,7 +248,16 @@ password: a-password
 
 ## 7. Create The First BotBrowser Profile
 
-Until the profile creation UI is expanded for BotBrowser, create the metadata file directly.
+Recommended desktop path:
+
+1. Click `Create Profile`.
+2. Choose `BotBrowser`.
+3. Enter a profile name.
+4. Select the uploaded `.enc` template, or enter a local `.enc` path.
+5. Optionally enter the BotBrowser/Chromium executable path. Leave it empty to use auto-detection.
+6. Create the profile. Donut writes local metadata, registers the team profile on the server, and sets sync mode to `Regular`.
+
+CLI fallback for debugging:
 
 ```bash
 PROFILE_ID="$(uuidgen | tr '[:upper:]' '[:lower:]')"
@@ -278,6 +307,15 @@ Donut releases the lock
 ```
 
 Grant user B access:
+
+Recommended desktop path:
+
+1. Admin opens `Sync settings` → `Team Admin`.
+2. Open `Profiles`.
+3. In the target profile, select user B and `Editor`.
+4. Click `Save permission`.
+
+CLI fallback:
 
 ```bash
 curl -sS http://127.0.0.1:12342/v1/team-profiles/$PROFILE_ID/permissions \

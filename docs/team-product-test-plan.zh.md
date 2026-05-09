@@ -46,6 +46,7 @@ pnpm test
 | 管理权限 | 普通成员访问 admin 用户列表 | 请求返回 403 |
 | BotBrowser assets | 管理员上传 `.enc` bytes 并查看 asset 列表 | asset 存储到 `teams/{teamId}/bot_profiles/{id}.enc` |
 | Profile 创建 | 成员 A 创建引用 asset 的 BotBrowser profile | profile engine 为 `botbrowser`，A 自动获得 owner 权限 |
+| Asset 引用 | 管理员删除仍被 live profile 引用的模板 | 请求返回 409 |
 | 隔离性 | 未共享的 B list/get/download/upload/lock A 的 profile | profile 被隐藏或请求返回 403 |
 | Viewer | 管理员给 B viewer 权限 | B 能读 profile metadata 和下载 `.enc`，但不能上传或加锁 |
 | Asset 权限 | Viewer 尝试上传 `bot_profiles/*.enc` | 请求返回 403 |
@@ -53,11 +54,12 @@ pnpm test
 | Editor sync | Editor B 获取 lock 后通过 presigned URL 上传 metadata | 上传成功，`stat` 能看到对象 |
 | Lock 冲突 | B 持有 lock 时 owner A 尝试 lock | 请求返回 409 |
 | Lock 生命周期 | B heartbeat、unlock，之后 A 获取 lock | heartbeat、unlock 和 takeover 成功 |
+| 管理员解锁 | 管理员强制释放其他用户持有的 lock | lock 被释放，其他用户可以重新获取 |
 | 下载/删除 | A 下载 B 上传的 profile 文件并带 tombstone 删除 | 下载 bytes 匹配，对象被删除，tombstone 创建成功 |
 | 撤销权限 | 管理员移除 B 的权限 | B 不能再 get 该 profile |
-| 禁用用户 | 管理员禁用 C | C 无法再次登录 |
+| 禁用用户 | 管理员禁用 C | C 无法再次登录，也不能复用旧 JWT |
 | Soft delete | A 删除 profile | profile 从 A 的列表消失，直接 get 被拒绝 |
-| Audit | 管理员读取 audit log | 关键操作记录存在 |
+| Audit | 管理员读取并筛选 audit log | 关键操作记录存在，查询过滤可用 |
 
 ## 手动桌面验收
 
@@ -66,8 +68,9 @@ pnpm test
 | 模块 | 用例 | 预期结果 |
 | --- | --- | --- |
 | 桌面登录 | 打开 Donut，配置 self-hosted URL、email、password | 重启应用后登录状态仍然存在 |
+| Team Admin UI | 管理员打开 Sync settings 并点击团队管理 | 可在桌面端管理用户、模板、profile、权限、lock 和审计日志 |
 | BotBrowser 路径 | 选择或自动探测 BotBrowser/Chromium 可执行文件 | 启动 profile 时不再重复询问 |
-| Profile 创建 | 创建 BotBrowser profile 并绑定已上传 `.enc` asset | profile 出现在团队列表中 |
+| Profile 创建 | 创建 BotBrowser profile 并绑定已上传 `.enc` asset | profile 出现在本地列表和团队列表中 |
 | 启动参数 | 启动 profile | 进程包含 `--bot-profile`、`--user-data-dir`、`--remote-debugging-port`、`--disable-blink-features=AutomationControlled` |
 | Lock UI | A 启动 profile，B 同时启动同一个 profile | B 看到冲突并无法启动 |
 | 状态同步 | A 登录测试网站后关闭浏览器，B 在 unlock 后启动 | B 能看到 A 保留的登录状态 |

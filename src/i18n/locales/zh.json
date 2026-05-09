@@ -312,7 +312,18 @@
     "firefoxLabel": "Firefox",
     "firefoxSubtitle": "由 Camoufox 驱动",
     "camoufoxWarning": "Firefox（Camoufox）由第三方组织维护。在生产环境中，请使用 Chromium。",
-    "platformUnavailable": "{{browser}} 在您的平台上尚不可用。"
+    "platformUnavailable": "{{browser}} 在您的平台上尚不可用。",
+    "botbrowser": {
+      "subtitle": "使用共享 .enc 模板的 Chromium 指纹执行层",
+      "loginRequired": "创建 BotBrowser profile 前，请先登录自托管团队账号。",
+      "template": "BotBrowser 模板",
+      "templatePlaceholder": "选择 .enc 模板",
+      "templateHint": "模板由管理员上传，启动前会自动缓存到本机。",
+      "localEncPath": "本地 .enc 路径",
+      "localEncPathPlaceholder": "/path/to/profile.enc",
+      "executablePath": "BotBrowser 可执行文件路径",
+      "executablePathPlaceholder": "留空则自动探测"
+    }
   },
   "deleteDialog": {
     "title": "删除配置文件",
@@ -589,6 +600,80 @@
       "profileSynced": "配置文件 '{{name}}' 同步成功",
       "profileSyncFailed": "同步配置文件 '{{name}}' 失败",
       "profileSyncFailedWithError": "同步配置文件 '{{name}}' 失败: {{error}}"
+    },
+    "teamAdmin": {
+      "open": "团队管理",
+      "title": "团队管理",
+      "description": "管理自托管团队用户、BotBrowser 模板、团队 profile、权限和审计日志。",
+      "actions": "操作",
+      "tabs": {
+        "users": "用户",
+        "assets": "BotBrowser 模板",
+        "profiles": "Profile",
+        "audit": "审计日志"
+      },
+      "toasts": {
+        "userCreated": "用户已创建",
+        "userUpdated": "用户已更新",
+        "assetUploaded": "BotBrowser 模板已上传",
+        "assetDeleted": "BotBrowser 模板已删除",
+        "profileCreated": "团队 profile 已创建",
+        "profileUpdated": "团队 profile 已更新",
+        "profileDeleted": "团队 profile 已删除",
+        "profileUnlocked": "Profile 已解锁",
+        "permissionSaved": "权限已保存",
+        "permissionDeleted": "权限已移除"
+      },
+      "users": {
+        "emailPlaceholder": "member@example.com",
+        "passwordPlaceholder": "临时密码",
+        "create": "创建用户",
+        "resetPassword": "重置密码",
+        "newPassword": "新密码",
+        "active": "启用",
+        "disabled": "禁用",
+        "enable": "启用",
+        "disable": "禁用"
+      },
+      "assets": {
+        "name": "模板名称",
+        "namePlaceholder": "Mac Chrome 124 模板",
+        "file": ".enc 文件",
+        "encFile": "BotBrowser 加密 profile",
+        "browserVersion": "浏览器版本",
+        "platform": "平台",
+        "platformPlaceholder": "macos",
+        "upload": "上传",
+        "used": "使用状态",
+        "inUse": "使用中",
+        "notUsed": "未使用",
+        "deleteConfirm": "确定删除这个 BotBrowser 模板吗？"
+      },
+      "profiles": {
+        "name": "Profile 名称",
+        "namePlaceholder": "团队 profile",
+        "engine": "内核",
+        "template": "BotBrowser 模板",
+        "create": "创建 profile",
+        "forceUnlock": "强制解锁",
+        "deleteConfirm": "确定删除这个团队 profile 吗？"
+      },
+      "permissions": {
+        "user": "用户",
+        "owner": "Owner",
+        "editor": "Editor",
+        "viewer": "Viewer",
+        "save": "保存权限",
+        "remove": "移除权限"
+      },
+      "audit": {
+        "action": "动作",
+        "targetType": "目标类型",
+        "targetId": "目标 ID",
+        "time": "时间",
+        "user": "用户",
+        "target": "目标"
+      }
     }
   },
   "integrations": {

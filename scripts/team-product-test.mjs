@@ -230,6 +230,13 @@ async function main() {
       );
     });
 
+    await step("referenced BotBrowser assets cannot be deleted", async () => {
+      await requestJson("DELETE", `/v1/admin/bot-profiles/${state.assetId}`, {
+        token: state.adminToken,
+        expected: 409,
+      });
+    });
+
     await step("unshared member cannot see, read, upload, or lock the profile", async () => {
       state.bToken = (await login(userB.email, userB.password)).token;
       const list = await requestJson("GET", "/v1/team-profiles", {
@@ -359,6 +366,25 @@ async function main() {
       });
     });
 
+    await step("admin can force unlock a profile locked by another user", async () => {
+      await requestJson("POST", `/v1/team-profiles/${state.profileId}/unlock`, {
+        token: state.adminToken,
+        expected: 201,
+      });
+      await requestJson("POST", `/v1/team-profiles/${state.profileId}/lock`, {
+        token: state.bToken,
+        expected: 201,
+      });
+      await requestJson("POST", `/v1/team-profiles/${state.profileId}/unlock`, {
+        token: state.adminToken,
+        expected: 201,
+      });
+      await requestJson("POST", `/v1/team-profiles/${state.profileId}/lock`, {
+        token: state.aToken,
+        expected: 201,
+      });
+    });
+
     await step("owner can download and delete profile state while holding the lock", async () => {
       const download = await requestJson("POST", "/v1/objects/presign-download", {
         token: state.aToken,
@@ -393,7 +419,7 @@ async function main() {
       });
     });
 
-    await step("permissions can be revoked and disabled users cannot log in", async () => {
+    await step("permissions can be revoked and disabled users cannot log in or reuse old tokens", async () => {
       await requestJson("DELETE", `/v1/team-profiles/${state.profileId}/permissions/${userB.id}`, {
         token: state.adminToken,
       });
@@ -402,11 +428,16 @@ async function main() {
         expected: 403,
       });
 
+      const userCLogin = await login(userC.email, userC.password);
       await requestJson("PATCH", `/v1/admin/users/${userC.id}`, {
         token: state.adminToken,
         body: { disabled: true },
       });
       await login(userC.email, userC.password, 401);
+      await requestJson("GET", "/v1/me", {
+        token: userCLogin.token,
+        expected: 401,
+      });
     });
 
     await step("soft-deleted profiles disappear from member access", async () => {
@@ -432,16 +463,30 @@ async function main() {
       });
       const actions = new Set(logs.body.map((entry) => entry.action));
       for (const action of [
+        "auth.login",
         "user.create",
+        "user.disable",
         "bot_profile.create",
-        "profile.create",
-        "profile.permission.set",
-        "profile.lock",
-        "profile.unlock",
-        "profile.delete",
+        "team_profile.create",
+        "permission.set",
+        "lock.acquire",
+        "lock.unlock",
+        "lock.admin_unlock",
+        "team_profile.delete",
+        "profile_object.upload",
+        "profile_object.delete",
       ]) {
         assert(actions.has(action), `audit log did not include ${action}`);
       }
+
+      const filtered = await requestJson("GET", "/v1/admin/audit-logs?action=bot_profile.create&limit=10", {
+        token: state.adminToken,
+      });
+      assert(
+        filtered.body.length > 0 &&
+          filtered.body.every((entry) => entry.action === "bot_profile.create"),
+        "audit log action filter did not work",
+      );
     });
 
     log(`PASS ${passed.length} product test cases completed for ${RUN_ID}`);

@@ -10,6 +10,7 @@ donutbrowser/
 ├── src/                              # Next.js frontend
 │   ├── app/                          # App router (page.tsx, layout.tsx)
 │   ├── components/                   # 50+ React components (dialogs, tables, UI)
+│   │   └── team-admin-dialog.tsx     # Self-hosted team admin UI
 │   ├── hooks/                        # Event-driven React hooks
 │   ├── i18n/locales/                 # Translations (en, es, fr, ja, pt, ru, zh)
 │   ├── lib/                          # Utilities (themes, toast, browser-utils)
@@ -28,6 +29,7 @@ donutbrowser/
 │   │   ├── mcp_server.rs            # MCP protocol server
 │   │   ├── sync/                    # Cloud sync (engine, encryption, manifest, scheduler)
 │   │   ├── self_hosted_auth.rs      # Self-hosted JWT login/token cache
+│   │   ├── self_hosted_team.rs      # Self-hosted team admin/API commands
 │   │   ├── vpn/                     # WireGuard tunnels
 │   │   ├── camoufox/                # Camoufox fingerprint engine (Bayesian network)
 │   │   ├── wayfern_manager.rs       # Wayfern (Chromium) browser management

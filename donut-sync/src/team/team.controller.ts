@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from "@nestjs/common";
@@ -75,8 +76,19 @@ export class TeamController {
   }
 
   @Get("admin/audit-logs")
-  listAuditLogs(@Req() req: Request) {
-    return this.teamService.listAuditLogs(ctx(req));
+  listAuditLogs(
+    @Req() req: Request,
+    @Query("limit") limit?: string,
+    @Query("action") action?: string,
+    @Query("targetType") targetType?: string,
+    @Query("targetId") targetId?: string,
+  ) {
+    return this.teamService.listAuditLogs(ctx(req), {
+      limit,
+      action,
+      targetType,
+      targetId,
+    });
   }
 
   @Get("team-profiles")

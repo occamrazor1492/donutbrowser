@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LuEye, LuEyeOff } from "react-icons/lu";
 import { LoadingButton } from "@/components/loading-button";
+import { TeamAdminDialog } from "@/components/team-admin-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -97,6 +98,7 @@ export function SyncConfigDialog({
   const [connectionStatus, setConnectionStatus] = useState<
     "unknown" | "testing" | "connected" | "error"
   >("unknown");
+  const [teamAdminOpen, setTeamAdminOpen] = useState(false);
   const hasConfig = Boolean(serverUrl && (token || selfHostedUser));
 
   const testConnection = useCallback(async (url: string) => {
@@ -280,314 +282,349 @@ export function SyncConfigDialog({
   const selfHostedBlocked = isLoggedIn;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{t("sync.title")}</DialogTitle>
-          <DialogDescription>{t("sync.description")}</DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("sync.title")}</DialogTitle>
+            <DialogDescription>{t("sync.description")}</DialogDescription>
+          </DialogHeader>
 
-        {isLoggedIn && user ? (
-          <div className="grid gap-4 py-4">
-            <div className="flex gap-2 items-center text-sm">
-              <div className="w-2 h-2 rounded-full bg-success" />
-              {t("sync.cloud.connected")}
-            </div>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  {t("sync.cloud.email")}
-                </span>
-                <span>{user.email}</span>
+          {isLoggedIn && user ? (
+            <div className="grid gap-4 py-4">
+              <div className="flex gap-2 items-center text-sm">
+                <div className="w-2 h-2 rounded-full bg-success" />
+                {t("sync.cloud.connected")}
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  {t("sync.cloud.plan")}
-                </span>
-                <span className="capitalize">
-                  {user.plan}
-                  {user.planPeriod ? ` (${user.planPeriod})` : ""}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  {t("sync.cloud.profiles")}
-                </span>
-                <span>
-                  {t("sync.cloud.profileUsage", {
-                    used: user.cloudProfilesUsed,
-                    limit: user.profileLimit,
-                  })}
-                </span>
-              </div>
-              {user.teamName && (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      {t("sync.team.name")}
-                    </span>
-                    <span>{user.teamName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      {t("sync.team.role")}
-                    </span>
-                    <span className="capitalize">
-                      {user.teamRole === "owner"
-                        ? t("sync.team.roleOwner")
-                        : user.teamRole === "admin"
-                          ? t("sync.team.roleAdmin")
-                          : t("sync.team.roleMember")}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground pt-1">
-                    {t("sync.team.manageOnWeb")}
-                  </p>
-                </>
-              )}
-            </div>
 
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" className="flex-1" asChild>
-                <a
-                  href="https://donutbrowser.com/account"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {t("sync.cloud.manageAccount")}
-                </a>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => void handleCloudLogout()}
-              >
-                {t("sync.cloud.logout")}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full">
-              <TabsTrigger
-                value="cloud"
-                className="flex-1"
-                disabled={cloudBlocked}
-              >
-                <span className="flex items-center gap-2">
-                  {t("sync.cloud.tabLabel")}
-                  {cloudBlocked && <ProBadge />}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="self-hosted"
-                className="flex-1"
-                disabled={selfHostedBlocked}
-              >
-                <span className="flex items-center gap-2">
-                  {t("sync.cloud.selfHostedTabLabel")}
-                  {selfHostedBlocked && <ProBadge />}
-                </span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="cloud">
-              {isCloudLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="w-6 h-6 rounded-full border-2 border-current animate-spin border-t-transparent" />
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    {t("sync.cloud.email")}
+                  </span>
+                  <span>{user.email}</span>
                 </div>
-              ) : (
-                <div className="grid gap-4 py-4">
-                  <p className="text-sm text-muted-foreground">
-                    {t("sync.cloud.deviceLinkInstructions")}
-                  </p>
-                  <Button
-                    onClick={() => void handleOpenLogin()}
-                    className="w-full"
-                  >
-                    {t("sync.cloud.openLogin")}
-                  </Button>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    {t("sync.cloud.plan")}
+                  </span>
+                  <span className="capitalize">
+                    {user.plan}
+                    {user.planPeriod ? ` (${user.planPeriod})` : ""}
+                  </span>
                 </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="self-hosted">
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="w-6 h-6 rounded-full border-2 border-current animate-spin border-t-transparent" />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    {t("sync.cloud.profiles")}
+                  </span>
+                  <span>
+                    {t("sync.cloud.profileUsage", {
+                      used: user.cloudProfilesUsed,
+                      limit: user.profileLimit,
+                    })}
+                  </span>
                 </div>
-              ) : (
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="sync-server-url">
-                      {t("sync.serverUrl")}
-                    </Label>
-                    <Input
-                      id="sync-server-url"
-                      placeholder={t("sync.serverUrlPlaceholder")}
-                      value={serverUrl}
-                      onChange={(e) => {
-                        setServerUrl(e.target.value);
-                      }}
-                    />
-                  </div>
-
-                  {selfHostedUser && !useAdvancedToken && (
-                    <div className="flex gap-2 items-center text-sm text-muted-foreground">
-                      <div className="w-2 h-2 rounded-full bg-success" />
-                      {selfHostedUser.email}
+                {user.teamName && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        {t("sync.team.name")}
+                      </span>
+                      <span>{user.teamName}</span>
                     </div>
-                  )}
-
-                  {!useAdvancedToken ? (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="self-hosted-email">
-                          {t("sync.email")}
-                        </Label>
-                        <Input
-                          id="self-hosted-email"
-                          type="email"
-                          autoComplete="username"
-                          value={email}
-                          onChange={(e) => {
-                            setEmail(e.target.value);
-                          }}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="self-hosted-password">
-                          {t("sync.password")}
-                        </Label>
-                        <Input
-                          id="self-hosted-password"
-                          type="password"
-                          autoComplete="current-password"
-                          value={password}
-                          onChange={(e) => {
-                            setPassword(e.target.value);
-                          }}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label htmlFor="sync-token">{t("sync.token")}</Label>
-                      <div className="relative">
-                        <Input
-                          id="sync-token"
-                          type={showToken ? "text" : "password"}
-                          placeholder={t("sync.tokenPlaceholder")}
-                          value={token}
-                          onChange={(e) => {
-                            setToken(e.target.value);
-                          }}
-                          className="pr-10"
-                        />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowToken(!showToken);
-                              }}
-                              className="absolute right-3 top-1/2 p-1 rounded-sm transition-colors transform -translate-y-1/2 hover:bg-accent"
-                              aria-label={
-                                showToken
-                                  ? t("common.aria.hideToken")
-                                  : t("common.aria.showToken")
-                              }
-                            >
-                              {showToken ? (
-                                <LuEyeOff className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                              ) : (
-                                <LuEye className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                              )}
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {showToken
-                              ? t("common.aria.hideToken")
-                              : t("common.aria.showToken")}
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        {t("sync.team.role")}
+                      </span>
+                      <span className="capitalize">
+                        {user.teamRole === "owner"
+                          ? t("sync.team.roleOwner")
+                          : user.teamRole === "admin"
+                            ? t("sync.team.roleAdmin")
+                            : t("sync.team.roleMember")}
+                      </span>
                     </div>
-                  )}
-
-                  <div className="flex gap-2 items-center text-sm">
-                    <Checkbox
-                      id="self-hosted-advanced-token"
-                      checked={useAdvancedToken}
-                      onCheckedChange={(checked) => {
-                        setUseAdvancedToken(checked === true);
-                      }}
-                    />
-                    <Label
-                      htmlFor="self-hosted-advanced-token"
-                      className="font-normal cursor-pointer"
-                    >
-                      {t("sync.advancedTokenMode")}
-                    </Label>
-                  </div>
-
-                  {connectionStatus === "testing" && (
-                    <div className="flex gap-2 items-center text-sm text-muted-foreground">
-                      <div className="w-4 h-4 rounded-full border-2 border-current animate-spin border-t-transparent" />
-                      {t("sync.status.syncing")}
-                    </div>
-                  )}
-                  {connectionStatus === "connected" && (
-                    <div className="flex gap-2 items-center text-sm text-muted-foreground">
-                      <div className="w-2 h-2 rounded-full bg-success" />
-                      {t("sync.status.connected")}
-                    </div>
-                  )}
-                  {connectionStatus === "error" && (
-                    <div className="flex gap-2 items-center text-sm text-muted-foreground">
-                      <div className="w-2 h-2 rounded-full bg-destructive" />
-                      {t("sync.status.disconnected")}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <DialogFooter className="flex gap-2">
-                {hasConfig && (
-                  <Button
-                    variant="outline"
-                    onClick={() => void handleDisconnect()}
-                    disabled={isSaving}
-                  >
-                    {t("sync.actions.disconnect")}
-                  </Button>
+                    <p className="text-xs text-muted-foreground pt-1">
+                      {t("sync.team.manageOnWeb")}
+                    </p>
+                  </>
                 )}
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1" asChild>
+                  <a
+                    href="https://donutbrowser.com/account"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t("sync.cloud.manageAccount")}
+                  </a>
+                </Button>
                 <Button
                   variant="outline"
-                  onClick={() => void handleTestConnection()}
-                  disabled={isTesting || !serverUrl}
+                  className="flex-1"
+                  onClick={() => void handleCloudLogout()}
                 >
-                  {isTesting
-                    ? t("sync.actions.testingConnection")
-                    : t("sync.actions.testConnection")}
+                  {t("sync.cloud.logout")}
                 </Button>
-                <LoadingButton
-                  onClick={() => void handleSave()}
-                  isLoading={isSaving}
-                  disabled={
-                    !serverUrl ||
-                    (useAdvancedToken ? !token : !email || !password)
-                  }
+              </div>
+            </div>
+          ) : (
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="w-full">
+                <TabsTrigger
+                  value="cloud"
+                  className="flex-1"
+                  disabled={cloudBlocked}
                 >
-                  {t("common.buttons.save")}
-                </LoadingButton>
-              </DialogFooter>
-            </TabsContent>
-          </Tabs>
-        )}
-      </DialogContent>
-    </Dialog>
+                  <span className="flex items-center gap-2">
+                    {t("sync.cloud.tabLabel")}
+                    {cloudBlocked && <ProBadge />}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="self-hosted"
+                  className="flex-1"
+                  disabled={selfHostedBlocked}
+                >
+                  <span className="flex items-center gap-2">
+                    {t("sync.cloud.selfHostedTabLabel")}
+                    {selfHostedBlocked && <ProBadge />}
+                  </span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="cloud">
+                {isCloudLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-6 h-6 rounded-full border-2 border-current animate-spin border-t-transparent" />
+                  </div>
+                ) : (
+                  <div className="grid gap-4 py-4">
+                    <p className="text-sm text-muted-foreground">
+                      {t("sync.cloud.deviceLinkInstructions")}
+                    </p>
+                    <Button
+                      onClick={() => void handleOpenLogin()}
+                      className="w-full"
+                    >
+                      {t("sync.cloud.openLogin")}
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="self-hosted">
+                {isLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-6 h-6 rounded-full border-2 border-current animate-spin border-t-transparent" />
+                  </div>
+                ) : (
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="sync-server-url">
+                        {t("sync.serverUrl")}
+                      </Label>
+                      <Input
+                        id="sync-server-url"
+                        placeholder={t("sync.serverUrlPlaceholder")}
+                        value={serverUrl}
+                        onChange={(e) => {
+                          setServerUrl(e.target.value);
+                        }}
+                      />
+                    </div>
+
+                    {selfHostedUser && !useAdvancedToken && (
+                      <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+                        <div className="flex gap-2 items-center text-sm text-muted-foreground">
+                          <div className="w-2 h-2 rounded-full bg-success" />
+                          <span>{selfHostedUser.email}</span>
+                          <BadgeLike>
+                            {selfHostedUser.role === "admin"
+                              ? t("sync.team.roleAdmin")
+                              : t("sync.team.roleMember")}
+                          </BadgeLike>
+                        </div>
+                        {selfHostedUser.role === "admin" && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setTeamAdminOpen(true);
+                            }}
+                          >
+                            {t("sync.teamAdmin.open")}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    {!useAdvancedToken ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="self-hosted-email">
+                            {t("sync.email")}
+                          </Label>
+                          <Input
+                            id="self-hosted-email"
+                            type="email"
+                            autoComplete="username"
+                            value={email}
+                            onChange={(e) => {
+                              setEmail(e.target.value);
+                            }}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="self-hosted-password">
+                            {t("sync.password")}
+                          </Label>
+                          <Input
+                            id="self-hosted-password"
+                            type="password"
+                            autoComplete="current-password"
+                            value={password}
+                            onChange={(e) => {
+                              setPassword(e.target.value);
+                            }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="sync-token">{t("sync.token")}</Label>
+                        <div className="relative">
+                          <Input
+                            id="sync-token"
+                            type={showToken ? "text" : "password"}
+                            placeholder={t("sync.tokenPlaceholder")}
+                            value={token}
+                            onChange={(e) => {
+                              setToken(e.target.value);
+                            }}
+                            className="pr-10"
+                          />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowToken(!showToken);
+                                }}
+                                className="absolute right-3 top-1/2 p-1 rounded-sm transition-colors transform -translate-y-1/2 hover:bg-accent"
+                                aria-label={
+                                  showToken
+                                    ? t("common.aria.hideToken")
+                                    : t("common.aria.showToken")
+                                }
+                              >
+                                {showToken ? (
+                                  <LuEyeOff className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                                ) : (
+                                  <LuEye className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                                )}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {showToken
+                                ? t("common.aria.hideToken")
+                                : t("common.aria.showToken")}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 items-center text-sm">
+                      <Checkbox
+                        id="self-hosted-advanced-token"
+                        checked={useAdvancedToken}
+                        onCheckedChange={(checked) => {
+                          setUseAdvancedToken(checked === true);
+                        }}
+                      />
+                      <Label
+                        htmlFor="self-hosted-advanced-token"
+                        className="font-normal cursor-pointer"
+                      >
+                        {t("sync.advancedTokenMode")}
+                      </Label>
+                    </div>
+
+                    {connectionStatus === "testing" && (
+                      <div className="flex gap-2 items-center text-sm text-muted-foreground">
+                        <div className="w-4 h-4 rounded-full border-2 border-current animate-spin border-t-transparent" />
+                        {t("sync.status.syncing")}
+                      </div>
+                    )}
+                    {connectionStatus === "connected" && (
+                      <div className="flex gap-2 items-center text-sm text-muted-foreground">
+                        <div className="w-2 h-2 rounded-full bg-success" />
+                        {t("sync.status.connected")}
+                      </div>
+                    )}
+                    {connectionStatus === "error" && (
+                      <div className="flex gap-2 items-center text-sm text-muted-foreground">
+                        <div className="w-2 h-2 rounded-full bg-destructive" />
+                        {t("sync.status.disconnected")}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <DialogFooter className="flex gap-2">
+                  {hasConfig && (
+                    <Button
+                      variant="outline"
+                      onClick={() => void handleDisconnect()}
+                      disabled={isSaving}
+                    >
+                      {t("sync.actions.disconnect")}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => void handleTestConnection()}
+                    disabled={isTesting || !serverUrl}
+                  >
+                    {isTesting
+                      ? t("sync.actions.testingConnection")
+                      : t("sync.actions.testConnection")}
+                  </Button>
+                  <LoadingButton
+                    onClick={() => void handleSave()}
+                    isLoading={isSaving}
+                    disabled={
+                      !serverUrl ||
+                      (useAdvancedToken ? !token : !email || !password)
+                    }
+                  >
+                    {t("common.buttons.save")}
+                  </LoadingButton>
+                </DialogFooter>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+      <TeamAdminDialog
+        isOpen={teamAdminOpen}
+        onClose={() => {
+          setTeamAdminOpen(false);
+        }}
+      />
+    </>
+  );
+}
+
+function BadgeLike({ children }: { children: string }) {
+  return (
+    <span className="rounded bg-muted px-1.5 py-0.5 text-xs capitalize text-muted-foreground">
+      {children}
+    </span>
   );
 }

@@ -38,6 +38,7 @@ pub mod proxy_runner;
 pub mod proxy_server;
 pub mod proxy_storage;
 mod self_hosted_auth;
+mod self_hosted_team;
 mod settings_manager;
 pub mod sync;
 mod synchronizer;
@@ -2088,6 +2089,20 @@ pub fn run() {
       self_hosted_auth::login_self_hosted,
       self_hosted_auth::logout_self_hosted,
       self_hosted_auth::get_self_hosted_user,
+      self_hosted_team::team_list_users,
+      self_hosted_team::team_create_user,
+      self_hosted_team::team_update_user,
+      self_hosted_team::team_list_bot_profiles,
+      self_hosted_team::team_upload_bot_profile_asset,
+      self_hosted_team::team_delete_bot_profile_asset,
+      self_hosted_team::team_list_profiles,
+      self_hosted_team::team_create_profile,
+      self_hosted_team::team_update_profile,
+      self_hosted_team::team_delete_profile,
+      self_hosted_team::team_set_profile_permission,
+      self_hosted_team::team_delete_profile_permission,
+      self_hosted_team::team_unlock_profile,
+      self_hosted_team::team_list_audit_logs,
       // Team lock commands
       team_lock::get_team_locks,
       team_lock::get_team_lock_status,

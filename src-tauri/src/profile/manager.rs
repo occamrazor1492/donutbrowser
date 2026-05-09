@@ -4,7 +4,7 @@ use crate::camoufox_manager::CamoufoxConfig;
 use crate::cloud_auth::CLOUD_AUTH;
 use crate::downloaded_browsers_registry::DownloadedBrowsersRegistry;
 use crate::events;
-use crate::profile::types::{get_host_os, BrowserProfile, SyncMode};
+use crate::profile::types::{get_host_os, BotBrowserConfig, BrowserProfile, SyncMode};
 use crate::proxy_manager::PROXY_MANAGER;
 use crate::wayfern_manager::WayfernConfig;
 use std::fs::{self, create_dir_all};
@@ -68,6 +68,7 @@ impl ProfileManager {
     vpn_id: Option<String>,
     camoufox_config: Option<CamoufoxConfig>,
     wayfern_config: Option<WayfernConfig>,
+    botbrowser_config: Option<BotBrowserConfig>,
     group_id: Option<String>,
     ephemeral: bool,
     dns_blocklist: Option<String>,
@@ -318,6 +319,22 @@ impl ProfileManager {
       wayfern_config.clone()
     };
 
+    let normalized_botbrowser_config =
+      crate::self_hosted_team::normalize_botbrowser_config(botbrowser_config);
+    if browser == "botbrowser" {
+      let has_asset = normalized_botbrowser_config
+        .as_ref()
+        .and_then(|config| config.bot_profile_asset_id.as_deref())
+        .is_some_and(|value| !value.trim().is_empty());
+      let has_local_path = normalized_botbrowser_config
+        .as_ref()
+        .and_then(|config| config.bot_profile_path.as_deref())
+        .is_some_and(|value| !value.trim().is_empty());
+      if !has_asset && !has_local_path {
+        return Err("BotBrowser profiles require a .enc template or local .enc path".into());
+      }
+    }
+
     let profile = BrowserProfile {
       id: profile_id,
       name: name.to_string(),
@@ -335,7 +352,11 @@ impl ProfileManager {
       group_id: group_id.clone(),
       tags: Vec::new(),
       note: None,
-      sync_mode: SyncMode::Disabled,
+      sync_mode: if browser == "botbrowser" {
+        SyncMode::Regular
+      } else {
+        SyncMode::Disabled
+      },
       encryption_salt: None,
       last_sync: None,
       host_os: Some(get_host_os()),
@@ -345,7 +366,7 @@ impl ProfileManager {
       created_by_id: None,
       created_by_email: None,
       dns_blocklist,
-      botbrowser_config: None,
+      botbrowser_config: normalized_botbrowser_config,
     };
 
     // Save profile info
@@ -358,9 +379,19 @@ impl ProfileManager {
 
     log::info!("Profile '{name}' created successfully with ID: {profile_id}");
 
+    if browser == "botbrowser" {
+      if let Err(e) =
+        crate::self_hosted_team::register_botbrowser_profile(app_handle, &profile).await
+      {
+        let _ = fs::remove_file(&profile_file);
+        let _ = fs::remove_dir_all(&profile_uuid_dir);
+        return Err(format!("Failed to register BotBrowser team profile: {e}").into());
+      }
+    }
+
     // Create user.js with common Firefox preferences and apply proxy settings if provided
     // Skip for ephemeral profiles since the data dir is created at launch time
-    if !ephemeral {
+    if !ephemeral && browser != "botbrowser" {
       if let Some(proxy_id_ref) = &proxy_id {
         if let Some(proxy_settings) = PROXY_MANAGER.get_proxy_settings_by_id(proxy_id_ref) {
           self.apply_proxy_settings_to_profile(&profile_data_dir, &proxy_settings, None)?;
@@ -2083,6 +2114,7 @@ pub async fn create_browser_profile_with_group(
   vpn_id: Option<String>,
   camoufox_config: Option<CamoufoxConfig>,
   wayfern_config: Option<WayfernConfig>,
+  botbrowser_config: Option<BotBrowserConfig>,
   group_id: Option<String>,
   ephemeral: bool,
   dns_blocklist: Option<String>,
@@ -2100,6 +2132,7 @@ pub async fn create_browser_profile_with_group(
       vpn_id,
       camoufox_config,
       wayfern_config,
+      botbrowser_config,
       group_id,
       ephemeral,
       dns_blocklist,
@@ -2238,6 +2271,7 @@ pub async fn create_browser_profile_new(
   vpn_id: Option<String>,
   camoufox_config: Option<CamoufoxConfig>,
   wayfern_config: Option<WayfernConfig>,
+  botbrowser_config: Option<BotBrowserConfig>,
   group_id: Option<String>,
   ephemeral: Option<bool>,
   dns_blocklist: Option<String>,
@@ -2255,18 +2289,25 @@ pub async fn create_browser_profile_new(
     return Err("Fingerprint OS spoofing requires an active Pro subscription".to_string());
   }
 
-  let browser_type =
-    BrowserType::from_str(&browser_str).map_err(|e| format!("Invalid browser type: {e}"))?;
+  let browser = if browser_str == "botbrowser" {
+    "botbrowser".to_string()
+  } else {
+    BrowserType::from_str(&browser_str)
+      .map_err(|e| format!("Invalid browser type: {e}"))?
+      .as_str()
+      .to_string()
+  };
   create_browser_profile_with_group(
     app_handle,
     name,
-    browser_type.as_str().to_string(),
+    browser,
     version,
     release_type,
     proxy_id,
     vpn_id,
     camoufox_config,
     wayfern_config,
+    botbrowser_config,
     group_id,
     ephemeral.unwrap_or(false),
     dns_blocklist,

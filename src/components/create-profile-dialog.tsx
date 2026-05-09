@@ -50,9 +50,11 @@ import { useVpnEvents } from "@/hooks/use-vpn-events";
 import { getBrowserIcon } from "@/lib/browser-utils";
 import { cn } from "@/lib/utils";
 import type {
+  BotBrowserConfig,
   BrowserReleaseTypes,
   CamoufoxConfig,
   CamoufoxOS,
+  TeamBotProfileAsset,
   WayfernConfig,
   WayfernOS,
 } from "@/types";
@@ -67,7 +69,16 @@ const getCurrentOS = (): CamoufoxOS => {
 
 import { RippleButton } from "./ui/ripple";
 
-type BrowserTypeString = "camoufox" | "wayfern";
+type BrowserTypeString = "botbrowser" | "camoufox" | "wayfern";
+
+interface SelfHostedAuthState {
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    teamId: string;
+  };
+}
 
 interface CreateProfileDialogProps {
   isOpen: boolean;
@@ -81,6 +92,7 @@ interface CreateProfileDialogProps {
     vpnId?: string;
     camoufoxConfig?: CamoufoxConfig;
     wayfernConfig?: WayfernConfig;
+    botbrowserConfig?: BotBrowserConfig;
     groupId?: string;
     extensionGroupId?: string;
     ephemeral?: boolean;
@@ -128,6 +140,16 @@ export function CreateProfileDialog({
   const [proxyPopoverOpen, setProxyPopoverOpen] = useState(false);
   const [dnsBlocklist, setDnsBlocklist] = useState<string>("");
   const [launchHook, setLaunchHook] = useState("");
+  const [selfHostedUser, setSelfHostedUser] = useState<
+    SelfHostedAuthState["user"] | null
+  >(null);
+  const [botProfileAssets, setBotProfileAssets] = useState<
+    TeamBotProfileAsset[]
+  >([]);
+  const [selectedBotProfileAssetId, setSelectedBotProfileAssetId] =
+    useState<string>("__none__");
+  const [botProfilePath, setBotProfilePath] = useState("");
+  const [botExecutablePath, setBotExecutablePath] = useState("");
 
   // Camoufox anti-detect states
   const [camoufoxConfig, setCamoufoxConfig] = useState<CamoufoxConfig>(() => ({
@@ -186,6 +208,27 @@ export function CreateProfileDialog({
           setExtensionGroups([]);
         });
     }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    void invoke<SelfHostedAuthState | null>("get_self_hosted_user")
+      .then((state) => {
+        setSelfHostedUser(state?.user ?? null);
+        if (state?.user) {
+          void invoke<TeamBotProfileAsset[]>("team_list_bot_profiles")
+            .then(setBotProfileAssets)
+            .catch(() => {
+              setBotProfileAssets([]);
+            });
+        } else {
+          setBotProfileAssets([]);
+        }
+      })
+      .catch(() => {
+        setSelfHostedUser(null);
+        setBotProfileAssets([]);
+      });
   }, [isOpen]);
   const [releaseTypes, setReleaseTypes] = useState<BrowserReleaseTypes>();
   const [isLoadingReleaseTypes, setIsLoadingReleaseTypes] = useState(false);
@@ -293,7 +336,7 @@ export function CreateProfileDialog({
     if (isOpen) {
       void loadSupportedBrowsers();
       // Load release types when a browser is selected
-      if (selectedBrowser) {
+      if (selectedBrowser && selectedBrowser !== "botbrowser") {
         void loadReleaseTypes(selectedBrowser);
       }
       // Check and download GeoIP database if needed for Camoufox or Wayfern
@@ -311,7 +354,7 @@ export function CreateProfileDialog({
 
   // Load release types when browser selection changes
   useEffect(() => {
-    if (selectedBrowser) {
+    if (selectedBrowser && selectedBrowser !== "botbrowser") {
       // Cancel any previous loading
       loadingBrowserRef.current = null;
       // Clear previous release types immediately to prevent showing stale data
@@ -378,8 +421,33 @@ export function CreateProfileDialog({
       isVpnSelection && selectedProxyId ? selectedProxyId.slice(4) : undefined;
     try {
       if (activeTab === "anti-detect") {
-        // Anti-detect browser - check if Wayfern or Camoufox is selected
-        if (selectedBrowser === "wayfern") {
+        // Anti-detect browser - check if BotBrowser, Wayfern, or Camoufox is selected
+        if (selectedBrowser === "botbrowser") {
+          const botbrowserConfig: BotBrowserConfig = {
+            executable_path: botExecutablePath.trim() || undefined,
+            bot_profile_asset_id:
+              selectedBotProfileAssetId !== "__none__"
+                ? selectedBotProfileAssetId
+                : undefined,
+            bot_profile_path: botProfilePath.trim() || undefined,
+          };
+
+          await onCreateProfile({
+            name: profileName.trim(),
+            browserStr: "botbrowser",
+            version: "system",
+            releaseType: "stable",
+            proxyId: resolvedProxyId,
+            vpnId: resolvedVpnId,
+            botbrowserConfig,
+            groupId:
+              selectedGroupId !== "default" ? selectedGroupId : undefined,
+            extensionGroupId: selectedExtensionGroupId,
+            ephemeral,
+            dnsBlocklist: dnsBlocklist || undefined,
+            launchHook: launchHook.trim() || undefined,
+          });
+        } else if (selectedBrowser === "wayfern") {
           const bestWayfernVersion = getCreatableVersion("wayfern");
           if (!bestWayfernVersion) {
             console.error("No Wayfern version available");
@@ -477,6 +545,9 @@ export function CreateProfileDialog({
     setSelectedBrowser(null);
     setSelectedProxyId(undefined);
     setLaunchHook("");
+    setSelectedBotProfileAssetId("__none__");
+    setBotProfilePath("");
+    setBotExecutablePath("");
     setReleaseTypes({});
     setIsLoadingReleaseTypes(false);
     setReleaseTypesError(null);
@@ -519,6 +590,13 @@ export function CreateProfileDialog({
   const isCreateDisabled = useMemo(() => {
     if (!profileName.trim()) return true;
     if (!selectedBrowser) return true;
+    if (selectedBrowser === "botbrowser") {
+      if (!selfHostedUser) return true;
+      if (selectedBotProfileAssetId === "__none__" && !botProfilePath.trim()) {
+        return true;
+      }
+      return false;
+    }
     if (isBrowserCurrentlyDownloading(selectedBrowser)) return true;
     if (!getCreatableVersion(selectedBrowser)) return true;
 
@@ -526,6 +604,9 @@ export function CreateProfileDialog({
   }, [
     profileName,
     selectedBrowser,
+    selfHostedUser,
+    selectedBotProfileAssetId,
+    botProfilePath,
     isBrowserCurrentlyDownloading,
     getCreatableVersion,
   ]);
@@ -544,9 +625,11 @@ export function CreateProfileDialog({
               ? t("createProfile.title")
               : t("createProfile.configureTitle", {
                   browser:
-                    selectedBrowser === "wayfern"
-                      ? t("createProfile.chromiumLabel")
-                      : t("createProfile.firefoxLabel"),
+                    selectedBrowser === "botbrowser"
+                      ? "BotBrowser"
+                      : selectedBrowser === "wayfern"
+                        ? t("createProfile.chromiumLabel")
+                        : t("createProfile.firefoxLabel"),
                 })}
           </DialogTitle>
         </DialogHeader>
@@ -566,6 +649,31 @@ export function CreateProfileDialog({
                     <TabsContent value="anti-detect" className="mt-0 space-y-6">
                       {/* Anti-Detect Browser Selection */}
                       <div className="space-y-3 pt-8">
+                        {selfHostedUser && (
+                          <Button
+                            onClick={() => {
+                              handleBrowserSelect("botbrowser");
+                            }}
+                            className="flex gap-3 justify-start items-center p-4 w-full h-16 border-2 transition-colors hover:border-primary/50"
+                            variant="outline"
+                          >
+                            <div className="flex justify-center items-center w-8 h-8">
+                              {(() => {
+                                const IconComponent = getBrowserIcon("wayfern");
+                                return IconComponent ? (
+                                  <IconComponent className="w-6 h-6" />
+                                ) : null;
+                              })()}
+                            </div>
+                            <div className="text-left">
+                              <div className="font-medium">BotBrowser</div>
+                              <div className="text-sm text-muted-foreground">
+                                {t("createProfile.botbrowser.subtitle")}
+                              </div>
+                            </div>
+                          </Button>
+                        )}
+
                         {/* Wayfern (Chromium) - First */}
                         <Button
                           onClick={() => {
@@ -718,7 +826,81 @@ export function CreateProfileDialog({
                           </p>
                         </div>
 
-                        {selectedBrowser === "wayfern" ? (
+                        {selectedBrowser === "botbrowser" ? (
+                          <div className="space-y-6">
+                            {!selfHostedUser && (
+                              <Alert className="border-warning/50 bg-warning/10">
+                                <AlertDescription className="text-sm">
+                                  {t("createProfile.botbrowser.loginRequired")}
+                                </AlertDescription>
+                              </Alert>
+                            )}
+
+                            <div className="space-y-2">
+                              <Label>
+                                {t("createProfile.botbrowser.template")}
+                              </Label>
+                              <Select
+                                value={selectedBotProfileAssetId}
+                                onValueChange={setSelectedBotProfileAssetId}
+                                disabled={!selfHostedUser}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={t(
+                                      "createProfile.botbrowser.templatePlaceholder",
+                                    )}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none__">
+                                    {t("profileInfo.values.none")}
+                                  </SelectItem>
+                                  {botProfileAssets.map((asset) => (
+                                    <SelectItem key={asset.id} value={asset.id}>
+                                      {asset.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-muted-foreground">
+                                {t("createProfile.botbrowser.templateHint")}
+                              </p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="bot-profile-path">
+                                {t("createProfile.botbrowser.localEncPath")}
+                              </Label>
+                              <Input
+                                id="bot-profile-path"
+                                value={botProfilePath}
+                                onChange={(event) => {
+                                  setBotProfilePath(event.target.value);
+                                }}
+                                placeholder={t(
+                                  "createProfile.botbrowser.localEncPathPlaceholder",
+                                )}
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="bot-executable-path">
+                                {t("createProfile.botbrowser.executablePath")}
+                              </Label>
+                              <Input
+                                id="bot-executable-path"
+                                value={botExecutablePath}
+                                onChange={(event) => {
+                                  setBotExecutablePath(event.target.value);
+                                }}
+                                placeholder={t(
+                                  "createProfile.botbrowser.executablePathPlaceholder",
+                                )}
+                              />
+                            </div>
+                          </div>
+                        ) : selectedBrowser === "wayfern" ? (
                           // Wayfern Configuration
                           <div className="space-y-6">
                             {/* Wayfern Download Status */}
