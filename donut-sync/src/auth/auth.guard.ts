@@ -8,6 +8,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
 import * as jwt from "jsonwebtoken";
+import { AuthService } from "./auth.service.js";
 import type { UserContext } from "./user-context.interface.js";
 
 @Injectable()
@@ -15,7 +16,10 @@ export class AuthGuard implements CanActivate {
   private readonly logger = new Logger(AuthGuard.name);
   private jwtPublicKey: string | null = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private authService: AuthService,
+  ) {
     const publicKey = this.configService.get<string>("SYNC_JWT_PUBLIC_KEY");
     if (publicKey) {
       this.jwtPublicKey = publicKey.replace(/\\n/g, "\n");
@@ -34,6 +38,12 @@ export class AuthGuard implements CanActivate {
     }
 
     const token = authHeader.substring(7);
+
+    if (this.authService.isMultiUserEnabled()) {
+      (request as unknown as Record<string, unknown>).user =
+        this.authService.verifyTeamToken(token);
+      return true;
+    }
 
     // Try SYNC_TOKEN first (self-hosted mode)
     const expectedToken = this.configService.get<string>("SYNC_TOKEN");

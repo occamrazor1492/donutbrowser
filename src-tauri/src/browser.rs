@@ -1196,6 +1196,7 @@ mod tests {
       id: uuid::Uuid::parse_str("12345678-1234-1234-1234-123456789abc").unwrap(),
       name: "test".to_string(),
       browser: "wayfern".to_string(),
+      engine: None,
       version: "1.0.0".to_string(),
       proxy_id: None,
       vpn_id: None,
@@ -1218,6 +1219,7 @@ mod tests {
       created_by_id: None,
       created_by_email: None,
       dns_blocklist: None,
+      botbrowser_config: None,
     };
 
     let path = profile.get_profile_data_path(&profiles_dir);

@@ -562,6 +562,7 @@ impl ProfileImporter {
           id: uuid::Uuid::new_v4(),
           name: new_profile_name.to_string(),
           browser: mapped.to_string(),
+          engine: None,
           version: version.clone(),
           proxy_id: proxy_id.clone(),
           vpn_id: None,
@@ -584,6 +585,7 @@ impl ProfileImporter {
           created_by_id: None,
           created_by_email: None,
           dns_blocklist: None,
+          botbrowser_config: None,
         };
 
         match self
@@ -642,6 +644,7 @@ impl ProfileImporter {
           id: uuid::Uuid::new_v4(),
           name: new_profile_name.to_string(),
           browser: mapped.to_string(),
+          engine: None,
           version: version.clone(),
           proxy_id: proxy_id.clone(),
           vpn_id: None,
@@ -664,6 +667,7 @@ impl ProfileImporter {
           created_by_id: None,
           created_by_email: None,
           dns_blocklist: None,
+          botbrowser_config: None,
         };
 
         match self
@@ -693,6 +697,7 @@ impl ProfileImporter {
       id: profile_id,
       name: new_profile_name.to_string(),
       browser: mapped.to_string(),
+      engine: Some(mapped.to_string()),
       version,
       proxy_id,
       vpn_id: None,
@@ -715,6 +720,7 @@ impl ProfileImporter {
       created_by_id: None,
       created_by_email: None,
       dns_blocklist: None,
+      botbrowser_config: None,
     };
 
     self.profile_manager.save_profile(&profile)?;

@@ -3,6 +3,32 @@ use crate::wayfern_manager::WayfernConfig;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct BotBrowserConfig {
+  #[serde(default)]
+  pub executable_path: Option<String>,
+  #[serde(default)]
+  pub bot_profile_asset_id: Option<String>,
+  #[serde(default)]
+  pub bot_profile_path: Option<String>,
+  #[serde(default)]
+  pub extra_args: Vec<String>,
+  #[serde(default)]
+  pub locale: Option<String>,
+  #[serde(default)]
+  pub timezone: Option<String>,
+  #[serde(default)]
+  pub languages: Option<String>,
+  #[serde(default)]
+  pub noise_seed: Option<u64>,
+  #[serde(default)]
+  pub local_dns: bool,
+  #[serde(default)]
+  pub port_protection: bool,
+  #[serde(default)]
+  pub network_info_override: bool,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Default)]
 #[allow(dead_code)]
 pub enum SyncStatus {
@@ -26,6 +52,8 @@ pub struct BrowserProfile {
   pub id: uuid::Uuid,
   pub name: String,
   pub browser: String,
+  #[serde(default)]
+  pub engine: Option<String>,
   pub version: String,
   #[serde(default)]
   pub proxy_id: Option<String>, // Reference to stored proxy
@@ -69,6 +97,8 @@ pub struct BrowserProfile {
   pub created_by_email: Option<String>,
   #[serde(default)]
   pub dns_blocklist: Option<String>,
+  #[serde(default)]
+  pub botbrowser_config: Option<BotBrowserConfig>,
 }
 
 pub fn default_release_type() -> String {

@@ -306,6 +306,10 @@ impl SyncEngine {
 
   /// Get the key prefix for team profiles. Returns empty string for personal profiles.
   async fn get_team_key_prefix(profile: &BrowserProfile) -> String {
+    if let Some(prefix) = crate::self_hosted_auth::cached_team_prefix() {
+      return prefix;
+    }
+
     if profile.created_by_id.is_some() {
       if let Some(auth) = crate::cloud_auth::CLOUD_AUTH.get_user().await {
         if let Some(team_id) = &auth.user.team_id {
@@ -314,11 +318,6 @@ impl SyncEngine {
       }
     }
     String::new()
-  }
-
-  /// Check if this is a self-hosted sync (no cloud login).
-  async fn is_self_hosted_sync() -> bool {
-    !crate::cloud_auth::CLOUD_AUTH.is_logged_in().await
   }
 
   pub async fn sync_profile(
@@ -333,16 +332,6 @@ impl SyncEngine {
         profile.id
       );
       return self.sync_cross_os_metadata(app_handle, profile).await;
-    }
-
-    // Skip team profiles for self-hosted sync
-    if Self::is_self_hosted_sync().await && profile.created_by_id.is_some() {
-      log::info!(
-        "Skipping team profile for self-hosted sync: {} ({})",
-        profile.name,
-        profile.id
-      );
-      return Ok(());
     }
 
     // Skip if profile is currently running locally
@@ -388,8 +377,14 @@ impl SyncEngine {
 
     let profile_manager = ProfileManager::instance();
     let profiles_dir = profile_manager.get_profiles_dir();
-    let profile_dir = profiles_dir.join(profile.id.to_string());
     let profile_id = profile.id.to_string();
+    let profile_dir = if crate::botbrowser::is_botbrowser_profile(profile)
+      && crate::self_hosted_auth::cached_team_id().is_some()
+    {
+      crate::botbrowser::profile_data_path(profile, &profiles_dir)
+    } else {
+      profiles_dir.join(&profile_id)
+    };
 
     // Determine team key prefix for team profiles
     let key_prefix = Self::get_team_key_prefix(profile).await;
@@ -668,6 +663,45 @@ impl SyncEngine {
     Err(SyncError::SerializationError(
       "Failed to parse manifest (not valid JSON and no encryption key available)".to_string(),
     ))
+  }
+
+  pub async fn download_key_to_path(&self, key: &str, path: &Path) -> SyncResult<()> {
+    let stat = self.client.stat(key).await?;
+    if !stat.exists {
+      return Err(SyncError::InvalidData(format!(
+        "Remote object not found: {key}"
+      )));
+    }
+
+    let presign = self.client.presign_download(key).await?;
+    let data = self.client.download_bytes(&presign.url).await?;
+    if let Some(parent) = path.parent() {
+      fs::create_dir_all(parent).map_err(|e| {
+        SyncError::IoError(format!(
+          "Failed to create download directory {}: {e}",
+          parent.display()
+        ))
+      })?;
+    }
+    fs::write(path, data).map_err(|e| {
+      SyncError::IoError(format!(
+        "Failed to write downloaded object {}: {e}",
+        path.display()
+      ))
+    })?;
+    Ok(())
+  }
+
+  pub async fn acquire_profile_lock(&self, profile_id: &str) -> SyncResult<()> {
+    self.client.acquire_profile_lock(profile_id).await
+  }
+
+  pub async fn heartbeat_profile_lock(&self, profile_id: &str) -> SyncResult<()> {
+    self.client.heartbeat_profile_lock(profile_id).await
+  }
+
+  pub async fn unlock_profile(&self, profile_id: &str) -> SyncResult<()> {
+    self.client.unlock_profile(profile_id).await
   }
 
   async fn upload_manifest(

@@ -534,8 +534,16 @@
     },
     "serverUrl": "URL сервера",
     "serverUrlPlaceholder": "https://sync.example.com",
+    "email": "Электронная почта",
+    "password": "Пароль",
     "token": "Токен синхронизации",
     "tokenPlaceholder": "Введите токен синхронизации",
+    "advancedTokenMode": "Расширенный режим токена",
+    "actions": {
+      "disconnect": "Отключиться",
+      "testConnection": "Проверить подключение",
+      "testingConnection": "Проверка..."
+    },
     "status": {
       "connected": "Подключено",
       "disconnected": "Отключено",

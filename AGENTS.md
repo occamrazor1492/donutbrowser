@@ -19,6 +19,7 @@ donutbrowser/
 │   │   ├── lib.rs                    # Tauri command registration (100+ commands)
 │   │   ├── browser_runner.rs         # Profile launch/kill orchestration
 │   │   ├── browser.rs               # Browser trait & launch logic
+│   │   ├── botbrowser.rs            # BotBrowser Chromium adapter
 │   │   ├── profile/                  # Profile CRUD (manager.rs, types.rs)
 │   │   ├── proxy_manager.rs         # Proxy lifecycle & connection testing
 │   │   ├── proxy_server.rs          # Local proxy binary (donut-proxy)
@@ -26,6 +27,7 @@ donutbrowser/
 │   │   ├── api_server.rs            # REST API (utoipa + axum)
 │   │   ├── mcp_server.rs            # MCP protocol server
 │   │   ├── sync/                    # Cloud sync (engine, encryption, manifest, scheduler)
+│   │   ├── self_hosted_auth.rs      # Self-hosted JWT login/token cache
 │   │   ├── vpn/                     # WireGuard tunnels
 │   │   ├── camoufox/                # Camoufox fingerprint engine (Bayesian network)
 │   │   ├── wayfern_manager.rs       # Wayfern (Chromium) browser management
@@ -42,8 +44,10 @@ donutbrowser/
 │   ├── tests/                      # Integration tests
 │   └── Cargo.toml                  # Rust dependencies
 ├── donut-sync/                     # NestJS sync server (self-hostable)
+│   ├── prisma/                     # Prisma schema and Postgres migrations
 │   └── src/                        # Controllers, services, auth, S3 sync
-├── docs/                           # Documentation (self-hosting guide)
+├── docs/                           # Documentation and runbooks
+├── scripts/                        # Local development and deployment helpers
 ├── flake.nix                       # Nix development environment
 └── .github/workflows/              # CI/CD pipelines
 ```

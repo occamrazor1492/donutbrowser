@@ -1649,7 +1649,7 @@ async fn run_profile(
   }
 
   // Team lock check
-  crate::team_lock::acquire_team_lock_if_needed(profile)
+  crate::team_lock::acquire_team_lock_if_needed(&state.app_handle, profile)
     .await
     .map_err(|_| StatusCode::CONFLICT)?;
 
@@ -1763,7 +1763,7 @@ async fn kill_profile(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-  crate::team_lock::release_team_lock_if_needed(profile).await;
+  crate::team_lock::release_team_lock_if_needed(&state.app_handle, profile).await;
 
   Ok(StatusCode::NO_CONTENT)
 }

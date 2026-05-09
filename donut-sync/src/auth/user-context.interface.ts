@@ -1,5 +1,9 @@
 export interface UserContext {
-  mode: "self-hosted" | "cloud";
+  mode: "self-hosted" | "cloud" | "team";
+  userId?: string;
+  email?: string;
+  role?: "admin" | "member";
+  teamId?: string;
   prefix: string; // '' for self-hosted, 'users/{id}/' for cloud
   teamPrefix: string | null; // 'teams/{id}/' or null
   profileLimit: number; // 0 for unlimited (self-hosted)

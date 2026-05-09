@@ -534,8 +534,16 @@
     },
     "serverUrl": "Server URL",
     "serverUrlPlaceholder": "https://sync.example.com",
+    "email": "Email",
+    "password": "Password",
     "token": "Sync Token",
     "tokenPlaceholder": "Enter your sync token",
+    "advancedTokenMode": "Advanced token mode",
+    "actions": {
+      "disconnect": "Disconnect",
+      "testConnection": "Test Connection",
+      "testingConnection": "Testing..."
+    },
     "status": {
       "connected": "Connected",
       "disconnected": "Disconnected",

@@ -534,8 +534,16 @@
     },
     "serverUrl": "URL del Servidor",
     "serverUrlPlaceholder": "https://sync.ejemplo.com",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
     "token": "Token de Sincronización",
     "tokenPlaceholder": "Ingresa tu token de sincronización",
+    "advancedTokenMode": "Modo avanzado de token",
+    "actions": {
+      "disconnect": "Desconectar",
+      "testConnection": "Probar conexión",
+      "testingConnection": "Probando..."
+    },
     "status": {
       "connected": "Conectado",
       "disconnected": "Desconectado",

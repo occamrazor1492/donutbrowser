@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  member
+}
+
+enum ProfilePermissionLevel {
+  owner
+  editor
+  viewer
+}
+
+enum BrowserEngine {
+  botbrowser
+  wayfern
+  camoufox
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users            User[]
+  profiles         TeamProfile[]
+  botProfileAssets BotProfileAsset[]
+  auditLogs        AuditLog[]
+}
+
+model User {
+  id           String    @id @default(cuid())
+  teamId       String
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(member)
+  disabledAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  team                    Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  ownedProfiles           TeamProfile[]       @relation("TeamProfileOwner")
+  profilePermissions      ProfilePermission[]
+  botProfileAssetsCreated BotProfileAsset[]   @relation("BotProfileAssetCreator")
+  locks                   ProfileLock[]       @relation("ProfileLockUser")
+  auditLogs               AuditLog[]
+}
+
+model TeamProfile {
+  id                String        @id @default(cuid())
+  teamId            String
+  ownerUserId       String
+  name              String
+  engine            BrowserEngine @default(botbrowser)
+  botProfileAssetId String?
+  syncMode          String        @default("Regular")
+  deletedAt         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  team            Team                 @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  owner           User                 @relation("TeamProfileOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  botProfileAsset BotProfileAsset?     @relation(fields: [botProfileAssetId], references: [id], onDelete: SetNull)
+  permissions     ProfilePermission[]
+  lock            ProfileLock?
+
+  @@index([teamId])
+  @@index([ownerUserId])
+}
+
+model ProfilePermission {
+  id         String                 @id @default(cuid())
+  profileId  String
+  userId     String
+  permission ProfilePermissionLevel
+  createdAt  DateTime               @default(now())
+
+  profile TeamProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, userId])
+  @@index([userId])
+}
+
+model ProfileLock {
+  profileId      String   @id
+  lockedByUserId String
+  expiresAt      DateTime
+  heartbeatAt    DateTime @default(now())
+
+  profile TeamProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  user    User        @relation("ProfileLockUser", fields: [lockedByUserId], references: [id], onDelete: Cascade)
+}
+
+model BotProfileAsset {
+  id                  String   @id @default(cuid())
+  teamId              String
+  name                String
+  s3Key               String
+  browserMajorVersion String?
+  platform            String?
+  createdByUserId     String
+  createdAt           DateTime @default(now())
+
+  team      Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy User          @relation("BotProfileAssetCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  profiles  TeamProfile[]
+
+  @@index([teamId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  teamId     String
+  userId     String?
+  action     String
+  targetType String
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  team Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([teamId, createdAt])
+}

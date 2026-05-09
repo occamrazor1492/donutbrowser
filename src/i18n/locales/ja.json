@@ -534,8 +534,16 @@
     },
     "serverUrl": "サーバーURL",
     "serverUrlPlaceholder": "https://sync.example.com",
+    "email": "メールアドレス",
+    "password": "パスワード",
     "token": "同期トークン",
     "tokenPlaceholder": "同期トークンを入力",
+    "advancedTokenMode": "高度なトークンモード",
+    "actions": {
+      "disconnect": "切断",
+      "testConnection": "接続をテスト",
+      "testingConnection": "テスト中..."
+    },
     "status": {
       "connected": "接続済み",
       "disconnected": "切断",

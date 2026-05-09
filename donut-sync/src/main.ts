@@ -3,6 +3,16 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module.js";
 
 function validateEnv() {
+  if (process.env.MULTI_USER_ENABLED === "true") {
+    if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
+      console.error(
+        "DATABASE_URL and JWT_SECRET must be set when MULTI_USER_ENABLED=true",
+      );
+      process.exit(1);
+    }
+    return;
+  }
+
   if (!process.env.SYNC_TOKEN && !process.env.SYNC_JWT_PUBLIC_KEY) {
     console.error("Either SYNC_TOKEN or SYNC_JWT_PUBLIC_KEY must be set");
     process.exit(1);

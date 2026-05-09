@@ -154,10 +154,111 @@ impl BrowserRunner {
     app_handle: tauri::AppHandle,
     profile: &BrowserProfile,
     url: Option<String>,
-    _local_proxy_settings: Option<&ProxySettings>,
+    local_proxy_settings: Option<&ProxySettings>,
     remote_debugging_port: Option<u16>,
     headless: bool,
   ) -> Result<BrowserProfile, Box<dyn std::error::Error + Send + Sync>> {
+    // Handle BotBrowser profiles using Chromium plus an encrypted BotBrowser fingerprint profile.
+    if crate::botbrowser::is_botbrowser_profile(profile) {
+      let mut updated_profile = profile.clone();
+
+      let profiles_dir = self.profile_manager.get_profiles_dir();
+      let profile_data_path = crate::botbrowser::profile_data_path(&updated_profile, &profiles_dir);
+
+      std::fs::create_dir_all(&profile_data_path)
+        .map_err(|e| format!("Failed to create BotBrowser profile directory: {e}"))?;
+
+      if updated_profile.is_sync_enabled() || crate::self_hosted_auth::cached_user().is_some() {
+        match crate::sync::SyncEngine::create_from_settings(&app_handle).await {
+          Ok(engine) => {
+            if let Err(e) = engine.sync_profile(&app_handle, &updated_profile).await {
+              log::warn!(
+                "Failed to sync BotBrowser profile before launch {}: {}",
+                updated_profile.id,
+                e
+              );
+            }
+          }
+          Err(e) => {
+            log::debug!("Sync not configured before BotBrowser launch: {e}");
+          }
+        }
+      }
+
+      let executable_path = crate::botbrowser::resolve_executable_path(&updated_profile)
+        .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
+      let bot_profile_path =
+        crate::botbrowser::ensure_bot_profile_asset(&app_handle, &updated_profile)
+          .await
+          .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
+
+      // Install Chromium-compatible extensions if an extension group is assigned.
+      if updated_profile.extension_group_id.is_some() {
+        let mgr = crate::extension_manager::EXTENSION_MANAGER.lock().unwrap();
+        match mgr.install_extensions_for_profile(&updated_profile, &profile_data_path) {
+          Ok(paths) => {
+            if !paths.is_empty() {
+              log::info!(
+                "Prepared {} Chromium extensions for BotBrowser profile: {}",
+                paths.len(),
+                updated_profile.name
+              );
+            }
+          }
+          Err(e) => {
+            log::warn!("Failed to install extensions for BotBrowser profile: {e}");
+          }
+        }
+      }
+
+      let args = crate::botbrowser::build_launch_args(
+        &updated_profile,
+        &profile_data_path,
+        &bot_profile_path,
+        local_proxy_settings,
+        url.as_deref(),
+        remote_debugging_port,
+        headless,
+      );
+
+      let (_child, launch_result) =
+        crate::botbrowser::launch_process(&executable_path, &args, &bot_profile_path)?;
+      let process_id = launch_result.process_id;
+      log::info!("BotBrowser launched successfully with PID: {process_id}");
+
+      updated_profile.browser = "botbrowser".to_string();
+      updated_profile.engine = Some("botbrowser".to_string());
+      updated_profile.process_id = Some(process_id);
+      updated_profile.last_launch = Some(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs());
+
+      self.save_process_info(&updated_profile)?;
+      let _ = crate::tag_manager::TAG_MANAGER.lock().map(|tm| {
+        let _ = tm.rebuild_from_profiles(&self.profile_manager.list_profiles().unwrap_or_default());
+      });
+
+      if let Err(e) = events::emit_empty("profiles-changed") {
+        log::warn!("Warning: Failed to emit profiles-changed event: {e}");
+      }
+      if let Err(e) = events::emit("profile-updated", &updated_profile) {
+        log::warn!("Warning: Failed to emit profile update event: {e}");
+      }
+
+      #[derive(Serialize)]
+      struct RunningChangedPayload {
+        id: String,
+        is_running: bool,
+      }
+      let payload = RunningChangedPayload {
+        id: updated_profile.id.to_string(),
+        is_running: true,
+      };
+      if let Err(e) = events::emit("profile-running-changed", &payload) {
+        log::warn!("Warning: Failed to emit profile running changed event: {e}");
+      }
+
+      return Ok(updated_profile);
+    }
+
     // Handle Camoufox profiles using CamoufoxManager
     if profile.browser == "camoufox" {
       // Get or create camoufox config
@@ -772,6 +873,29 @@ impl BrowserRunner {
           return Err("Wayfern browser is not running".into());
         }
       }
+    }
+
+    if crate::botbrowser::is_botbrowser_profile(profile) {
+      let profiles_dir = self.profile_manager.get_profiles_dir();
+      let profile_data_path = crate::botbrowser::profile_data_path(profile, &profiles_dir);
+
+      let executable_path = crate::botbrowser::resolve_executable_path(profile)
+        .map_err(|e| format!("Failed to get BotBrowser executable path: {e}"))?;
+      let output = std::process::Command::new(&executable_path)
+        .arg(format!(
+          "--user-data-dir={}",
+          profile_data_path.to_string_lossy()
+        ))
+        .arg("--new-tab")
+        .arg(url)
+        .output()
+        .map_err(|e| format!("Failed to execute BotBrowser: {e}"))?;
+
+      if output.status.success() {
+        return Ok(());
+      }
+      let stderr = String::from_utf8_lossy(&output.stderr);
+      return Err(format!("Failed to open URL in existing BotBrowser instance: {stderr}").into());
     }
 
     Err(format!("Unsupported browser type: {}", profile.browser).into())
@@ -1827,6 +1951,11 @@ impl BrowserRunner {
           }
           "zen" => exe_name.contains("zen"),
           "chromium" => exe_name.contains("chromium") || exe_name.contains("chrome"),
+          "botbrowser" => {
+            exe_name.contains("botbrowser")
+              || exe_name.contains("chromium")
+              || exe_name.contains("chrome")
+          }
           "brave" => exe_name.contains("brave") || exe_name.contains("Brave"),
           _ => false,
         };
@@ -1834,7 +1963,7 @@ impl BrowserRunner {
         if is_correct_browser {
           // Verify profile path match
           let profiles_dir = self.profile_manager.get_profiles_dir();
-          let profile_data_path = profile.get_profile_data_path(&profiles_dir);
+          let profile_data_path = crate::botbrowser::profile_data_path(profile, &profiles_dir);
           let profile_data_path_str = profile_data_path.to_string_lossy();
 
           let profile_path_match = if matches!(
@@ -1921,7 +2050,7 @@ impl BrowserRunner {
     #[cfg(target_os = "macos")]
     {
       let profiles_dir = self.profile_manager.get_profiles_dir();
-      let profile_data_path = profile.get_profile_data_path(&profiles_dir);
+      let profile_data_path = crate::botbrowser::profile_data_path(profile, &profiles_dir);
       let profile_path_str = profile_data_path.to_string_lossy().to_string();
       platform_browser::macos::kill_browser_process_impl(pid, Some(&profile_path_str)).await?;
     }
@@ -1932,7 +2061,7 @@ impl BrowserRunner {
     #[cfg(target_os = "linux")]
     {
       let profiles_dir = self.profile_manager.get_profiles_dir();
-      let profile_data_path = profile.get_profile_data_path(&profiles_dir);
+      let profile_data_path = crate::botbrowser::profile_data_path(profile, &profiles_dir);
       let profile_path_str = profile_data_path.to_string_lossy().to_string();
       platform_browser::linux::kill_browser_process_impl(pid, Some(&profile_path_str)).await?;
     }
@@ -2080,7 +2209,7 @@ impl BrowserRunner {
   ) -> Result<u32, Box<dyn std::error::Error + Send + Sync>> {
     let system = System::new_all();
     let profiles_dir = self.profile_manager.get_profiles_dir();
-    let profile_data_path = profile.get_profile_data_path(&profiles_dir);
+    let profile_data_path = crate::botbrowser::profile_data_path(profile, &profiles_dir);
     let profile_data_path_str = profile_data_path.to_string_lossy();
 
     log::info!(
@@ -2118,6 +2247,11 @@ impl BrowserRunner {
         }
         "zen" => exe_name.contains("zen"),
         "chromium" => exe_name.contains("chromium") || exe_name.contains("chrome"),
+        "botbrowser" => {
+          exe_name.contains("botbrowser")
+            || exe_name.contains("chromium")
+            || exe_name.contains("chrome")
+        }
         "brave" => exe_name.contains("brave") || exe_name.contains("Brave"),
         _ => false,
       };
@@ -2251,7 +2385,7 @@ pub async fn launch_browser_profile(
   }
 
   // Team lock check: if profile is sync-enabled and user is on a team, acquire lock
-  crate::team_lock::acquire_team_lock_if_needed(&profile).await?;
+  crate::team_lock::acquire_team_lock_if_needed(&app_handle, &profile).await?;
 
   // Notify sync scheduler that profile is now running and queue sync for when it stops
   if let Some(scheduler) = crate::sync::get_global_scheduler() {
@@ -2469,14 +2603,46 @@ pub async fn kill_browser_profile(
       );
 
       // Release team lock if applicable
-      crate::team_lock::release_team_lock_if_needed(&profile).await;
-
       // Notify sync scheduler that profile stopped (sync was queued at launch)
       if let Some(scheduler) = crate::sync::get_global_scheduler() {
         scheduler
           .mark_profile_stopped(&profile.id.to_string())
           .await;
       }
+
+      if profile.is_sync_enabled() || crate::self_hosted_auth::cached_user().is_some() {
+        let stopped_profile = match browser_runner.profile_manager.list_profiles() {
+          Ok(profiles) => profiles.into_iter().find(|p| p.id == profile.id),
+          Err(e) => {
+            log::warn!(
+              "Failed to reload profile {} before close-time sync: {}",
+              profile.id,
+              e
+            );
+            None
+          }
+        };
+
+        if let Some(stopped_profile) = stopped_profile {
+          match crate::sync::SyncEngine::create_from_settings(&app_handle).await {
+            Ok(engine) => {
+              if let Err(e) = engine.sync_profile(&app_handle, &stopped_profile).await {
+                log::warn!(
+                  "Failed to sync profile {} before releasing lock: {}",
+                  profile.id,
+                  e
+                );
+              }
+            }
+            Err(e) => {
+              log::debug!("Sync not configured after browser stop: {e}");
+            }
+          }
+        }
+      }
+
+      // Release team lock after the close-time sync so self-hosted uploads still have a valid lock.
+      crate::team_lock::release_team_lock_if_needed(&app_handle, &profile).await;
 
       // Auto-update non-running profiles and cleanup unused binaries
       let browser_for_update = profile.browser.clone();

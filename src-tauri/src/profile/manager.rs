@@ -162,6 +162,7 @@ impl ProfileManager {
           id: uuid::Uuid::new_v4(),
           name: name.to_string(),
           browser: browser.to_string(),
+          engine: None,
           version: version.to_string(),
           proxy_id: proxy_id.clone(),
           vpn_id: None,
@@ -184,6 +185,7 @@ impl ProfileManager {
           created_by_id: None,
           created_by_email: None,
           dns_blocklist: None,
+          botbrowser_config: None,
         };
 
         match self
@@ -263,6 +265,7 @@ impl ProfileManager {
           id: uuid::Uuid::new_v4(),
           name: name.to_string(),
           browser: browser.to_string(),
+          engine: None,
           version: version.to_string(),
           proxy_id: proxy_id.clone(),
           vpn_id: None,
@@ -285,6 +288,7 @@ impl ProfileManager {
           created_by_id: None,
           created_by_email: None,
           dns_blocklist: None,
+          botbrowser_config: None,
         };
 
         match self
@@ -318,6 +322,7 @@ impl ProfileManager {
       id: profile_id,
       name: name.to_string(),
       browser: browser.to_string(),
+      engine: Some(browser.to_string()),
       version: version.to_string(),
       proxy_id: proxy_id.clone(),
       vpn_id: vpn_id.clone(),
@@ -340,6 +345,7 @@ impl ProfileManager {
       created_by_id: None,
       created_by_email: None,
       dns_blocklist,
+      botbrowser_config: None,
     };
 
     // Save profile info
@@ -965,6 +971,7 @@ impl ProfileManager {
       id: new_id,
       name: clone_name,
       browser: source.browser,
+      engine: source.engine,
       version: source.version,
       proxy_id: source.proxy_id,
       vpn_id: source.vpn_id,
@@ -987,6 +994,7 @@ impl ProfileManager {
       created_by_id: None,
       created_by_email: None,
       dns_blocklist: source.dns_blocklist,
+      botbrowser_config: source.botbrowser_config,
     };
 
     self.save_profile(&new_profile)?;
@@ -1313,7 +1321,7 @@ impl ProfileManager {
         let cmd = process.cmd();
         // Verify this process is actually our browser with the correct profile
         let profiles_dir = self.get_profiles_dir();
-        let profile_data_path = profile.get_profile_data_path(&profiles_dir);
+        let profile_data_path = crate::botbrowser::profile_data_path(profile, &profiles_dir);
         let profile_data_path_str = profile_data_path.to_string_lossy();
         let profile_path_match = cmd.iter().any(|s| {
           let arg = s.to_str().unwrap_or("");
@@ -1353,6 +1361,11 @@ impl ProfileManager {
                 || exe_name.contains("chromium")
                 || exe_name.contains("chrome")
             }
+            "botbrowser" => {
+              exe_name.contains("botbrowser")
+                || exe_name.contains("chromium")
+                || exe_name.contains("chrome")
+            }
             _ => false,
           };
 
@@ -1362,7 +1375,7 @@ impl ProfileManager {
 
           // Check for profile path match
           let profiles_dir = self.get_profiles_dir();
-          let profile_data_path = profile.get_profile_data_path(&profiles_dir);
+          let profile_data_path = crate::botbrowser::profile_data_path(profile, &profiles_dir);
           let profile_data_path_str = profile_data_path.to_string_lossy();
           let profile_path_match = cmd.iter().any(|s| {
             let arg = s.to_str().unwrap_or("");

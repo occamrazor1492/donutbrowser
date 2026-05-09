@@ -7,6 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -24,7 +26,9 @@
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.1.18",
     "@nestjs/platform-express": "^11.1.18",
+    "@prisma/client": "^6.19.0",
     "jsonwebtoken": "^9.0.3",
+    "prisma": "^6.19.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },

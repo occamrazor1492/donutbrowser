@@ -679,6 +679,7 @@ mod tests {
       id: uuid::Uuid::new_v4(),
       name: name.to_string(),
       browser: browser.to_string(),
+      engine: None,
       version: version.to_string(),
       process_id: None,
       proxy_id: None,
@@ -701,6 +702,7 @@ mod tests {
       created_by_id: None,
       created_by_email: None,
       dns_blocklist: None,
+      botbrowser_config: None,
     }
   }
 

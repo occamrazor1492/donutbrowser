@@ -21,6 +21,55 @@ impl SyncClient {
     format!("{}/v1/objects/{}", self.base_url, path)
   }
 
+  fn api_url(&self, path: &str) -> String {
+    format!("{}/v1/{}", self.base_url, path.trim_start_matches('/'))
+  }
+
+  async fn post_api(&self, path: &str) -> SyncResult<serde_json::Value> {
+    let response = self
+      .client
+      .post(self.api_url(path))
+      .header("Authorization", format!("Bearer {}", self.token))
+      .send()
+      .await
+      .map_err(|e| SyncError::NetworkError(e.to_string()))?;
+
+    if response.status().is_client_error() {
+      let status = response.status();
+      let body = response.text().await.unwrap_or_default();
+      if status.as_u16() == 409 {
+        return Err(SyncError::ConflictError(body));
+      }
+      return Err(SyncError::AuthError(format!("({status}) {body}")));
+    }
+
+    response
+      .json()
+      .await
+      .map_err(|e| SyncError::SerializationError(e.to_string()))
+  }
+
+  pub async fn acquire_profile_lock(&self, profile_id: &str) -> SyncResult<()> {
+    self
+      .post_api(&format!("team-profiles/{profile_id}/lock"))
+      .await
+      .map(|_| ())
+  }
+
+  pub async fn heartbeat_profile_lock(&self, profile_id: &str) -> SyncResult<()> {
+    self
+      .post_api(&format!("team-profiles/{profile_id}/lock/heartbeat"))
+      .await
+      .map(|_| ())
+  }
+
+  pub async fn unlock_profile(&self, profile_id: &str) -> SyncResult<()> {
+    self
+      .post_api(&format!("team-profiles/{profile_id}/unlock"))
+      .await
+      .map(|_| ())
+  }
+
   pub async fn stat(&self, key: &str) -> SyncResult<StatResponse> {
     let response = self
       .client

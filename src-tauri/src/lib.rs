@@ -13,6 +13,7 @@ mod api_server;
 mod app_auto_updater;
 pub mod app_dirs;
 mod auto_updater;
+mod botbrowser;
 mod browser;
 mod browser_runner;
 mod browser_version_manager;
@@ -36,6 +37,7 @@ mod proxy_manager;
 pub mod proxy_runner;
 pub mod proxy_server;
 pub mod proxy_storage;
+mod self_hosted_auth;
 mod settings_manager;
 pub mod sync;
 mod synchronizer;
@@ -1111,6 +1113,7 @@ async fn generate_sample_fingerprint(
     id: uuid::Uuid::new_v4(),
     name: "temp_fingerprint_gen".to_string(),
     browser: browser.clone(),
+    engine: None,
     version: version.clone(),
     process_id: None,
     proxy_id: None,
@@ -1133,6 +1136,7 @@ async fn generate_sample_fingerprint(
     created_by_id: None,
     created_by_email: None,
     dns_blocklist: None,
+    botbrowser_config: None,
   };
 
   if browser == "camoufox" {
@@ -2081,6 +2085,9 @@ pub fn run() {
       cloud_auth::restart_sync_service,
       cloud_auth::cloud_get_wayfern_token,
       cloud_auth::cloud_refresh_wayfern_token,
+      self_hosted_auth::login_self_hosted,
+      self_hosted_auth::logout_self_hosted,
+      self_hosted_auth::get_self_hosted_user,
       // Team lock commands
       team_lock::get_team_locks,
       team_lock::get_team_lock_status,

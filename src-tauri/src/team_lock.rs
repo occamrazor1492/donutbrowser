@@ -147,6 +147,48 @@ impl ProfileLockManager {
     Ok(())
   }
 
+  pub async fn acquire_self_hosted_lock(
+    &self,
+    app_handle: &tauri::AppHandle,
+    profile_id: &str,
+  ) -> Result<(), String> {
+    let user = crate::self_hosted_auth::cached_user().ok_or_else(|| "Not logged in".to_string())?;
+    let engine = crate::sync::SyncEngine::create_from_settings(app_handle).await?;
+    engine
+      .acquire_profile_lock(profile_id)
+      .await
+      .map_err(|e| e.to_string())?;
+
+    {
+      let mut locks = self.locks.write().await;
+      locks.insert(
+        profile_id.to_string(),
+        ProfileLockInfo {
+          profile_id: profile_id.to_string(),
+          locked_by: user.id.clone(),
+          locked_by_email: user.email.clone(),
+          locked_at: chrono::Utc::now().to_rfc3339(),
+          expires_at: None,
+        },
+      );
+    }
+
+    {
+      let mut c = self.connected.lock().await;
+      *c = true;
+    }
+    self
+      .start_self_hosted_heartbeat_loop(app_handle.clone())
+      .await;
+
+    let _ = crate::events::emit(
+      "profile-lock-changed",
+      serde_json::json!({ "profileId": profile_id, "action": "acquired" }),
+    );
+
+    Ok(())
+  }
+
   pub async fn release_lock(&self, profile_id: &str) -> Result<(), String> {
     let client = Client::new();
     let access_token =
@@ -158,6 +200,37 @@ impl ProfileLockManager {
       .header("Authorization", format!("Bearer {access_token}"))
       .send()
       .await;
+
+    let should_stop_heartbeat = {
+      let mut locks = self.locks.write().await;
+      locks.remove(profile_id);
+      locks.is_empty()
+    };
+    if should_stop_heartbeat {
+      let mut c = self.connected.lock().await;
+      *c = false;
+      let mut handle = self.heartbeat_handle.lock().await;
+      if let Some(h) = handle.take() {
+        h.abort();
+      }
+    }
+
+    let _ = crate::events::emit(
+      "profile-lock-changed",
+      serde_json::json!({ "profileId": profile_id, "action": "released" }),
+    );
+
+    Ok(())
+  }
+
+  pub async fn release_self_hosted_lock(
+    &self,
+    app_handle: &tauri::AppHandle,
+    profile_id: &str,
+  ) -> Result<(), String> {
+    if let Ok(engine) = crate::sync::SyncEngine::create_from_settings(app_handle).await {
+      let _ = engine.unlock_profile(profile_id).await;
+    }
 
     {
       let mut locks = self.locks.write().await;
@@ -185,6 +258,9 @@ impl ProfileLockManager {
   pub async fn is_locked_by_another(&self, profile_id: &str) -> bool {
     let locks = self.locks.read().await;
     if let Some(lock) = locks.get(profile_id) {
+      if let Some(user) = crate::self_hosted_auth::cached_user() {
+        return lock.locked_by != user.id;
+      }
       if let Some(user) = CLOUD_AUTH.get_user().await {
         return lock.locked_by != user.user.id;
       }
@@ -272,14 +348,71 @@ impl ProfileLockManager {
 
     *handle = Some(h);
   }
+
+  async fn start_self_hosted_heartbeat_loop(&self, app_handle: tauri::AppHandle) {
+    let mut handle = self.heartbeat_handle.lock().await;
+    if handle.is_some() {
+      return;
+    }
+
+    let h = tokio::spawn(async move {
+      loop {
+        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+
+        if !PROFILE_LOCK.is_connected().await {
+          break;
+        }
+
+        let Some(user) = crate::self_hosted_auth::cached_user() else {
+          break;
+        };
+
+        let held_locks: Vec<String> = {
+          let locks = PROFILE_LOCK.locks.read().await;
+          locks
+            .values()
+            .filter(|l| l.locked_by == user.id)
+            .map(|l| l.profile_id.clone())
+            .collect()
+        };
+
+        if held_locks.is_empty() {
+          break;
+        }
+
+        let Ok(engine) = crate::sync::SyncEngine::create_from_settings(&app_handle).await else {
+          continue;
+        };
+
+        for profile_id in held_locks {
+          if let Err(e) = engine.heartbeat_profile_lock(&profile_id).await {
+            log::warn!(
+              "Failed to heartbeat self-hosted profile lock {}: {}",
+              profile_id,
+              e
+            );
+          }
+        }
+      }
+    });
+
+    *handle = Some(h);
+  }
 }
 
 /// Acquire profile lock if profile is sync-enabled and user has a paid subscription.
 pub async fn acquire_team_lock_if_needed(
+  app_handle: &tauri::AppHandle,
   profile: &crate::profile::BrowserProfile,
 ) -> Result<(), String> {
-  if !profile.is_sync_enabled() {
+  let is_self_hosted = crate::self_hosted_auth::cached_user().is_some();
+  if !profile.is_sync_enabled() && !is_self_hosted {
     return Ok(());
+  }
+  if is_self_hosted {
+    return PROFILE_LOCK
+      .acquire_self_hosted_lock(app_handle, &profile.id.to_string())
+      .await;
   }
   if !CLOUD_AUTH.has_active_paid_subscription().await {
     return Ok(());
@@ -304,8 +437,24 @@ pub async fn acquire_team_lock_if_needed(
 }
 
 /// Release profile lock if profile is sync-enabled and user has a paid subscription.
-pub async fn release_team_lock_if_needed(profile: &crate::profile::BrowserProfile) {
-  if !profile.is_sync_enabled() {
+pub async fn release_team_lock_if_needed(
+  app_handle: &tauri::AppHandle,
+  profile: &crate::profile::BrowserProfile,
+) {
+  let is_self_hosted = crate::self_hosted_auth::cached_user().is_some();
+  if !profile.is_sync_enabled() && !is_self_hosted {
+    return;
+  }
+  if is_self_hosted {
+    if let Err(e) = PROFILE_LOCK
+      .release_self_hosted_lock(app_handle, &profile.id.to_string())
+      .await
+    {
+      log::warn!(
+        "Failed to release self-hosted profile lock for {}: {e}",
+        profile.id
+      );
+    }
     return;
   }
   if !CLOUD_AUTH.has_active_paid_subscription().await {

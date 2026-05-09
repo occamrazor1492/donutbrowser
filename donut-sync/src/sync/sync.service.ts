@@ -21,6 +21,7 @@ import { ConfigService } from "@nestjs/config";
 import { interval, merge, type Observable, of, Subject } from "rxjs";
 import { catchError, filter, map, startWith, switchMap } from "rxjs/operators";
 import type { UserContext } from "../auth/user-context.interface.js";
+import { TeamService } from "../team/team.service.js";
 import type {
   DeletePrefixRequestDto,
   DeletePrefixResponseDto,
@@ -45,13 +46,17 @@ import type {
 export class SyncService implements OnModuleInit {
   private readonly logger = new Logger(SyncService.name);
   private s3Client: S3Client;
+  private presignS3Client: S3Client;
   private bucket: string;
   private changeSubject = new Subject<SubscribeEventDto>();
   private s3Ready = false;
   private backendInternalUrl: string | undefined;
   private backendInternalKey: string | undefined;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private teamService: TeamService,
+  ) {
     const endpoint =
       this.configService.get<string>("S3_ENDPOINT") || "http://localhost:8987";
     const region = this.configService.get<string>("S3_REGION") || "us-east-1";
@@ -64,7 +69,7 @@ export class SyncService implements OnModuleInit {
 
     this.bucket = this.configService.get<string>("S3_BUCKET") || "donut-sync";
 
-    this.s3Client = new S3Client({
+    const s3Config = {
       endpoint,
       region,
       credentials: {
@@ -72,7 +77,13 @@ export class SyncService implements OnModuleInit {
         secretAccessKey,
       },
       forcePathStyle,
-    });
+    };
+    this.s3Client = new S3Client(s3Config);
+
+    const publicEndpoint = this.configService.get<string>("S3_PUBLIC_ENDPOINT");
+    this.presignS3Client = publicEndpoint
+      ? new S3Client({ ...s3Config, endpoint: publicEndpoint })
+      : this.s3Client;
 
     this.backendInternalUrl = this.configService.get<string>(
       "BACKEND_INTERNAL_URL",
@@ -143,7 +154,10 @@ export class SyncService implements OnModuleInit {
    * Scope a key to the user's prefix for cloud mode.
    * Self-hosted mode passes through unchanged.
    */
-  private scopeKey(ctx: UserContext, key: string): string {
+  private async scopeKey(ctx: UserContext, key: string): Promise<string> {
+    if (this.teamService.isEnabled() && ctx.mode === "team") {
+      return this.teamService.scopeObjectKey(ctx, key);
+    }
     if (ctx.mode === "self-hosted") return key;
     if (ctx.teamPrefix && key.startsWith(ctx.teamPrefix)) return key;
     return `${ctx.prefix}${key}`;
@@ -154,6 +168,7 @@ export class SyncService implements OnModuleInit {
    * For cloud mode, key must start with user's prefix or team prefix.
    */
   private validateKeyAccess(ctx: UserContext, key: string): void {
+    if (this.teamService.isEnabled() && ctx.mode === "team") return;
     if (ctx.mode === "self-hosted") return;
 
     if (key.startsWith(ctx.prefix)) return;
@@ -163,8 +178,9 @@ export class SyncService implements OnModuleInit {
   }
 
   async stat(dto: StatRequestDto, ctx: UserContext): Promise<StatResponseDto> {
-    const key = this.scopeKey(ctx, dto.key);
+    const key = await this.scopeKey(ctx, dto.key);
     this.validateKeyAccess(ctx, key);
+    await this.teamService.assertCanReadKey(ctx, key);
 
     try {
       const response = await this.s3Client.send(
@@ -196,8 +212,9 @@ export class SyncService implements OnModuleInit {
     dto: PresignUploadRequestDto,
     ctx: UserContext,
   ): Promise<PresignUploadResponseDto> {
-    const key = this.scopeKey(ctx, dto.key);
+    const key = await this.scopeKey(ctx, dto.key);
     this.validateKeyAccess(ctx, key);
+    await this.teamService.assertCanWriteKey(ctx, key);
 
     // Check profile limit for cloud users
     if (ctx.mode === "cloud" && ctx.profileLimit > 0) {
@@ -213,7 +230,9 @@ export class SyncService implements OnModuleInit {
       ContentType: dto.contentType || "application/octet-stream",
     });
 
-    const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+    const url = await getSignedUrl(this.presignS3Client, command, {
+      expiresIn,
+    });
 
     // Report profile usage after upload presign if key is under profiles/
     if (ctx.mode === "cloud" && dto.key.startsWith("profiles/")) {
@@ -230,8 +249,9 @@ export class SyncService implements OnModuleInit {
     dto: PresignDownloadRequestDto,
     ctx: UserContext,
   ): Promise<PresignDownloadResponseDto> {
-    const key = this.scopeKey(ctx, dto.key);
+    const key = await this.scopeKey(ctx, dto.key);
     this.validateKeyAccess(ctx, key);
+    await this.teamService.assertCanReadKey(ctx, key);
 
     const expiresIn = dto.expiresIn || 3600;
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
@@ -241,7 +261,9 @@ export class SyncService implements OnModuleInit {
       Key: key,
     });
 
-    const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+    const url = await getSignedUrl(this.presignS3Client, command, {
+      expiresIn,
+    });
 
     return {
       url,
@@ -253,8 +275,9 @@ export class SyncService implements OnModuleInit {
     dto: DeleteRequestDto,
     ctx: UserContext,
   ): Promise<DeleteResponseDto> {
-    const key = this.scopeKey(ctx, dto.key);
+    const key = await this.scopeKey(ctx, dto.key);
     this.validateKeyAccess(ctx, key);
+    await this.teamService.assertCanDeleteKey(ctx, key);
 
     let deleted = false;
     let tombstoneCreated = false;
@@ -272,7 +295,8 @@ export class SyncService implements OnModuleInit {
     }
 
     if (dto.tombstoneKey) {
-      const scopedTombstoneKey = this.scopeKey(ctx, dto.tombstoneKey);
+      const scopedTombstoneKey = await this.scopeKey(ctx, dto.tombstoneKey);
+      await this.teamService.assertCanWriteKey(ctx, scopedTombstoneKey);
       const tombstoneData = JSON.stringify({
         id: key,
         deleted_at: dto.deletedAt || new Date().toISOString(),
@@ -298,7 +322,7 @@ export class SyncService implements OnModuleInit {
   }
 
   async list(dto: ListRequestDto, ctx?: UserContext): Promise<ListResponseDto> {
-    const prefix = ctx ? this.scopeKey(ctx, dto.prefix) : dto.prefix;
+    const prefix = ctx ? await this.scopeKey(ctx, dto.prefix) : dto.prefix;
 
     const response = await this.s3Client.send(
       new ListObjectsV2Command({
@@ -311,19 +335,32 @@ export class SyncService implements OnModuleInit {
 
     const userPrefix = ctx?.prefix || "";
     const teamPrefix = ctx?.teamPrefix || "";
-    const objects = (response.Contents || []).map((obj) => {
-      let key = obj.Key || "";
-      if (teamPrefix && key.startsWith(teamPrefix)) {
-        key = key.substring(teamPrefix.length);
-      } else if (userPrefix && key.startsWith(userPrefix)) {
-        key = key.substring(userPrefix.length);
-      }
-      return {
-        key,
-        lastModified: obj.LastModified?.toISOString() || "",
-        size: obj.Size || 0,
-      };
-    });
+    const visibleProfileIds = ctx
+      ? await this.teamService.visibleProfileIds(ctx)
+      : null;
+    const objects = (response.Contents || [])
+      .filter((obj) => {
+        if (!visibleProfileIds || !obj.Key) return true;
+        const normalized =
+          teamPrefix && obj.Key.startsWith(teamPrefix)
+            ? obj.Key.substring(teamPrefix.length)
+            : obj.Key;
+        const match = normalized.match(/^profiles\/([^/]+)\//);
+        return !match || visibleProfileIds.has(match[1]);
+      })
+      .map((obj) => {
+        let key = obj.Key || "";
+        if (teamPrefix && key.startsWith(teamPrefix)) {
+          key = key.substring(teamPrefix.length);
+        } else if (userPrefix && key.startsWith(userPrefix)) {
+          key = key.substring(userPrefix.length);
+        }
+        return {
+          key,
+          lastModified: obj.LastModified?.toISOString() || "",
+          size: obj.Size || 0,
+        };
+      });
 
     return {
       objects,
@@ -346,8 +383,9 @@ export class SyncService implements OnModuleInit {
 
     const items = await Promise.all(
       dto.items.map(async (item) => {
-        const key = this.scopeKey(ctx, item.key);
+        const key = await this.scopeKey(ctx, item.key);
         this.validateKeyAccess(ctx, key);
+        await this.teamService.assertCanWriteKey(ctx, key);
 
         const command = new PutCmd({
           Bucket: this.bucket,
@@ -355,7 +393,9 @@ export class SyncService implements OnModuleInit {
           ContentType: item.contentType || "application/octet-stream",
         });
 
-        const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+        const url = await getSignedUrl(this.presignS3Client, command, {
+          expiresIn,
+        });
 
         return {
           key: item.key,
@@ -385,15 +425,18 @@ export class SyncService implements OnModuleInit {
 
     const items = await Promise.all(
       dto.keys.map(async (rawKey) => {
-        const key = this.scopeKey(ctx, rawKey);
+        const key = await this.scopeKey(ctx, rawKey);
         this.validateKeyAccess(ctx, key);
+        await this.teamService.assertCanReadKey(ctx, key);
 
         const command = new GetObjectCommand({
           Bucket: this.bucket,
           Key: key,
         });
 
-        const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+        const url = await getSignedUrl(this.presignS3Client, command, {
+          expiresIn,
+        });
 
         return {
           key: rawKey,
@@ -410,7 +453,8 @@ export class SyncService implements OnModuleInit {
     dto: DeletePrefixRequestDto,
     ctx: UserContext,
   ): Promise<DeletePrefixResponseDto> {
-    const prefix = this.scopeKey(ctx, dto.prefix);
+    const prefix = await this.scopeKey(ctx, dto.prefix);
+    await this.teamService.assertCanDeleteKey(ctx, prefix);
     let deletedCount = 0;
     let tombstoneCreated = false;
     let continuationToken: string | undefined;
@@ -452,7 +496,8 @@ export class SyncService implements OnModuleInit {
 
     // Create tombstone if requested
     if (dto.tombstoneKey && deletedCount > 0) {
-      const scopedTombstoneKey = this.scopeKey(ctx, dto.tombstoneKey);
+      const scopedTombstoneKey = await this.scopeKey(ctx, dto.tombstoneKey);
+      await this.teamService.assertCanWriteKey(ctx, scopedTombstoneKey);
       const tombstoneData = JSON.stringify({
         prefix: dto.prefix,
         deleted_at: dto.deletedAt || new Date().toISOString(),
@@ -485,7 +530,9 @@ export class SyncService implements OnModuleInit {
     const basePrefixes = ["profiles/", "proxies/", "groups/", "tombstones/"];
 
     let prefixes: string[];
-    if (ctx.mode === "self-hosted") {
+    if (this.teamService.isEnabled() && ctx.mode === "team") {
+      prefixes = basePrefixes;
+    } else if (ctx.mode === "self-hosted") {
       prefixes = basePrefixes;
     } else {
       prefixes = basePrefixes.map((p) => `${ctx.prefix}${p}`);
@@ -505,7 +552,7 @@ export class SyncService implements OnModuleInit {
 
         for (const prefix of prefixes) {
           try {
-            const result = await this.list({ prefix, maxKeys: 1000 });
+            const result = await this.list({ prefix, maxKeys: 1000 }, ctx);
             for (const obj of result.objects) {
               const stateKey = `${obj.key}:${obj.lastModified}`;
               currentState.set(obj.key, stateKey);

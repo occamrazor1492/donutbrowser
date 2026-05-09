@@ -257,6 +257,7 @@ mod tests {
       id,
       name: "test".to_string(),
       browser: "camoufox".to_string(),
+      engine: None,
       version: "1.0".to_string(),
       proxy_id: None,
       vpn_id: None,
@@ -279,6 +280,7 @@ mod tests {
       created_by_id: None,
       created_by_email: None,
       dns_blocklist: None,
+      botbrowser_config: None,
     }
   }
 

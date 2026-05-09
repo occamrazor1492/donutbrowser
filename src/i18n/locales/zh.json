@@ -534,8 +534,16 @@
     },
     "serverUrl": "服务器 URL",
     "serverUrlPlaceholder": "https://sync.example.com",
+    "email": "电子邮件",
+    "password": "密码",
     "token": "同步令牌",
     "tokenPlaceholder": "输入您的同步令牌",
+    "advancedTokenMode": "高级令牌模式",
+    "actions": {
+      "disconnect": "断开连接",
+      "testConnection": "测试连接",
+      "testingConnection": "测试中..."
+    },
     "status": {
       "connected": "已连接",
       "disconnected": "已断开",

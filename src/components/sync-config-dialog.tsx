@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { LuEye, LuEyeOff } from "react-icons/lu";
 import { LoadingButton } from "@/components/loading-button";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +51,17 @@ interface ProxyUsage {
   extra_limit_mb: number;
 }
 
+interface SelfHostedAuthState {
+  server_url: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    teamId: string;
+    teamName?: string;
+  };
+}
+
 export function SyncConfigDialog({
   isOpen,
   onClose,
@@ -60,6 +72,12 @@ export function SyncConfigDialog({
   // Self-hosted state
   const [serverUrl, setServerUrl] = useState("");
   const [token, setToken] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [selfHostedUser, setSelfHostedUser] = useState<
+    SelfHostedAuthState["user"] | null
+  >(null);
+  const [useAdvancedToken, setUseAdvancedToken] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -79,7 +97,7 @@ export function SyncConfigDialog({
   const [connectionStatus, setConnectionStatus] = useState<
     "unknown" | "testing" | "connected" | "error"
   >("unknown");
-  const hasConfig = Boolean(serverUrl && token);
+  const hasConfig = Boolean(serverUrl && (token || selfHostedUser));
 
   const testConnection = useCallback(async (url: string) => {
     setConnectionStatus("testing");
@@ -96,8 +114,14 @@ export function SyncConfigDialog({
     setIsLoading(true);
     try {
       const settings = await invoke<SyncSettings>("get_sync_settings");
+      const authState = await invoke<SelfHostedAuthState | null>(
+        "get_self_hosted_user",
+      ).catch(() => null);
       setServerUrl(settings.sync_server_url ?? "");
       setToken(settings.sync_token ?? "");
+      setSelfHostedUser(authState?.user ?? null);
+      setEmail(authState?.user.email ?? "");
+      setUseAdvancedToken(Boolean(settings.sync_token && !authState?.user));
       if (settings.sync_server_url && settings.sync_token) {
         void testConnection(settings.sync_server_url);
       }
@@ -125,12 +149,12 @@ export function SyncConfigDialog({
     if (isCloudLoading) return;
     if (isLoggedIn) {
       setActiveTab("cloud");
-    } else if (serverUrl && token) {
+    } else if (serverUrl && (token || selfHostedUser)) {
       setActiveTab("self-hosted");
     } else {
       setActiveTab("cloud");
     }
-  }, [isCloudLoading, isLoggedIn, serverUrl, token]);
+  }, [isCloudLoading, isLoggedIn, serverUrl, token, selfHostedUser]);
 
   const handleTestConnection = useCallback(async () => {
     if (!serverUrl) {
@@ -161,10 +185,24 @@ export function SyncConfigDialog({
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await invoke<SyncSettings>("save_sync_settings", {
-        syncServerUrl: serverUrl || null,
-        syncToken: token || null,
-      });
+      if (useAdvancedToken) {
+        await invoke<SyncSettings>("save_sync_settings", {
+          syncServerUrl: serverUrl || null,
+          syncToken: token || null,
+        });
+      } else {
+        const authState = await invoke<SelfHostedAuthState>(
+          "login_self_hosted",
+          {
+            serverUrl,
+            email,
+            password,
+          },
+        );
+        setSelfHostedUser(authState.user);
+        setToken("");
+        setPassword("");
+      }
       try {
         await invoke("restart_sync_service");
       } catch (e) {
@@ -178,7 +216,7 @@ export function SyncConfigDialog({
     } finally {
       setIsSaving(false);
     }
-  }, [serverUrl, token, onClose, t]);
+  }, [serverUrl, token, email, password, useAdvancedToken, onClose, t]);
 
   const handleDisconnect = useCallback(async () => {
     setIsSaving(true);
@@ -187,6 +225,7 @@ export function SyncConfigDialog({
         syncServerUrl: null,
         syncToken: null,
       });
+      await invoke("logout_self_hosted");
       try {
         await invoke("restart_sync_service");
       } catch (e) {
@@ -194,6 +233,9 @@ export function SyncConfigDialog({
       }
       setServerUrl("");
       setToken("");
+      setEmail("");
+      setPassword("");
+      setSelfHostedUser(null);
       setConnectionStatus("unknown");
       showSuccessToast(t("sync.config.disconnected"));
     } catch (error) {
@@ -391,45 +433,104 @@ export function SyncConfigDialog({
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="sync-token">{t("sync.token")}</Label>
-                    <div className="relative">
-                      <Input
-                        id="sync-token"
-                        type={showToken ? "text" : "password"}
-                        placeholder={t("sync.tokenPlaceholder")}
-                        value={token}
-                        onChange={(e) => {
-                          setToken(e.target.value);
-                        }}
-                        className="pr-10"
-                      />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowToken(!showToken);
-                            }}
-                            className="absolute right-3 top-1/2 p-1 rounded-sm transition-colors transform -translate-y-1/2 hover:bg-accent"
-                            aria-label={
-                              showToken
-                                ? t("common.aria.hideToken")
-                                : t("common.aria.showToken")
-                            }
-                          >
-                            {showToken ? (
-                              <LuEyeOff className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                            ) : (
-                              <LuEye className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                            )}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {showToken ? "Hide token" : "Show token"}
-                        </TooltipContent>
-                      </Tooltip>
+                  {selfHostedUser && !useAdvancedToken && (
+                    <div className="flex gap-2 items-center text-sm text-muted-foreground">
+                      <div className="w-2 h-2 rounded-full bg-success" />
+                      {selfHostedUser.email}
                     </div>
+                  )}
+
+                  {!useAdvancedToken ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="self-hosted-email">
+                          {t("sync.email")}
+                        </Label>
+                        <Input
+                          id="self-hosted-email"
+                          type="email"
+                          autoComplete="username"
+                          value={email}
+                          onChange={(e) => {
+                            setEmail(e.target.value);
+                          }}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="self-hosted-password">
+                          {t("sync.password")}
+                        </Label>
+                        <Input
+                          id="self-hosted-password"
+                          type="password"
+                          autoComplete="current-password"
+                          value={password}
+                          onChange={(e) => {
+                            setPassword(e.target.value);
+                          }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="sync-token">{t("sync.token")}</Label>
+                      <div className="relative">
+                        <Input
+                          id="sync-token"
+                          type={showToken ? "text" : "password"}
+                          placeholder={t("sync.tokenPlaceholder")}
+                          value={token}
+                          onChange={(e) => {
+                            setToken(e.target.value);
+                          }}
+                          className="pr-10"
+                        />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowToken(!showToken);
+                              }}
+                              className="absolute right-3 top-1/2 p-1 rounded-sm transition-colors transform -translate-y-1/2 hover:bg-accent"
+                              aria-label={
+                                showToken
+                                  ? t("common.aria.hideToken")
+                                  : t("common.aria.showToken")
+                              }
+                            >
+                              {showToken ? (
+                                <LuEyeOff className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                              ) : (
+                                <LuEye className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                              )}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {showToken
+                              ? t("common.aria.hideToken")
+                              : t("common.aria.showToken")}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 items-center text-sm">
+                    <Checkbox
+                      id="self-hosted-advanced-token"
+                      checked={useAdvancedToken}
+                      onCheckedChange={(checked) => {
+                        setUseAdvancedToken(checked === true);
+                      }}
+                    />
+                    <Label
+                      htmlFor="self-hosted-advanced-token"
+                      className="font-normal cursor-pointer"
+                    >
+                      {t("sync.advancedTokenMode")}
+                    </Label>
                   </div>
 
                   {connectionStatus === "testing" && (
@@ -460,7 +561,7 @@ export function SyncConfigDialog({
                     onClick={() => void handleDisconnect()}
                     disabled={isSaving}
                   >
-                    Disconnect
+                    {t("sync.actions.disconnect")}
                   </Button>
                 )}
                 <Button
@@ -468,14 +569,19 @@ export function SyncConfigDialog({
                   onClick={() => void handleTestConnection()}
                   disabled={isTesting || !serverUrl}
                 >
-                  {isTesting ? "Testing..." : "Test Connection"}
+                  {isTesting
+                    ? t("sync.actions.testingConnection")
+                    : t("sync.actions.testConnection")}
                 </Button>
                 <LoadingButton
                   onClick={() => void handleSave()}
                   isLoading={isSaving}
-                  disabled={!serverUrl || !token}
+                  disabled={
+                    !serverUrl ||
+                    (useAdvancedToken ? !token : !email || !password)
+                  }
                 >
-                  Save
+                  {t("common.buttons.save")}
                 </LoadingButton>
               </DialogFooter>
             </TabsContent>

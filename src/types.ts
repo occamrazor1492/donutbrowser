@@ -15,6 +15,7 @@ export interface BrowserProfile {
   id: string; // UUID of the profile
   name: string;
   browser: string;
+  engine?: "botbrowser" | "wayfern" | "camoufox";
   version: string;
   proxy_id?: string; // Reference to stored proxy
   vpn_id?: string; // Reference to stored VPN config
@@ -37,6 +38,21 @@ export interface BrowserProfile {
   created_by_id?: string;
   created_by_email?: string;
   dns_blocklist?: string;
+  botbrowser_config?: BotBrowserConfig;
+}
+
+export interface BotBrowserConfig {
+  executable_path?: string;
+  bot_profile_asset_id?: string;
+  bot_profile_path?: string;
+  extra_args?: string[];
+  locale?: string;
+  timezone?: string;
+  languages?: string;
+  noise_seed?: number;
+  local_dns?: boolean;
+  port_protection?: boolean;
+  network_info_override?: boolean;
 }
 
 export interface Extension {

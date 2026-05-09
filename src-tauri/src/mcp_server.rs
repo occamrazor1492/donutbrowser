@@ -1,7 +1,7 @@
 use axum::{
-  body::Body,
+  body::{Body, Bytes},
   extract::State,
-  http::{header, Request, StatusCode},
+  http::{header, HeaderMap, Request, StatusCode},
   middleware::{self, Next},
   response::{IntoResponse, Response},
   routing::{get, post},
@@ -312,10 +312,9 @@ impl McpServer {
 
   async fn handle_mcp_delete(
     State(state): State<McpHttpState>,
-    req: Request<Body>,
+    headers: HeaderMap,
   ) -> impl IntoResponse {
-    let session_id = req
-      .headers()
+    let session_id = headers
       .get("mcp-session-id")
       .and_then(|h| h.to_str().ok())
       .map(|s| s.to_string());
@@ -329,19 +328,15 @@ impl McpServer {
     StatusCode::OK
   }
 
-  async fn handle_mcp_post(State(state): State<McpHttpState>, req: Request<Body>) -> Response {
-    let session_id = req
-      .headers()
+  async fn handle_mcp_post(
+    State(state): State<McpHttpState>,
+    headers: HeaderMap,
+    body_bytes: Bytes,
+  ) -> Response {
+    let session_id = headers
       .get("mcp-session-id")
       .and_then(|h| h.to_str().ok())
       .map(|s| s.to_string());
-
-    let body_bytes = match axum::body::to_bytes(req.into_body(), 1024 * 1024).await {
-      Ok(b) => b,
-      Err(_) => {
-        return (StatusCode::BAD_REQUEST, "Invalid request body").into_response();
-      }
-    };
 
     let request: McpRequest = match serde_json::from_slice(&body_bytes) {
       Ok(r) => r,
@@ -1670,20 +1665,20 @@ impl McpServer {
       });
     }
 
-    // Team lock check
-    crate::team_lock::acquire_team_lock_if_needed(profile)
-      .await
-      .map_err(|e| McpError {
-        code: -32000,
-        message: e,
-      })?;
-
     // Get app handle to launch
     let inner = self.inner.lock().await;
     let app_handle = inner.app_handle.as_ref().ok_or_else(|| McpError {
       code: -32000,
       message: "MCP server not properly initialized".to_string(),
     })?;
+
+    // Team lock check
+    crate::team_lock::acquire_team_lock_if_needed(app_handle, profile)
+      .await
+      .map_err(|e| McpError {
+        code: -32000,
+        message: e,
+      })?;
 
     // Launch the browser
     crate::browser_runner::BrowserRunner::instance()
@@ -1759,7 +1754,7 @@ impl McpServer {
         message: format!("Failed to kill browser: {e}"),
       })?;
 
-    crate::team_lock::release_team_lock_if_needed(profile).await;
+    crate::team_lock::release_team_lock_if_needed(app_handle, profile).await;
 
     Ok(serde_json::json!({
       "content": [{
