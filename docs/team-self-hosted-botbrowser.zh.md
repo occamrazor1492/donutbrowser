@@ -35,6 +35,8 @@ pnpm test:team-product
 
 完整测试矩阵见 [团队版自托管产品测试计划](./team-product-test-plan.zh.md)。
 
+部署方式、服务器配置和桌面安装包说明见 [团队版部署指南](./team-deployment-guide.zh.md)。
+
 如果当前机器没有 `pnpm`，先创建本地 Corepack shim：
 
 ```bash

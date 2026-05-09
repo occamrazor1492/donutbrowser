@@ -37,6 +37,8 @@ pnpm test:team-product
 
 The full product test matrix is in [Team Self-Hosted Product Test Plan](./team-product-test-plan.md).
 
+Deployment, server sizing, and desktop packaging notes are in [Team Deployment Guide](./team-deployment-guide.md).
+
 If this machine does not have `pnpm`, create a local Corepack shim:
 
 ```bash
