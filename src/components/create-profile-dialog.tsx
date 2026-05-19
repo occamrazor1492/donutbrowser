@@ -105,17 +105,17 @@ interface CreateProfileDialogProps {
 
 interface BrowserOption {
   value: BrowserTypeString;
-  label: string;
+  labelKey: string;
 }
 
 const browserOptions: BrowserOption[] = [
   {
     value: "camoufox",
-    label: "Camoufox",
+    labelKey: "createProfile.engines.camoufox",
   },
   {
     value: "wayfern",
-    label: "Wayfern",
+    labelKey: "createProfile.engines.wayfern",
   },
 ];
 
@@ -127,6 +127,21 @@ export function CreateProfileDialog({
   crossOsUnlocked = false,
 }: CreateProfileDialogProps) {
   const { t } = useTranslation();
+  const browserDisplayName = useCallback(
+    (browser?: BrowserTypeString | string | null) => {
+      switch (browser) {
+        case "botbrowser":
+          return t("createProfile.engines.botbrowser");
+        case "wayfern":
+          return t("createProfile.engines.wayfern");
+        case "camoufox":
+          return t("createProfile.engines.camoufox");
+        default:
+          return "";
+      }
+    },
+    [t],
+  );
   const [profileName, setProfileName] = useState("");
   const [currentStep, setCurrentStep] = useState<
     "browser-selection" | "browser-config"
@@ -305,9 +320,7 @@ export function CreateProfileDialog({
             setReleaseTypesError(null);
           } else if (loadingBrowserRef.current === browser) {
             // No downloaded versions and API failed - show error
-            setReleaseTypesError(
-              "Failed to fetch browser versions. Please check your internet connection and try again.",
-            );
+            setReleaseTypesError(t("createProfile.version.fetchError"));
           }
         } catch (e) {
           console.error(
@@ -315,9 +328,7 @@ export function CreateProfileDialog({
             e,
           );
           if (loadingBrowserRef.current === browser) {
-            setReleaseTypesError(
-              "Failed to fetch browser versions. Please check your internet connection and try again.",
-            );
+            setReleaseTypesError(t("createProfile.version.fetchError"));
           }
         }
       } finally {
@@ -328,7 +339,7 @@ export function CreateProfileDialog({
         }
       }
     },
-    [loadDownloadedVersions],
+    [loadDownloadedVersions, t],
   );
 
   // Load data when dialog opens
@@ -625,11 +636,11 @@ export function CreateProfileDialog({
               ? t("createProfile.title")
               : t("createProfile.configureTitle", {
                   browser:
-                    selectedBrowser === "botbrowser"
-                      ? "BotBrowser"
-                      : selectedBrowser === "wayfern"
-                        ? t("createProfile.chromiumLabel")
-                        : t("createProfile.firefoxLabel"),
+                    selectedBrowser === "wayfern"
+                      ? t("createProfile.chromiumLabel")
+                      : selectedBrowser === "camoufox"
+                        ? t("createProfile.firefoxLabel")
+                        : browserDisplayName(selectedBrowser),
                 })}
           </DialogTitle>
         </DialogHeader>
@@ -666,7 +677,9 @@ export function CreateProfileDialog({
                               })()}
                             </div>
                             <div className="text-left">
-                              <div className="font-medium">BotBrowser</div>
+                              <div className="font-medium">
+                                {browserDisplayName("botbrowser")}
+                              </div>
                               <div className="text-sm text-muted-foreground">
                                 {t("createProfile.botbrowser.subtitle")}
                               </div>
@@ -760,7 +773,7 @@ export function CreateProfileDialog({
                                 </div>
                                 <div className="text-left">
                                   <div className="font-medium">
-                                    {browser.label}
+                                    {t(browser.labelKey)}
                                   </div>
                                   <div className="text-sm text-muted-foreground">
                                     {t("createProfile.regular.badge")}
@@ -935,7 +948,7 @@ export function CreateProfileDialog({
                                 <div className="flex gap-3 items-center p-3 rounded-md border border-warning/50 bg-warning/10">
                                   <p className="text-sm text-warning">
                                     {t("createProfile.platformUnavailable", {
-                                      browser: "Wayfern",
+                                      browser: browserDisplayName("wayfern"),
                                     })}
                                   </p>
                                 </div>
@@ -948,7 +961,7 @@ export function CreateProfileDialog({
                                 <div className="flex gap-3 items-center p-3 rounded-md border">
                                   <p className="text-sm text-muted-foreground">
                                     {t("createProfile.version.needsDownload", {
-                                      browser: "Wayfern",
+                                      browser: browserDisplayName("wayfern"),
                                       version:
                                         getBestAvailableVersion("wayfern")
                                           ?.version,
@@ -979,7 +992,7 @@ export function CreateProfileDialog({
                                 <div className="p-3 text-sm rounded-md border text-muted-foreground">
                                   ✓{" "}
                                   {t("createProfile.version.available", {
-                                    browser: "Wayfern",
+                                    browser: browserDisplayName("wayfern"),
                                     version:
                                       getBestAvailableVersion("wayfern")
                                         ?.version,
@@ -989,7 +1002,7 @@ export function CreateProfileDialog({
                             {isBrowserCurrentlyDownloading("wayfern") && (
                               <div className="p-3 text-sm rounded-md border text-muted-foreground">
                                 {t("createProfile.version.downloading", {
-                                  browser: "Wayfern",
+                                  browser: browserDisplayName("wayfern"),
                                   version:
                                     getBestAvailableVersion("wayfern")?.version,
                                 })}
@@ -1043,7 +1056,7 @@ export function CreateProfileDialog({
                                 <div className="flex gap-3 items-center p-3 rounded-md border border-warning/50 bg-warning/10">
                                   <p className="text-sm text-warning">
                                     {t("createProfile.platformUnavailable", {
-                                      browser: "Camoufox",
+                                      browser: browserDisplayName("camoufox"),
                                     })}
                                   </p>
                                 </div>
@@ -1056,7 +1069,7 @@ export function CreateProfileDialog({
                                 <div className="flex gap-3 items-center p-3 rounded-md border">
                                   <p className="text-sm text-muted-foreground">
                                     {t("createProfile.version.needsDownload", {
-                                      browser: "Camoufox",
+                                      browser: browserDisplayName("camoufox"),
                                       version:
                                         getBestAvailableVersion("camoufox")
                                           ?.version,
@@ -1087,7 +1100,7 @@ export function CreateProfileDialog({
                                 <div className="p-3 text-sm rounded-md border text-muted-foreground">
                                   ✓{" "}
                                   {t("createProfile.version.available", {
-                                    browser: "Camoufox",
+                                    browser: browserDisplayName("camoufox"),
                                     version:
                                       getBestAvailableVersion("camoufox")
                                         ?.version,
@@ -1097,7 +1110,7 @@ export function CreateProfileDialog({
                             {isBrowserCurrentlyDownloading("camoufox") && (
                               <div className="p-3 text-sm rounded-md border text-muted-foreground">
                                 {t("createProfile.version.downloading", {
-                                  browser: "Camoufox",
+                                  browser: browserDisplayName("camoufox"),
                                   version:
                                     getBestAvailableVersion("camoufox")
                                       ?.version,

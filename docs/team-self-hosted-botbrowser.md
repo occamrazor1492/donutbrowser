@@ -237,7 +237,7 @@ In Donut Desktop:
 http://127.0.0.1:12342
 ```
 
-Admin users will see a `Team Admin` button after login. That panel manages team users, BotBrowser templates, team profiles, profile permissions, force unlock, and audit logs. Non-admin members use the same self-hosted login but do not see the admin panel.
+Admin users will see a `Team Admin` button after login. That panel manages team users, BotBrowser templates, team profiles, profile permissions, force unlock, and audit logs with action/profile/user filters. Non-admin members use the same self-hosted login but do not see the admin panel.
 
 4. Login with a team user, for example:
 

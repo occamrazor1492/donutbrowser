@@ -579,6 +579,7 @@ export class TeamService {
       action?: string;
       targetType?: string;
       targetId?: string;
+      userId?: string;
     },
   ) {
     this.requireTeamContext(ctx);
@@ -593,6 +594,7 @@ export class TeamService {
         action: filters?.action || undefined,
         targetType: filters?.targetType || undefined,
         targetId: filters?.targetId || undefined,
+        userId: filters?.userId || undefined,
       },
       include: { user: { select: this.userSelect() } },
       orderBy: { createdAt: "desc" },

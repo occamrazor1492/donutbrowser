@@ -323,6 +323,11 @@
       "localEncPathPlaceholder": "/path/to/profile.enc",
       "executablePath": "BotBrowser executable path",
       "executablePathPlaceholder": "Leave empty to auto-detect"
+    },
+    "engines": {
+      "botbrowser": "BotBrowser",
+      "wayfern": "Wayfern",
+      "camoufox": "Camoufox"
     }
   },
   "deleteDialog": {
@@ -672,7 +677,13 @@
         "targetId": "Target ID",
         "time": "Time",
         "user": "User",
-        "target": "Target"
+        "target": "Target",
+        "allUsers": "All users"
+      },
+      "engines": {
+        "botbrowser": "BotBrowser",
+        "wayfern": "Wayfern",
+        "camoufox": "Camoufox"
       }
     }
   },

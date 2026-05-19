@@ -125,6 +125,7 @@ fn audit_query_path(
   action: Option<String>,
   target_type: Option<String>,
   target_id: Option<String>,
+  user_id: Option<String>,
 ) -> String {
   let mut serializer = url::form_urlencoded::Serializer::new(String::new());
   if let Some(limit) = limit {
@@ -138,6 +139,9 @@ fn audit_query_path(
   }
   if let Some(target_id) = target_id.filter(|value| !value.trim().is_empty()) {
     serializer.append_pair("targetId", &target_id);
+  }
+  if let Some(user_id) = user_id.filter(|value| !value.trim().is_empty()) {
+    serializer.append_pair("userId", &user_id);
   }
   let query = serializer.finish();
   if query.is_empty() {
@@ -389,8 +393,9 @@ pub async fn team_list_audit_logs(
   action: Option<String>,
   target_type: Option<String>,
   target_id: Option<String>,
+  user_id: Option<String>,
 ) -> Result<Value, String> {
-  let path = audit_query_path(limit, action, target_type, target_id);
+  let path = audit_query_path(limit, action, target_type, target_id, user_id);
   team_request(&app_handle, Method::GET, &path, None).await
 }
 
@@ -436,6 +441,21 @@ mod tests {
     assert_eq!(
       encode_file_base64(&path).expect("encoded"),
       "Ym90LXByb2ZpbGU="
+    );
+  }
+
+  #[test]
+  fn builds_audit_query_with_user_filter() {
+    let path = audit_query_path(
+      Some(25),
+      Some("user.disable".to_string()),
+      Some("user".to_string()),
+      Some("user-1".to_string()),
+      Some("actor-1".to_string()),
+    );
+    assert_eq!(
+      path,
+      "admin/audit-logs?limit=25&action=user.disable&targetType=user&targetId=user-1&userId=actor-1"
     );
   }
 }

@@ -59,7 +59,7 @@ pnpm test
 | Permission revoke | Admin removes B permission | B can no longer get the profile |
 | Disabled user | Admin disables C | C can no longer log in or reuse an old JWT |
 | Soft delete | A deletes profile | Profile disappears from A's list and direct get is rejected |
-| Audit | Admin reads and filters audit log | Critical actions are present and query filters work |
+| Audit | Admin reads and filters audit log | Critical actions are present, action filters work, and user filters narrow results to one actor/target user |
 
 ## Manual Desktop Acceptance
 

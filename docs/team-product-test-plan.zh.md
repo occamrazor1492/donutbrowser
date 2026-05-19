@@ -59,7 +59,7 @@ pnpm test
 | 撤销权限 | 管理员移除 B 的权限 | B 不能再 get 该 profile |
 | 禁用用户 | 管理员禁用 C | C 无法再次登录，也不能复用旧 JWT |
 | Soft delete | A 删除 profile | profile 从 A 的列表消失，直接 get 被拒绝 |
-| Audit | 管理员读取并筛选 audit log | 关键操作记录存在，查询过滤可用 |
+| Audit | 管理员读取并筛选 audit log | 关键操作记录存在，action 过滤可用，user 过滤能收窄到指定操作者/目标用户 |
 
 ## 手动桌面验收
 

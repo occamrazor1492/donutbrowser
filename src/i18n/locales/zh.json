@@ -323,6 +323,11 @@
       "localEncPathPlaceholder": "/path/to/profile.enc",
       "executablePath": "BotBrowser 可执行文件路径",
       "executablePathPlaceholder": "留空则自动探测"
+    },
+    "engines": {
+      "botbrowser": "BotBrowser",
+      "wayfern": "Wayfern",
+      "camoufox": "Camoufox"
     }
   },
   "deleteDialog": {
@@ -672,7 +677,13 @@
         "targetId": "目标 ID",
         "time": "时间",
         "user": "用户",
-        "target": "目标"
+        "target": "目标",
+        "allUsers": "全部用户"
+      },
+      "engines": {
+        "botbrowser": "BotBrowser",
+        "wayfern": "Wayfern",
+        "camoufox": "Camoufox"
       }
     }
   },

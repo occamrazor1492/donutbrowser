@@ -54,6 +54,7 @@ interface ProfileEditState {
 }
 
 const NO_ASSET = "__none__";
+const ALL_USERS = "__all__";
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
@@ -103,6 +104,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
   const [auditAction, setAuditAction] = useState("");
   const [auditTargetType, setAuditTargetType] = useState("");
   const [auditTargetId, setAuditTargetId] = useState("");
+  const [auditUserId, setAuditUserId] = useState(ALL_USERS);
 
   const userOptions = useMemo(
     () => users.filter((user) => !user.disabledAt),
@@ -144,9 +146,10 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
       action: auditAction.trim() || null,
       targetType: auditTargetType.trim() || null,
       targetId: auditTargetId.trim() || null,
+      userId: auditUserId !== ALL_USERS ? auditUserId : null,
     });
     setAuditLogs(result);
-  }, [auditAction, auditTargetId, auditTargetType]);
+  }, [auditAction, auditTargetId, auditTargetType, auditUserId]);
 
   const loadAll = useCallback(async () => {
     setIsLoading(true);
@@ -730,9 +733,15 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="botbrowser">BotBrowser</SelectItem>
-                      <SelectItem value="wayfern">Wayfern</SelectItem>
-                      <SelectItem value="camoufox">Camoufox</SelectItem>
+                      <SelectItem value="botbrowser">
+                        {t("sync.teamAdmin.engines.botbrowser")}
+                      </SelectItem>
+                      <SelectItem value="wayfern">
+                        {t("sync.teamAdmin.engines.wayfern")}
+                      </SelectItem>
+                      <SelectItem value="camoufox">
+                        {t("sync.teamAdmin.engines.camoufox")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -814,10 +823,14 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="botbrowser">
-                              BotBrowser
+                              {t("sync.teamAdmin.engines.botbrowser")}
                             </SelectItem>
-                            <SelectItem value="wayfern">Wayfern</SelectItem>
-                            <SelectItem value="camoufox">Camoufox</SelectItem>
+                            <SelectItem value="wayfern">
+                              {t("sync.teamAdmin.engines.wayfern")}
+                            </SelectItem>
+                            <SelectItem value="camoufox">
+                              {t("sync.teamAdmin.engines.camoufox")}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <Select
@@ -961,7 +974,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
             </TabsContent>
 
             <TabsContent value="audit" className="mt-0 space-y-4">
-              <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto]">
+              <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto]">
                 <Input
                   value={auditAction}
                   onChange={(event) => setAuditAction(event.target.value)}
@@ -977,6 +990,21 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                   onChange={(event) => setAuditTargetId(event.target.value)}
                   placeholder={t("sync.teamAdmin.audit.targetId")}
                 />
+                <Select value={auditUserId} onValueChange={setAuditUserId}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_USERS}>
+                      {t("sync.teamAdmin.audit.allUsers")}
+                    </SelectItem>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button variant="outline" onClick={() => void loadAuditLogs()}>
                   {t("common.buttons.search")}
                 </Button>

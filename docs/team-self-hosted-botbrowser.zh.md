@@ -235,7 +235,7 @@ COREPACK_HOME=/private/tmp/corepack-cache corepack pnpm tauri dev
 http://127.0.0.1:12342
 ```
 
-管理员登录后会看到 `团队管理` 按钮。这个面板可以管理团队用户、BotBrowser 模板、团队 profile、profile 权限、强制解锁和审计日志。普通成员使用同一个自托管登录入口，但不会看到管理员面板。
+管理员登录后会看到 `团队管理` 按钮。这个面板可以管理团队用户、BotBrowser 模板、团队 profile、profile 权限、强制解锁和带 action/profile/user 筛选的审计日志。普通成员使用同一个自托管登录入口，但不会看到管理员面板。
 
 4. 使用团队用户登录，例如：
 

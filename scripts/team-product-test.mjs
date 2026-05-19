@@ -487,6 +487,22 @@ async function main() {
           filtered.body.every((entry) => entry.action === "bot_profile.create"),
         "audit log action filter did not work",
       );
+
+      const userFiltered = await requestJson(
+        "GET",
+        `/v1/admin/audit-logs?action=auth.login&userId=${userC.id}&limit=10`,
+        {
+          token: state.adminToken,
+        },
+      );
+      assert(
+        userFiltered.body.length > 0 &&
+          userFiltered.body.every(
+            (entry) =>
+              entry.action === "auth.login" && entry.userId === userC.id,
+          ),
+        "audit log user filter did not work",
+      );
     });
 
     log(`PASS ${passed.length} product test cases completed for ${RUN_ID}`);

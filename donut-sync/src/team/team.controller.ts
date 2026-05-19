@@ -82,12 +82,14 @@ export class TeamController {
     @Query("action") action?: string,
     @Query("targetType") targetType?: string,
     @Query("targetId") targetId?: string,
+    @Query("userId") userId?: string,
   ) {
     return this.teamService.listAuditLogs(ctx(req), {
       limit,
       action,
       targetType,
       targetId,
+      userId,
     });
   }
 
