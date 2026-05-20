@@ -546,6 +546,7 @@
       "connectFailed": "连接服务器失败",
       "settingsSaved": "同步设置已保存",
       "saveFailed": "保存设置失败",
+      "saveFailedWithReason": "保存设置失败：{{error}}",
       "disconnected": "已断开同步",
       "disconnectFailed": "断开连接失败"
     },

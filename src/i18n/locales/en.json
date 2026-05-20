@@ -546,6 +546,7 @@
       "connectFailed": "Failed to connect to server",
       "settingsSaved": "Sync settings saved",
       "saveFailed": "Failed to save settings",
+      "saveFailedWithReason": "Failed to save settings: {{error}}",
       "disconnected": "Sync disconnected",
       "disconnectFailed": "Failed to disconnect"
     },

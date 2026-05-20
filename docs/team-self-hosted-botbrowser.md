@@ -4,6 +4,8 @@ Languages: [English](./team-self-hosted-botbrowser.md) | [中文](./team-self-ho
 
 This runbook starts the local team browser stack and walks through the first usable profile.
 
+For a complete inventory of what this version currently supports, see [Team Edition Current Feature Overview](./team-current-feature-overview.md).
+
 ## 0. Local Dev Quick Start
 
 This is the exact local path used on macOS during development.
@@ -147,6 +149,14 @@ TOKEN="$(curl -sS http://127.0.0.1:12342/v1/auth/login \
 ```
 
 ## 3. Create Team Users
+
+Fast web admin path:
+
+1. Open `http://127.0.0.1:12342/admin`.
+2. Login with the admin account.
+3. Open `Users`.
+4. Enter email, temporary password, and role.
+5. Click `Create user`.
 
 Recommended desktop path:
 

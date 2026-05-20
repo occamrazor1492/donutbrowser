@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { AdminWebController } from "./admin-web.controller.js";
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 import { AuthModule } from "./auth/auth.module.js";
@@ -17,7 +18,7 @@ import { TeamModule } from "./team/team.module.js";
     TeamModule,
     SyncModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AdminWebController],
   providers: [AppService],
 })
 export class AppModule {}

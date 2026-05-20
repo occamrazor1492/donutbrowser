@@ -546,6 +546,7 @@
       "connectFailed": "サーバーへの接続に失敗しました",
       "settingsSaved": "同期設定を保存しました",
       "saveFailed": "設定の保存に失敗しました",
+      "saveFailedWithReason": "設定の保存に失敗しました: {{error}}",
       "disconnected": "同期を切断しました",
       "disconnectFailed": "切断に失敗しました"
     },

@@ -546,6 +546,7 @@
       "connectFailed": "Error al conectar con el servidor",
       "settingsSaved": "Ajustes de sincronización guardados",
       "saveFailed": "Error al guardar los ajustes",
+      "saveFailedWithReason": "Error al guardar los ajustes: {{error}}",
       "disconnected": "Sincronización desconectada",
       "disconnectFailed": "Error al desconectar"
     },

@@ -4,6 +4,8 @@
 
 这份文档说明哪些东西跑在服务器上，哪些东西留在每个用户电脑上，自托管服务器需要什么配置，以及 Mac/Windows 安装包应该怎么规划。
 
+当前产品能力清单见 [团队版当前功能总览](./team-current-feature-overview.zh.md)。
+
 ## 第一版推荐部署方式
 
 第一版团队内测建议全部后端服务都放在自己的服务器上：
@@ -101,6 +103,28 @@ Caddy 或 nginx
   反向代理
   可选：限制 MinIO Console 访问
 ```
+
+## 当前内部已部署环境
+
+当前内部已部署环境是这个 MVP 的服务端后端。真实域名、IP、面板地址、用户名和密码不要写进仓库。
+
+公网入口形态：
+
+```text
+https://sync.<team-domain> -> donut-sync API
+https://s3.<team-domain>   -> MinIO S3 API
+```
+
+2026-05-20 已验证：
+
+```text
+/health -> {"status":"ok"}
+/readyz -> {"status":"ready","s3":true}
+```
+
+这个已部署后端当前支持团队登录、轻量 `/admin` Web Admin 页面、管理员用户管理、BotBrowser 模板存储、团队 profile metadata、profile 权限、profile lock、lock heartbeat、管理员强制 unlock、presigned profile 上传/下载和 audit log。
+
+它不运行浏览器进程，不串流浏览器画面，不托管已签名的 Mac/Windows 安装包，也不会自动生成 BotBrowser `.enc` 模板。每个用户仍然需要匹配的桌面客户端，以及本机 BotBrowser 或 Chromium executable。`/admin` 页面是初始化和兜底工具；正式产品主入口仍然是 Donut Desktop `团队管理`。
 
 ## 每个用户电脑上跑什么
 

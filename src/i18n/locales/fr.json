@@ -546,6 +546,7 @@
       "connectFailed": "Échec de la connexion au serveur",
       "settingsSaved": "Paramètres de synchronisation enregistrés",
       "saveFailed": "Échec de l’enregistrement des paramètres",
+      "saveFailedWithReason": "Échec de l’enregistrement des paramètres : {{error}}",
       "disconnected": "Synchronisation déconnectée",
       "disconnectFailed": "Échec de la déconnexion"
     },

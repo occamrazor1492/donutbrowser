@@ -63,6 +63,17 @@ interface SelfHostedAuthState {
   };
 }
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  const serialized = JSON.stringify(error);
+  return serialized ?? String(error);
+}
+
 export function SyncConfigDialog({
   isOpen,
   onClose,
@@ -214,7 +225,11 @@ export function SyncConfigDialog({
       onClose();
     } catch (error) {
       console.error("Failed to save sync settings:", error);
-      showErrorToast(t("sync.config.saveFailed"));
+      showErrorToast(
+        t("sync.config.saveFailedWithReason", {
+          error: getErrorMessage(error),
+        }),
+      );
     } finally {
       setIsSaving(false);
     }

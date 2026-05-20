@@ -4,6 +4,8 @@ Languages: [English](./team-deployment-guide.md) | [中文](./team-deployment-gu
 
 This guide explains what runs on the server, what stays on each user's computer, how to size a self-hosted server, and how to think about Mac and Windows desktop packages.
 
+For the current product capability list, see [Team Edition Current Feature Overview](./team-current-feature-overview.md).
+
 ## Recommended First Deployment
 
 For the first team release, use your own server for all backend services:
@@ -101,6 +103,28 @@ Caddy or nginx
   Reverse proxy
   Optional access control for the MinIO Console
 ```
+
+## Current Internal Deployment
+
+The current internal deployment is the server-side backend for this MVP. Keep real domains, IPs, panel URLs, usernames, and passwords out of this repository.
+
+Public endpoint shape:
+
+```text
+https://sync.<team-domain> -> donut-sync API
+https://s3.<team-domain>   -> MinIO S3 API
+```
+
+Verified on 2026-05-20:
+
+```text
+/health -> {"status":"ok"}
+/readyz -> {"status":"ready","s3":true}
+```
+
+This deployed backend currently supports team login, the lightweight `/admin` Web Admin page, admin user management, BotBrowser template storage, team profile metadata, profile permissions, profile locks, lock heartbeat, admin force unlock, presigned profile upload/download, and audit logs.
+
+It does not run browser processes, stream browser screens, host a signed Mac/Windows installer, or generate BotBrowser `.enc` templates automatically. Each user still needs the matching desktop client and a local BotBrowser or Chromium executable. The `/admin` page is a bootstrap and fallback tool; the main product admin entry remains Donut Desktop `Team Admin`.
 
 ## What Runs On Each Computer
 
