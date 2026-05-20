@@ -2096,6 +2096,8 @@ pub fn run() {
       self_hosted_team::team_upload_bot_profile_asset,
       self_hosted_team::team_delete_bot_profile_asset,
       self_hosted_team::team_list_profiles,
+      self_hosted_team::team_materialize_profile,
+      self_hosted_team::team_preflight_botbrowser_profile,
       self_hosted_team::team_create_profile,
       self_hosted_team::team_update_profile,
       self_hosted_team::team_delete_profile,

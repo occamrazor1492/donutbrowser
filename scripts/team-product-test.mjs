@@ -279,6 +279,21 @@ async function main() {
       await requestJson("GET", `/v1/team-profiles/${state.profileId}`, {
         token: state.bToken,
       });
+      const sharedList = await requestJson("GET", "/v1/team-profiles", {
+        token: state.bToken,
+      });
+      assert(
+        sharedList.body.some(
+          (profile) =>
+            profile.id === state.profileId &&
+            profile.permissions.some(
+              (permission) =>
+                permission.userId === userB.id &&
+                permission.permission === "viewer",
+            ),
+        ),
+        "viewer shared profile did not appear in member list",
+      );
 
       await requestJson("POST", `/v1/team-profiles/${state.profileId}/lock`, {
         token: state.bToken,
@@ -318,6 +333,21 @@ async function main() {
         expected: 201,
         body: { userId: userB.id, permission: "editor" },
       });
+      const sharedList = await requestJson("GET", "/v1/team-profiles", {
+        token: state.bToken,
+      });
+      assert(
+        sharedList.body.some(
+          (profile) =>
+            profile.id === state.profileId &&
+            profile.permissions.some(
+              (permission) =>
+                permission.userId === userB.id &&
+                permission.permission === "editor",
+            ),
+        ),
+        "editor shared profile did not appear in member list",
+      );
       await requestJson("POST", "/v1/objects/presign-upload", {
         token: state.bToken,
         expected: 403,

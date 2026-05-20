@@ -118,6 +118,25 @@ export interface TeamAuditLog {
   user?: SelfHostedTeamUser | null;
 }
 
+export type BotBrowserPreflightStatus = "passed" | "failed";
+
+export interface BotBrowserPreflightCheck {
+  key:
+    | "selfHostedLogin"
+    | "engine"
+    | "permission"
+    | "executable"
+    | "botProfile"
+    | "lock";
+  status: BotBrowserPreflightStatus;
+  message: string;
+}
+
+export interface BotBrowserPreflightResult {
+  canLaunch: boolean;
+  checks: BotBrowserPreflightCheck[];
+}
+
 export interface Extension {
   id: string;
   name: string;

@@ -290,7 +290,31 @@ EOF
 
 重启 Donut Desktop，profile 应该会出现在列表中。
 
-## 8. 启动和共享
+## 8. 成员加入共享 Profile
+
+管理员授权后，成员不需要手动创建本地 profile，可以直接加入共享 profile：
+
+1. 登录同一个自托管服务器。
+2. 打开顶部菜单，点击 `共享 Profiles`。
+3. 找到目标 BotBrowser profile。
+4. 可选填写本机 BotBrowser/Chromium 可执行文件路径。
+5. 点击 `加入本机`。
+6. 点击 `预检`，检查登录状态、启动权限、可执行文件路径、`.enc` 模板可用性和 lock 状态。
+7. 预检通过后点击 `启动`。
+
+这个 MVP 只支持从成员入口一键启动 BotBrowser 共享 profile。Wayfern 和 Camoufox 团队 profile 会保留服务端数据兼容，但这一轮先不开放一键启动。
+
+常见预检失败处理：
+
+| 失败项 | 处理方式 |
+| --- | --- |
+| 自托管登录 | 回到 Sync settings 重新登录。 |
+| 启动权限 | 让管理员授予 `owner` 或 `editor` 权限。 |
+| 可执行文件 | 安装 BotBrowser/Chromium，或者在共享 Profiles 里填写可执行文件路径。 |
+| `.enc` 模板 | 让管理员上传并选择 BotBrowser `.enc` 模板。 |
+| Profile 锁 | 等另一个用户关闭 profile；如果锁已经异常残留，让管理员强制解锁。 |
+
+## 9. 启动和共享
 
 用户 A 启动 profile 时，流程是：
 
@@ -300,7 +324,8 @@ Donut 下载最新服务端 profile 状态
 如果本地没有 BotBrowser .enc asset，Donut 自动下载
 Donut 用 --bot-profile 启动 Chromium/BotBrowser
 Donut 持续发送 lock heartbeat
-浏览器关闭后，Donut 同步 cookies/local storage/profile files
+浏览器关闭后，Donut 先等待 profile 文件稳定
+Donut 在仍持有 lock 时同步 cookies/local storage/profile files
 Donut 释放 lock
 ```
 
@@ -322,9 +347,9 @@ curl -sS http://127.0.0.1:12342/v1/team-profiles/$PROFILE_ID/permissions \
   -d '{"userId":"B_USER_ID","permission":"editor"}'
 ```
 
-如果 B 在 A 使用同一个 profile 时启动，会收到 lock conflict。A 关闭浏览器并同步完成后，B 可以启动同一个 profile，并复用服务端保存的状态。
+如果 B 在 A 使用同一个 profile 时启动，会收到 lock conflict。A 关闭浏览器并同步完成后，B 可以打开 `共享 Profiles`，加入或刷新本地 profile，再启动同一个 profile，并复用服务端保存的状态。
 
-## 9. 停止服务端
+## 10. 停止服务端
 
 ```bash
 cd donut-sync

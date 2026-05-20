@@ -2610,6 +2610,7 @@ pub async fn kill_browser_profile(
           .await;
       }
 
+      let mut close_sync_error: Option<String> = None;
       if profile.is_sync_enabled() || crate::self_hosted_auth::cached_user().is_some() {
         let stopped_profile = match browser_runner.profile_manager.list_profiles() {
           Ok(profiles) => profiles.into_iter().find(|p| p.id == profile.id),
@@ -2624,9 +2625,28 @@ pub async fn kill_browser_profile(
         };
 
         if let Some(stopped_profile) = stopped_profile {
+          if crate::botbrowser::is_botbrowser_profile(&stopped_profile) {
+            let profiles_dir = browser_runner.profile_manager.get_profiles_dir();
+            let profile_data_path =
+              crate::botbrowser::profile_data_path(&stopped_profile, &profiles_dir);
+            let stable = crate::botbrowser::wait_for_profile_files_stable(&profile_data_path).await;
+            if stable {
+              log::info!(
+                "BotBrowser profile files are stable before close-time sync: {}",
+                profile_data_path.display()
+              );
+            } else {
+              log::warn!(
+                "Continuing close-time sync after BotBrowser profile stability timeout: {}",
+                profile_data_path.display()
+              );
+            }
+          }
+
           match crate::sync::SyncEngine::create_from_settings(&app_handle).await {
             Ok(engine) => {
               if let Err(e) = engine.sync_profile(&app_handle, &stopped_profile).await {
+                close_sync_error = Some(e.to_string());
                 log::warn!(
                   "Failed to sync profile {} before releasing lock: {}",
                   profile.id,
@@ -2643,6 +2663,10 @@ pub async fn kill_browser_profile(
 
       // Release team lock after the close-time sync so self-hosted uploads still have a valid lock.
       crate::team_lock::release_team_lock_if_needed(&app_handle, &profile).await;
+
+      if let Some(error) = close_sync_error {
+        return Err(format!("Browser closed, but profile sync failed: {error}"));
+      }
 
       // Auto-update non-running profiles and cleanup unused binaries
       let browser_for_update = profile.browser.clone();

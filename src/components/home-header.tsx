@@ -8,6 +8,7 @@ import {
   LuPlug,
   LuPuzzle,
   LuSearch,
+  LuServer,
   LuUsers,
   LuX,
 } from "react-icons/lu";
@@ -175,6 +176,8 @@ interface Props {
   onSyncConfigDialogOpen: (open: boolean) => void;
   onIntegrationsDialogOpen: (open: boolean) => void;
   onExtensionManagementDialogOpen: (open: boolean) => void;
+  onTeamProfilesDialogOpen: (open: boolean) => void;
+  showTeamProfiles: boolean;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
 }
@@ -188,6 +191,8 @@ const HomeHeader = ({
   onSyncConfigDialogOpen,
   onIntegrationsDialogOpen,
   onExtensionManagementDialogOpen,
+  onTeamProfilesDialogOpen,
+  showTeamProfiles,
   searchQuery,
   onSearchQueryChange,
 }: Props) => {
@@ -323,6 +328,16 @@ const HomeHeader = ({
               <LuCloud className="mr-2 w-4 h-4" />
               {t("header.menu.syncService")}
             </DropdownMenuItem>
+            {showTeamProfiles && (
+              <DropdownMenuItem
+                onClick={() => {
+                  onTeamProfilesDialogOpen(true);
+                }}
+              >
+                <LuServer className="mr-2 w-4 h-4" />
+                {t("header.menu.teamProfiles")}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={() => {
                 onIntegrationsDialogOpen(true);

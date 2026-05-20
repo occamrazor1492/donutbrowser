@@ -1,8 +1,10 @@
 use crate::browser::ProxySettings;
 use crate::profile::types::{BotBrowserConfig, BrowserProfile};
 use serde::Serialize;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
+use std::time::{Duration, SystemTime};
 
 #[derive(Debug, Serialize)]
 pub struct BotBrowserLaunchResult {
@@ -139,6 +141,111 @@ pub fn team_bot_profile_cache_path(team_id: &str, asset_id: &str) -> PathBuf {
     .join(team_id)
     .join("bot-profiles")
     .join(format!("{asset_id}.enc"))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct FileFingerprint {
+  len: u64,
+  modified_ms: u128,
+}
+
+pub async fn wait_for_profile_files_stable(profile_dir: &Path) -> bool {
+  wait_for_profile_files_stable_with_timing(
+    profile_dir,
+    Duration::from_secs(5),
+    Duration::from_millis(500),
+  )
+  .await
+}
+
+pub async fn wait_for_profile_files_stable_with_timing(
+  profile_dir: &Path,
+  max_wait: Duration,
+  interval: Duration,
+) -> bool {
+  let start = std::time::Instant::now();
+  let mut previous = match profile_files_snapshot(profile_dir) {
+    Ok(snapshot) => snapshot,
+    Err(e) => {
+      log::warn!(
+        "Failed to snapshot BotBrowser profile directory {} before sync: {}",
+        profile_dir.display(),
+        e
+      );
+      return false;
+    }
+  };
+
+  loop {
+    tokio::time::sleep(interval).await;
+    let current = match profile_files_snapshot(profile_dir) {
+      Ok(snapshot) => snapshot,
+      Err(e) => {
+        log::warn!(
+          "Failed to resnapshot BotBrowser profile directory {} before sync: {}",
+          profile_dir.display(),
+          e
+        );
+        return false;
+      }
+    };
+    if current == previous {
+      return true;
+    }
+    if start.elapsed() >= max_wait {
+      log::warn!(
+        "Timed out waiting for BotBrowser profile files to become stable before sync: {}",
+        profile_dir.display()
+      );
+      return false;
+    }
+    previous = current;
+  }
+}
+
+fn profile_files_snapshot(
+  profile_dir: &Path,
+) -> std::io::Result<BTreeMap<PathBuf, FileFingerprint>> {
+  let mut snapshot = BTreeMap::new();
+  if !profile_dir.exists() {
+    return Ok(snapshot);
+  }
+  snapshot_dir(profile_dir, profile_dir, &mut snapshot)?;
+  Ok(snapshot)
+}
+
+fn snapshot_dir(
+  root: &Path,
+  dir: &Path,
+  snapshot: &mut BTreeMap<PathBuf, FileFingerprint>,
+) -> std::io::Result<()> {
+  for entry in std::fs::read_dir(dir)? {
+    let entry = entry?;
+    let path = entry.path();
+    let metadata = entry.metadata()?;
+    if metadata.is_dir() {
+      snapshot_dir(root, &path, snapshot)?;
+      continue;
+    }
+    if !metadata.is_file() {
+      continue;
+    }
+    let modified_ms = metadata
+      .modified()
+      .ok()
+      .and_then(|modified| modified.duration_since(SystemTime::UNIX_EPOCH).ok())
+      .map(|duration| duration.as_millis())
+      .unwrap_or_default();
+    let relative = path.strip_prefix(root).unwrap_or(&path).to_path_buf();
+    snapshot.insert(
+      relative,
+      FileFingerprint {
+        len: metadata.len(),
+        modified_ms,
+      },
+    );
+  }
+  Ok(())
 }
 
 pub fn build_launch_args(
@@ -282,4 +389,63 @@ fn resolve_app_bundle_path(path: PathBuf) -> Result<PathBuf, String> {
   }
 
   Ok(path)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[tokio::test]
+  async fn stable_wait_returns_true_for_unchanged_directory() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    std::fs::write(dir.path().join("Cookies"), b"stable").expect("write fixture");
+
+    assert!(
+      wait_for_profile_files_stable_with_timing(
+        dir.path(),
+        Duration::from_millis(120),
+        Duration::from_millis(20),
+      )
+      .await
+    );
+  }
+
+  #[tokio::test]
+  async fn stable_wait_times_out_for_changing_file() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("Local Storage");
+    std::fs::write(&path, b"0").expect("write fixture");
+
+    let writer_path = path.clone();
+    let writer = tokio::spawn(async move {
+      for i in 2..100 {
+        std::fs::write(&writer_path, "x".repeat(i)).expect("rewrite fixture");
+        tokio::time::sleep(Duration::from_millis(2)).await;
+      }
+    });
+
+    let stable = wait_for_profile_files_stable_with_timing(
+      dir.path(),
+      Duration::from_millis(80),
+      Duration::from_millis(10),
+    )
+    .await;
+    writer.abort();
+
+    assert!(!stable);
+  }
+
+  #[tokio::test]
+  async fn stable_wait_treats_empty_directory_as_stable() {
+    let dir = tempfile::tempdir().expect("tempdir");
+
+    assert!(
+      wait_for_profile_files_stable_with_timing(
+        dir.path(),
+        Duration::from_millis(80),
+        Duration::from_millis(10),
+      )
+      .await
+    );
+  }
 }

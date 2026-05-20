@@ -186,7 +186,8 @@
       "syncService": "Conta",
       "integrations": "Integrações",
       "importProfile": "Importar Perfil",
-      "extensions": "Extensões"
+      "extensions": "Extensões",
+      "teamProfiles": "Shared Profiles"
     }
   },
   "profiles": {
@@ -1692,6 +1693,88 @@
       "upToDate": "Nenhuma nova versão de navegador encontrada",
       "upToDateDescription": "Todas as versões dos navegadores estão atualizadas",
       "updateAllFailed": "Falha ao atualizar as versões dos navegadores"
+    }
+  },
+  "teamProfiles": {
+    "title": "Shared Profiles",
+    "description": "Add BotBrowser profiles shared with your self-hosted team to this device and launch them after preflight checks pass.",
+    "executablePath": "BotBrowser executable path",
+    "executablePathPlaceholder": "Optional path, for example /Applications/BotBrowser.app",
+    "count": "{{count}} shared profiles",
+    "loading": "Loading shared profiles...",
+    "empty": "No shared profiles are available for this account.",
+    "template": "Template",
+    "noTemplate": "No template selected",
+    "syncMode": "Sync mode",
+    "unsupportedEngine": "This team profile engine is saved for compatibility, but only BotBrowser profiles can be added and launched in this version.",
+    "viewerCannotLaunch": "Viewer access can inspect this profile, but launching requires owner, editor, or admin permission.",
+    "actions": {
+      "addToLocal": "Add to local",
+      "preflight": "Preflight",
+      "launch": "Launch"
+    },
+    "toasts": {
+      "loadFailed": "Failed to load shared profiles: {{error}}",
+      "materialized": "Shared profile added to this device",
+      "materializeFailed": "Failed to add shared profile: {{error}}",
+      "preflightPassed": "BotBrowser preflight passed",
+      "preflightFailed": "BotBrowser preflight failed",
+      "preflightError": "Failed to run BotBrowser preflight: {{error}}",
+      "launchFailed": "Failed to launch shared profile: {{error}}"
+    },
+    "permissions": {
+      "admin": "Admin",
+      "owner": "Owner",
+      "editor": "Editor",
+      "viewer": "Viewer",
+      "none": "No access"
+    },
+    "localStatus": {
+      "added": "Added locally",
+      "notAdded": "Not local"
+    },
+    "lock": {
+      "locked": "Locked",
+      "available": "Available"
+    },
+    "engines": {
+      "botbrowser": "BotBrowser",
+      "wayfern": "Wayfern",
+      "camoufox": "Camoufox"
+    }
+  },
+  "botbrowserPreflight": {
+    "title": "BotBrowser Preflight",
+    "failedSummary": "BotBrowser preflight failed: {{checks}}",
+    "checks": {
+      "selfHostedLogin": "Self-hosted login",
+      "engine": "Engine support",
+      "permission": "Launch permission",
+      "executable": "Executable",
+      "botProfile": ".enc template",
+      "lock": "Profile lock"
+    },
+    "status": {
+      "passed": "Passed",
+      "failed": "Failed"
+    },
+    "messages": {
+      "passed": {
+        "selfHostedLogin": "Self-hosted account is logged in.",
+        "engine": "This shared profile uses BotBrowser.",
+        "permission": "Current user can launch this profile.",
+        "executable": "BotBrowser executable was found.",
+        "botProfile": "The encrypted BotBrowser template is available locally or was downloaded.",
+        "lock": "No other user currently holds the profile lock."
+      },
+      "failed": {
+        "selfHostedLogin": "Log in to the self-hosted sync server first.",
+        "engine": "Only BotBrowser shared profiles can be launched in this version.",
+        "permission": "Ask an admin for owner or editor permission.",
+        "executable": "Set a valid BotBrowser executable path on this device.",
+        "botProfile": "Select or upload a .enc template, then try again.",
+        "lock": "Another user is currently using this profile. Try again after they close it."
+      }
     }
   }
 }

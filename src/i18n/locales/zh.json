@@ -186,7 +186,8 @@
       "syncService": "账户",
       "integrations": "集成",
       "importProfile": "导入配置文件",
-      "extensions": "扩展程序"
+      "extensions": "扩展程序",
+      "teamProfiles": "共享 Profiles"
     }
   },
   "profiles": {
@@ -1692,6 +1693,88 @@
       "upToDate": "未发现新的浏览器版本",
       "upToDateDescription": "所有浏览器版本都是最新的",
       "updateAllFailed": "更新浏览器版本失败"
+    }
+  },
+  "teamProfiles": {
+    "title": "共享 Profiles",
+    "description": "把团队共享的 BotBrowser profile 加入本机，并在预检通过后启动。",
+    "executablePath": "BotBrowser 可执行文件路径",
+    "executablePathPlaceholder": "可选路径，例如 /Applications/BotBrowser.app",
+    "count": "{{count}} 个共享 profile",
+    "loading": "正在加载共享 profiles...",
+    "empty": "当前账号没有可用的共享 profile。",
+    "template": "模板",
+    "noTemplate": "未选择模板",
+    "syncMode": "同步模式",
+    "unsupportedEngine": "这个团队 profile engine 会保留数据兼容，但当前版本只支持加入和启动 BotBrowser profile。",
+    "viewerCannotLaunch": "Viewer 可以查看这个 profile，但启动需要 owner、editor 或 admin 权限。",
+    "actions": {
+      "addToLocal": "加入本机",
+      "preflight": "预检",
+      "launch": "启动"
+    },
+    "toasts": {
+      "loadFailed": "加载共享 profiles 失败：{{error}}",
+      "materialized": "已把共享 profile 加入本机",
+      "materializeFailed": "加入共享 profile 失败：{{error}}",
+      "preflightPassed": "BotBrowser 预检通过",
+      "preflightFailed": "BotBrowser 预检失败",
+      "preflightError": "运行 BotBrowser 预检失败：{{error}}",
+      "launchFailed": "启动共享 profile 失败：{{error}}"
+    },
+    "permissions": {
+      "admin": "管理员",
+      "owner": "Owner",
+      "editor": "Editor",
+      "viewer": "Viewer",
+      "none": "无权限"
+    },
+    "localStatus": {
+      "added": "已加入本机",
+      "notAdded": "未加入本机"
+    },
+    "lock": {
+      "locked": "已锁定",
+      "available": "可启动"
+    },
+    "engines": {
+      "botbrowser": "BotBrowser",
+      "wayfern": "Wayfern",
+      "camoufox": "Camoufox"
+    }
+  },
+  "botbrowserPreflight": {
+    "title": "BotBrowser 预检",
+    "failedSummary": "BotBrowser 预检失败：{{checks}}",
+    "checks": {
+      "selfHostedLogin": "自托管登录",
+      "engine": "Engine 支持",
+      "permission": "启动权限",
+      "executable": "可执行文件",
+      "botProfile": ".enc 模板",
+      "lock": "Profile 锁"
+    },
+    "status": {
+      "passed": "通过",
+      "failed": "失败"
+    },
+    "messages": {
+      "passed": {
+        "selfHostedLogin": "已经登录自托管账号。",
+        "engine": "这个共享 profile 使用 BotBrowser。",
+        "permission": "当前用户可以启动这个 profile。",
+        "executable": "已经找到 BotBrowser 可执行文件。",
+        "botProfile": "加密 BotBrowser 模板已在本地可用，或已下载完成。",
+        "lock": "当前没有其他用户持有这个 profile 的锁。"
+      },
+      "failed": {
+        "selfHostedLogin": "请先登录自托管同步服务器。",
+        "engine": "当前版本只支持启动 BotBrowser 共享 profile。",
+        "permission": "请让管理员授予 owner 或 editor 权限。",
+        "executable": "请在这台设备上填写有效的 BotBrowser 可执行文件路径。",
+        "botProfile": "请先选择或上传 .enc 模板，然后再试。",
+        "lock": "另一个用户正在使用这个 profile，请等对方关闭后再试。"
+      }
     }
   }
 }

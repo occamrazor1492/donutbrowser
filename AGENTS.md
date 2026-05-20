@@ -10,7 +10,8 @@ donutbrowser/
 ├── src/                              # Next.js frontend
 │   ├── app/                          # App router (page.tsx, layout.tsx)
 │   ├── components/                   # 50+ React components (dialogs, tables, UI)
-│   │   └── team-admin-dialog.tsx     # Self-hosted team admin UI
+│   │   ├── team-admin-dialog.tsx     # Self-hosted team admin UI
+│   │   └── team-profiles-dialog.tsx  # Self-hosted shared profile launcher UI
 │   ├── hooks/                        # Event-driven React hooks
 │   ├── i18n/locales/                 # Translations (en, es, fr, ja, pt, ru, zh)
 │   ├── lib/                          # Utilities (themes, toast, browser-utils)

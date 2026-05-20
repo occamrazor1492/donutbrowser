@@ -32,6 +32,7 @@ import { SettingsDialog } from "@/components/settings-dialog";
 import { SyncAllDialog } from "@/components/sync-all-dialog";
 import { SyncConfigDialog } from "@/components/sync-config-dialog";
 import { SyncFollowerDialog } from "@/components/sync-follower-dialog";
+import { TeamProfilesDialog } from "@/components/team-profiles-dialog";
 import { WayfernTermsDialog } from "@/components/wayfern-terms-dialog";
 import { WindowResizeWarningDialog } from "@/components/window-resize-warning-dialog";
 import { useAppUpdateNotifications } from "@/hooks/use-app-update-notifications";
@@ -56,6 +57,7 @@ import {
 } from "@/lib/toast-utils";
 import type {
   BotBrowserConfig,
+  BotBrowserPreflightResult,
   BrowserProfile,
   CamoufoxConfig,
   SyncSettings,
@@ -140,6 +142,7 @@ export default function Home() {
   const [createProfileDialogOpen, setCreateProfileDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [integrationsDialogOpen, setIntegrationsDialogOpen] = useState(false);
+  const [teamProfilesDialogOpen, setTeamProfilesDialogOpen] = useState(false);
   const [importProfileDialogOpen, setImportProfileDialogOpen] = useState(false);
   const [proxyManagementDialogOpen, setProxyManagementDialogOpen] =
     useState(false);
@@ -606,6 +609,28 @@ export default function Home() {
       }
 
       try {
+        if (
+          selfHostedSyncConfigured &&
+          (profile.browser === "botbrowser" || profile.engine === "botbrowser")
+        ) {
+          const preflight = await invoke<BotBrowserPreflightResult>(
+            "team_preflight_botbrowser_profile",
+            { profileId: profile.id },
+          );
+          if (!preflight.canLaunch) {
+            const failedChecks = preflight.checks
+              .filter((check) => check.status !== "passed")
+              .map((check) => t(`botbrowserPreflight.checks.${check.key}`))
+              .join(", ");
+            showErrorToast(
+              t("botbrowserPreflight.failedSummary", {
+                checks: failedChecks,
+              }),
+            );
+            return;
+          }
+        }
+
         const result = await invoke<BrowserProfile>("launch_browser_profile", {
           profile,
         });
@@ -619,7 +644,7 @@ export default function Home() {
         throw err;
       }
     },
-    [t],
+    [selfHostedSyncConfigured, t],
   );
 
   const handleCloneProfile = useCallback((profile: BrowserProfile) => {
@@ -1097,6 +1122,8 @@ export default function Home() {
             onSyncConfigDialogOpen={setSyncConfigDialogOpen}
             onIntegrationsDialogOpen={setIntegrationsDialogOpen}
             onExtensionManagementDialogOpen={setExtensionManagementDialogOpen}
+            onTeamProfilesDialogOpen={setTeamProfilesDialogOpen}
+            showTeamProfiles={selfHostedSyncConfigured}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
           />
@@ -1169,6 +1196,18 @@ export default function Home() {
         onClose={() => {
           setIntegrationsDialogOpen(false);
         }}
+      />
+
+      <TeamProfilesDialog
+        isOpen={teamProfilesDialogOpen}
+        onClose={() => {
+          setTeamProfilesDialogOpen(false);
+        }}
+        localProfiles={profiles}
+        onMaterialized={() => {
+          void checkSelfHostedSync();
+        }}
+        onLaunchProfile={launchProfile}
       />
 
       <ImportProfileDialog

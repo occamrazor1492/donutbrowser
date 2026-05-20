@@ -292,7 +292,31 @@ EOF
 
 Restart Donut Desktop. The profile should appear in the profile list.
 
-## 8. Launch And Share
+## 8. Join A Shared Profile As A Member
+
+After an admin grants access, a member can add a shared profile without manually creating a local profile:
+
+1. Login to the same self-hosted server.
+2. Open the header menu and click `Shared Profiles`.
+3. Find the shared BotBrowser profile.
+4. Optionally enter the local BotBrowser/Chromium executable path.
+5. Click `Add to local`.
+6. Click `Preflight` to verify login, permission, executable path, `.enc` template availability, and lock state.
+7. Click `Launch` after preflight passes.
+
+Only BotBrowser shared profiles can be launched from this member flow in this MVP. Wayfern and Camoufox team profile records remain compatible server data, but their one-click member launch is intentionally disabled for now.
+
+Common preflight failures:
+
+| Failure | Fix |
+| --- | --- |
+| Self-hosted login | Login again in Sync settings. |
+| Launch permission | Ask an admin for `owner` or `editor` permission. |
+| Executable | Install BotBrowser/Chromium or enter the executable path in Shared Profiles. |
+| `.enc` template | Ask an admin to upload/select a BotBrowser `.enc` template. |
+| Profile lock | Wait for the other user to close the profile, or ask an admin to force unlock if it is stale. |
+
+## 9. Launch And Share
 
 When user A launches the profile:
 
@@ -302,7 +326,8 @@ Donut downloads the latest server profile state
 Donut downloads the BotBrowser .enc asset if missing locally
 Donut launches Chromium/BotBrowser with --bot-profile
 Donut keeps lock heartbeat alive
-Donut syncs cookies/local storage/profile files after browser close
+After browser close, Donut waits for profile files to become stable
+Donut syncs cookies/local storage/profile files while the lock is still held
 Donut releases the lock
 ```
 
@@ -324,9 +349,9 @@ curl -sS http://127.0.0.1:12342/v1/team-profiles/$PROFILE_ID/permissions \
   -d '{"userId":"B_USER_ID","permission":"editor"}'
 ```
 
-If B starts the same profile while A is using it, B should receive a lock conflict. After A closes the browser and sync completes, B can start it and reuse the same server-side state.
+If B starts the same profile while A is using it, B should receive a lock conflict. After A closes the browser and sync completes, B can open `Shared Profiles`, add or refresh the local profile, launch it, and reuse the same server-side state.
 
-## 9. Stop The Server
+## 10. Stop The Server
 
 ```bash
 cd donut-sync

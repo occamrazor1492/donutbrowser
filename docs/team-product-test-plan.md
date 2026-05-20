@@ -49,10 +49,16 @@ pnpm test
 | Asset references | Admin deletes a template used by a live profile | Request is rejected with 409 |
 | Isolation | Unshared B lists/gets/downloads/uploads/locks A profile | Profile is hidden or rejected with 403 |
 | Viewer | Admin grants B viewer | B can read profile metadata and download `.enc`; B cannot upload or lock |
+| Shared list | Admin grants B editor | B's `team_list_profiles` result includes the shared profile |
+| Materialize | B adds shared BotBrowser profile locally | Local `BrowserProfile` uses the team profile id, `engine: "botbrowser"`, sync mode `Regular`, and the selected template id |
+| Materialize idempotency | B adds the same shared profile again | Existing local profile metadata is updated; no duplicate profile is created |
+| Preflight permission | Viewer runs BotBrowser preflight | Permission check fails with a readable result |
+| Preflight assets | Editor runs BotBrowser preflight with missing executable or missing `.enc` | The failing check identifies the missing executable/template |
 | Asset permissions | Viewer tries to upload `bot_profiles/*.enc` | Request is rejected with 403 |
 | Lock gate | Editor B uploads before lock | Upload presign is rejected with 403 |
 | Editor sync | Editor B locks and uploads metadata through presigned URL | Upload succeeds and `stat` sees the object |
 | Lock conflict | Owner A locks while B holds lock | Request is rejected with 409 |
+| Preflight lock | B preflights while A holds lock | Lock check fails and launch is blocked before browser startup |
 | Lock lifecycle | B heartbeats, unlocks; A locks afterward | Heartbeat, unlock, and takeover succeed |
 | Admin unlock | Admin force unlocks another user's lock | Lock is released and another user can acquire it |
 | Download/delete | A downloads B's profile upload and deletes it with tombstone | Downloaded bytes match; object is deleted; tombstone is created |
@@ -69,11 +75,16 @@ These cases require the real Donut Desktop app and a real BotBrowser-compatible 
 | --- | --- | --- |
 | Desktop login | Open Donut, configure self-hosted URL, email, password | Login survives app restart |
 | Team Admin UI | Admin opens Sync settings and clicks Team Admin | Users, templates, profiles, permissions, locks, and audit logs are manageable in desktop UI |
+| Shared Profiles UI | B opens the header menu and clicks Shared Profiles | B sees every profile shared with their account, with permission, engine, template, lock, and local status |
+| Shared add | B clicks Add to local for a BotBrowser profile | The local profile appears in the main list and keeps the same profile id |
+| Shared unsupported engine | B sees a Wayfern/Camoufox team profile | UI shows it as not supported for one-click launch |
+| Preflight UI | Run preflight from Shared Profiles | Login, permission, executable, `.enc`, and lock checks are displayed with readable pass/fail text |
 | BotBrowser path | Choose or auto-detect BotBrowser/Chromium executable | Profile launch does not ask again |
 | Profile create | Create BotBrowser profile and assign uploaded `.enc` asset | Profile appears locally and in team list |
 | Launch args | Start profile | Process includes `--bot-profile`, `--user-data-dir`, `--remote-debugging-port`, `--disable-blink-features=AutomationControlled` |
 | Lock UI | A starts profile; B starts same profile | B sees conflict and cannot start |
 | State sync | A logs into a test site, closes browser; B starts after unlock | B sees A's persisted login state |
+| Close-time stability | A closes BotBrowser after writing cookies/local storage | Donut waits for stable profile files before uploading; timeout logs a warning but still attempts sync |
 | Cross machine | B signs in on another machine | Profile and `.enc` download into local cache and launch |
 | Proxy | Test HTTP, SOCKS5, SOCKS5H proxies | BotBrowser receives valid `--proxy-server` URL and traffic exits through proxy |
 | Crash recovery | Kill browser process or app while lock is active | Lock expires or admin can unlock; later launch succeeds |

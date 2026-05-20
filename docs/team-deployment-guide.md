@@ -31,6 +31,40 @@ The desktop client only needs the sync API URL:
 https://sync.example.com
 ```
 
+## Baota / Existing Nginx Deployment
+
+If the server already runs Baota Panel, keep Baota in charge of public `80/443` traffic and run the team browser stack behind it:
+
+```text
+Baota Nginx
+  https://sync.example.com -> http://127.0.0.1:12342
+  https://s3.example.com   -> http://127.0.0.1:8987
+
+Docker Compose
+  donut-sync -> 127.0.0.1:12342
+  minio API  -> 127.0.0.1:8987
+  minio UI   -> 127.0.0.1:8988, optional local/admin access only
+  postgres   -> Docker network only
+```
+
+Do not bind Postgres or MinIO directly to a public interface. If MinIO needs to be reachable by desktop clients, expose only the S3 API through Nginx with HTTPS and set:
+
+```env
+S3_ENDPOINT=http://minio:9000
+S3_PUBLIC_ENDPOINT=https://s3.example.com
+```
+
+For Cloudflare DNS, use DNS-only records for `sync.example.com` and `s3.example.com` during the first deployment. This avoids upload limits and proxy behavior surprises for large profile sync and presigned S3 URLs.
+
+Keep deployment secrets outside the repo. A practical pattern is:
+
+```text
+/opt/donut-team/.env
+/root/donut-team-credentials.txt
+```
+
+Baota can still show and reload the Nginx vhosts, while Docker Compose remains responsible for `donut-sync`, Postgres, and MinIO lifecycle.
+
 ## What Runs On The Server
 
 The server stores the authoritative team state. It does not run browsers and does not render browser screens.
@@ -183,7 +217,48 @@ Mac can be packaged as a Tauri desktop build:
 .dmg
 ```
 
-For internal testing, an unsigned build can be used, but macOS may warn on first launch. Users may need to right-click and choose Open or allow it in System Settings.
+Local Apple Silicon internal test build:
+
+```bash
+pnpm build
+PROFILE=release TARGET=aarch64-apple-darwin \
+  pnpm tauri build --target aarch64-apple-darwin --bundles dmg
+```
+
+The default Tauri output is:
+
+```text
+src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/Donut_0.22.7_aarch64.dmg
+```
+
+For the current internal team build, use the re-signed ad-hoc artifact:
+
+```text
+release-artifacts/Donut_0.22.7_aarch64_internal-test.dmg
+```
+
+This artifact is suitable for Apple Silicon Macs only. It is ad-hoc signed, not Developer ID signed and not notarized. That means Gatekeeper will reject it if the user opens it like a normal public app.
+
+Internal tester install steps:
+
+1. Open the `.dmg`.
+2. Drag `Donut.app` to `Applications`.
+3. If macOS blocks the app, right-click `Donut.app` and choose `Open`, then confirm.
+4. If it is still blocked, run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Donut.app
+open /Applications/Donut.app
+```
+
+Intel Macs need a separate `x86_64-apple-darwin` build. Build it on a Mac that has the Intel target installed:
+
+```bash
+rustup target add x86_64-apple-darwin
+pnpm build
+PROFILE=release TARGET=x86_64-apple-darwin \
+  pnpm tauri build --target x86_64-apple-darwin --bundles dmg
+```
 
 For a normal installation experience, use:
 
@@ -203,6 +278,16 @@ Expected package types:
 ```text
 .msi
 .exe installer
+```
+
+Local Windows build command on a Windows machine:
+
+```powershell
+pnpm install
+pnpm build
+$env:PROFILE = "release"
+$env:TARGET = "x86_64-pc-windows-msvc"
+pnpm tauri build --target x86_64-pc-windows-msvc --bundles nsis
 ```
 
 Unsigned builds may trigger Microsoft Defender SmartScreen warnings. For smoother team distribution, use a Windows code signing certificate.

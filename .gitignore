@@ -16,6 +16,7 @@
 /.next/
 /out/
 /dist/
+/release-artifacts/
 
 # production
 /build

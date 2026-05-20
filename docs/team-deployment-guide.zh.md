@@ -31,6 +31,40 @@ minio.example.com -> MinIO Console，可选，只给管理员访问
 https://sync.example.com
 ```
 
+## 宝塔 / 已有 Nginx 部署方式
+
+如果服务器已经跑了宝塔面板，让宝塔继续接管公网 `80/443`，团队浏览器后端放在它后面：
+
+```text
+宝塔 Nginx
+  https://sync.example.com -> http://127.0.0.1:12342
+  https://s3.example.com   -> http://127.0.0.1:8987
+
+Docker Compose
+  donut-sync -> 127.0.0.1:12342
+  minio API  -> 127.0.0.1:8987
+  minio UI   -> 127.0.0.1:8988，仅本机或管理员可选访问
+  postgres   -> 仅 Docker 内网
+```
+
+不要把 Postgres 或 MinIO 直接绑定到公网。桌面客户端需要访问 MinIO 时，只通过 Nginx 暴露 S3 API，并配置 HTTPS：
+
+```env
+S3_ENDPOINT=http://minio:9000
+S3_PUBLIC_ENDPOINT=https://s3.example.com
+```
+
+Cloudflare DNS 第一版建议给 `sync.example.com` 和 `s3.example.com` 使用 DNS only。这样可以避开大 profile 同步和 S3 presigned URL 上传时的代理限制或行为差异。
+
+部署密钥不要放进仓库。一个实用的放法是：
+
+```text
+/opt/donut-team/.env
+/root/donut-team-credentials.txt
+```
+
+宝塔仍然可以展示和重载 Nginx 站点配置；`donut-sync`、Postgres 和 MinIO 的生命周期继续由 Docker Compose 管理。
+
 ## 服务器上跑什么
 
 服务器保存团队 profile 的权威数据。服务器不运行浏览器，也不渲染浏览器画面。
@@ -183,7 +217,48 @@ Mac 可以用 Tauri 打包：
 .dmg
 ```
 
-内部测试可以先用未签名版本，但 macOS 首次打开可能会警告。用户可能需要右键选择 Open，或者在 System Settings 里允许打开。
+本机 Apple Silicon 内部测试构建：
+
+```bash
+pnpm build
+PROFILE=release TARGET=aarch64-apple-darwin \
+  pnpm tauri build --target aarch64-apple-darwin --bundles dmg
+```
+
+Tauri 默认输出：
+
+```text
+src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/Donut_0.22.7_aarch64.dmg
+```
+
+当前团队内部测试请使用重新 ad-hoc 签名后的产物：
+
+```text
+release-artifacts/Donut_0.22.7_aarch64_internal-test.dmg
+```
+
+这个产物只适合 Apple Silicon Mac。它是 ad-hoc 签名，不是 Developer ID 签名，也没有 notarization，所以 Gatekeeper 不会把它当成正常公开发行软件。
+
+内部成员安装步骤：
+
+1. 打开 `.dmg`。
+2. 把 `Donut.app` 拖到 `Applications`。
+3. 如果 macOS 阻止打开，右键点击 `Donut.app`，选择 `Open`，再确认。
+4. 如果仍然被拦截，执行：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Donut.app
+open /Applications/Donut.app
+```
+
+Intel Mac 需要单独构建 `x86_64-apple-darwin` 版本。可以在装了 Intel target 的 Mac 上执行：
+
+```bash
+rustup target add x86_64-apple-darwin
+pnpm build
+PROFILE=release TARGET=x86_64-apple-darwin \
+  pnpm tauri build --target x86_64-apple-darwin --bundles dmg
+```
 
 如果想要接近正常软件的安装体验，需要：
 
@@ -203,6 +278,16 @@ Windows 最好在 Windows 机器或 Windows CI runner 上构建。
 ```text
 .msi
 .exe installer
+```
+
+在 Windows 机器上本机构建：
+
+```powershell
+pnpm install
+pnpm build
+$env:PROFILE = "release"
+$env:TARGET = "x86_64-pc-windows-msvc"
+pnpm tauri build --target x86_64-pc-windows-msvc --bundles nsis
 ```
 
 未签名版本可能触发 Microsoft Defender SmartScreen 警告。团队内部分发想更顺滑，需要 Windows code signing 证书。

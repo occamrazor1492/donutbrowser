@@ -2241,10 +2241,77 @@ pub async fn check_browser_status(
   profile: BrowserProfile,
 ) -> Result<bool, String> {
   let profile_manager = ProfileManager::instance();
-  profile_manager
-    .check_browser_status(app_handle, &profile)
+  let was_running = profile.process_id.is_some();
+  let is_running = profile_manager
+    .check_browser_status(app_handle.clone(), &profile)
     .await
-    .map_err(|e| format!("Failed to check browser status: {e}"))
+    .map_err(|e| format!("Failed to check browser status: {e}"))?;
+
+  if was_running
+    && !is_running
+    && (profile.is_sync_enabled() || crate::self_hosted_auth::cached_user().is_some())
+  {
+    handle_profile_stopped_after_status_check(app_handle, profile).await;
+  }
+
+  Ok(is_running)
+}
+
+async fn handle_profile_stopped_after_status_check(
+  app_handle: tauri::AppHandle,
+  profile: BrowserProfile,
+) {
+  let profile_manager = ProfileManager::instance();
+  if let Some(scheduler) = crate::sync::get_global_scheduler() {
+    scheduler
+      .mark_profile_stopped(&profile.id.to_string())
+      .await;
+  }
+
+  let stopped_profile = match profile_manager.list_profiles() {
+    Ok(profiles) => profiles
+      .into_iter()
+      .find(|candidate| candidate.id == profile.id),
+    Err(e) => {
+      log::warn!(
+        "Failed to reload profile {} after browser exit status check: {}",
+        profile.id,
+        e
+      );
+      None
+    }
+  };
+
+  if let Some(stopped_profile) = stopped_profile {
+    if crate::botbrowser::is_botbrowser_profile(&stopped_profile) {
+      let profiles_dir = profile_manager.get_profiles_dir();
+      let profile_data_path = crate::botbrowser::profile_data_path(&stopped_profile, &profiles_dir);
+      let stable = crate::botbrowser::wait_for_profile_files_stable(&profile_data_path).await;
+      if !stable {
+        log::warn!(
+          "Continuing close-time sync after BotBrowser profile stability timeout: {}",
+          profile_data_path.display()
+        );
+      }
+    }
+
+    match crate::sync::SyncEngine::create_from_settings(&app_handle).await {
+      Ok(engine) => {
+        if let Err(e) = engine.sync_profile(&app_handle, &stopped_profile).await {
+          log::warn!(
+            "Failed to sync profile {} after browser exit status check: {}",
+            profile.id,
+            e
+          );
+        }
+      }
+      Err(e) => {
+        log::debug!("Sync not configured after browser exit status check: {e}");
+      }
+    }
+  }
+
+  crate::team_lock::release_team_lock_if_needed(&app_handle, &profile).await;
 }
 
 #[tauri::command]
