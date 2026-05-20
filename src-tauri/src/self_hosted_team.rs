@@ -978,6 +978,7 @@ mod tests {
       email: "a@example.com".to_string(),
       role: "member".to_string(),
       team_id: "team-1".to_string(),
+      team_name: None,
       prefix: None,
       team_prefix: None,
     };

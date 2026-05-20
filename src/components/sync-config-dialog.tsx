@@ -60,7 +60,14 @@ interface SelfHostedAuthState {
     role: string;
     teamId: string;
     teamName?: string;
+    prefix?: string;
+    teamPrefix?: string;
   };
+}
+
+interface SelfHostedLoginResponse {
+  token: string;
+  user: SelfHostedAuthState["user"];
 }
 
 function getErrorMessage(error: unknown): string {
@@ -72,6 +79,54 @@ function getErrorMessage(error: unknown): string {
   }
   const serialized = JSON.stringify(error);
   return serialized ?? String(error);
+}
+
+function cleanSelfHostedUrl(url: string): string {
+  return url.trim().replace(/\/+$/, "");
+}
+
+async function getSelfHostedResponseMessage(
+  response: Response,
+): Promise<string> {
+  const body = await response.text();
+  if (!body) {
+    return `${response.status} ${response.statusText}`.trim();
+  }
+
+  try {
+    const parsed = JSON.parse(body) as { message?: unknown; error?: unknown };
+    if (typeof parsed.message === "string") {
+      return parsed.message;
+    }
+    if (Array.isArray(parsed.message)) {
+      return parsed.message.join(", ");
+    }
+    if (typeof parsed.error === "string") {
+      return parsed.error;
+    }
+  } catch {
+    // Use the original response body below.
+  }
+
+  return body;
+}
+
+async function loginSelfHostedViaWebview(
+  serverUrl: string,
+  email: string,
+  password: string,
+): Promise<SelfHostedLoginResponse> {
+  const response = await fetch(`${serverUrl}/v1/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getSelfHostedResponseMessage(response));
+  }
+
+  return response.json() as Promise<SelfHostedLoginResponse>;
 }
 
 export function SyncConfigDialog({
@@ -115,7 +170,7 @@ export function SyncConfigDialog({
   const testConnection = useCallback(async (url: string) => {
     setConnectionStatus("testing");
     try {
-      const healthUrl = `${url.replace(/\/$/, "")}/health`;
+      const healthUrl = `${cleanSelfHostedUrl(url)}/health`;
       const response = await fetch(healthUrl);
       setConnectionStatus(response.ok ? "connected" : "error");
     } catch {
@@ -178,7 +233,7 @@ export function SyncConfigDialog({
     setIsTesting(true);
     setConnectionStatus("testing");
     try {
-      const healthUrl = `${serverUrl.replace(/\/$/, "")}/health`;
+      const healthUrl = `${cleanSelfHostedUrl(serverUrl)}/health`;
       const response = await fetch(healthUrl);
       if (response.ok) {
         setConnectionStatus("connected");
@@ -198,18 +253,24 @@ export function SyncConfigDialog({
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
+      const cleanServerUrl = cleanSelfHostedUrl(serverUrl);
       if (useAdvancedToken) {
         await invoke<SyncSettings>("save_sync_settings", {
-          syncServerUrl: serverUrl || null,
+          syncServerUrl: cleanServerUrl || null,
           syncToken: token || null,
         });
       } else {
+        const loginResponse = await loginSelfHostedViaWebview(
+          cleanServerUrl,
+          email,
+          password,
+        );
         const authState = await invoke<SelfHostedAuthState>(
-          "login_self_hosted",
+          "save_self_hosted_auth_state",
           {
-            serverUrl,
-            email,
-            password,
+            serverUrl: cleanServerUrl,
+            token: loginResponse.token,
+            user: loginResponse.user,
           },
         );
         setSelfHostedUser(authState.user);

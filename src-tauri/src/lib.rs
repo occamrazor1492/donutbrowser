@@ -2086,7 +2086,7 @@ pub fn run() {
       cloud_auth::restart_sync_service,
       cloud_auth::cloud_get_wayfern_token,
       cloud_auth::cloud_refresh_wayfern_token,
-      self_hosted_auth::login_self_hosted,
+      self_hosted_auth::save_self_hosted_auth_state,
       self_hosted_auth::logout_self_hosted,
       self_hosted_auth::get_self_hosted_user,
       self_hosted_team::team_list_users,

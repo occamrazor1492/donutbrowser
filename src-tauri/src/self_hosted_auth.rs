@@ -9,6 +9,8 @@ pub struct SelfHostedUser {
   pub role: String,
   #[serde(rename = "teamId")]
   pub team_id: String,
+  #[serde(rename = "teamName", default)]
+  pub team_name: Option<String>,
   #[serde(default)]
   pub prefix: Option<String>,
   #[serde(rename = "teamPrefix", default)]
@@ -19,18 +21,6 @@ pub struct SelfHostedUser {
 pub struct SelfHostedAuthState {
   pub server_url: String,
   pub user: SelfHostedUser,
-}
-
-#[derive(Debug, Deserialize)]
-struct LoginResponse {
-  token: String,
-  user: SelfHostedUser,
-}
-
-#[derive(Debug, Serialize)]
-struct LoginRequest<'a> {
-  email: &'a str,
-  password: &'a str,
 }
 
 pub fn cached_user() -> Option<SelfHostedUser> {
@@ -51,49 +41,37 @@ pub fn cached_team_prefix() -> Option<String> {
 }
 
 #[tauri::command]
-pub async fn login_self_hosted(
+pub async fn save_self_hosted_auth_state(
   app_handle: tauri::AppHandle,
   server_url: String,
-  email: String,
-  password: String,
+  token: String,
+  user: SelfHostedUser,
 ) -> Result<SelfHostedAuthState, String> {
   let clean_url = server_url.trim_end_matches('/').to_string();
-  let response = reqwest::Client::new()
-    .post(format!("{clean_url}/v1/auth/login"))
-    .json(&LoginRequest {
-      email: &email,
-      password: &password,
-    })
-    .send()
-    .await
-    .map_err(|e| format!("Failed to login to self-hosted sync: {e}"))?;
-
-  if !response.status().is_success() {
-    let status = response.status();
-    let body = response.text().await.unwrap_or_default();
-    return Err(format!("Self-hosted login failed ({status}): {body}"));
-  }
-
-  let result: LoginResponse = response
-    .json()
-    .await
-    .map_err(|e| format!("Failed to parse self-hosted login response: {e}"))?;
-
-  let manager = SettingsManager::instance();
-  manager
-    .save_sync_server_url(Some(clean_url.clone()))
-    .map_err(|e| format!("Failed to save self-hosted server URL: {e}"))?;
-  manager
-    .store_sync_token(&app_handle, &result.token)
-    .await
-    .map_err(|e| format!("Failed to store self-hosted JWT: {e}"))?;
-
-  write_user_file(&result.user)?;
+  persist_self_hosted_auth_state(&app_handle, clean_url.clone(), &token, &user).await?;
 
   Ok(SelfHostedAuthState {
     server_url: clean_url,
-    user: result.user,
+    user,
   })
+}
+
+async fn persist_self_hosted_auth_state(
+  app_handle: &tauri::AppHandle,
+  clean_url: String,
+  token: &str,
+  user: &SelfHostedUser,
+) -> Result<(), String> {
+  let manager = SettingsManager::instance();
+  manager
+    .save_sync_server_url(Some(clean_url))
+    .map_err(|e| format!("Failed to save self-hosted server URL: {e}"))?;
+  manager
+    .store_sync_token(app_handle, token)
+    .await
+    .map_err(|e| format!("Failed to store self-hosted JWT: {e}"))?;
+
+  write_user_file(user)
 }
 
 #[tauri::command]
