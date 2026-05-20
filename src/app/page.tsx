@@ -1116,9 +1116,9 @@ export default function Home() {
   const isLoading = profilesLoading || groupsLoading || proxiesLoading;
 
   return (
-    <div className="grid items-center justify-items-center min-h-screen gap-8 font-(family-name:--font-geist-sans) bg-background">
-      <main className="flex flex-col items-center w-full max-w-4xl px-3">
-        <div className="w-full">
+    <div className="flex h-screen min-h-0 w-screen overflow-hidden bg-background font-(family-name:--font-geist-sans)">
+      <main className="flex h-full min-h-0 w-full flex-col px-4 py-4">
+        <div className="w-full shrink-0">
           <HomeHeader
             onCreateProfileDialogOpen={setCreateProfileDialogOpen}
             onGroupManagementDialogOpen={setGroupManagementDialogOpen}
@@ -1134,7 +1134,7 @@ export default function Home() {
             onSearchQueryChange={setSearchQuery}
           />
         </div>
-        <div className="w-full mt-2.5">
+        <div className="flex min-h-0 w-full flex-1 flex-col pt-3">
           <GroupBadges
             selectedGroupId={selectedGroupId}
             onGroupSelect={handleSelectGroup}
@@ -1142,6 +1142,7 @@ export default function Home() {
             isLoading={isLoading}
           />
           <ProfilesDataTable
+            className="min-h-0 flex-1"
             profiles={filteredProfiles}
             onLaunchProfile={launchProfile}
             onKillProfile={handleKillProfile}

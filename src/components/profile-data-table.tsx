@@ -73,7 +73,6 @@ import { useTeamLocks } from "@/hooks/use-team-locks";
 import { useVpnEvents } from "@/hooks/use-vpn-events";
 import {
   getBrowserDisplayName,
-  getCurrentOS,
   getOSDisplayName,
   getProfileIcon,
   isCrossOsProfile,
@@ -820,6 +819,7 @@ const NoteCell = React.memo<{
 NoteCell.displayName = "NoteCell";
 
 interface ProfilesDataTableProps {
+  className?: string;
   profiles: BrowserProfile[];
   onLaunchProfile: (profile: BrowserProfile) => void | Promise<void>;
   onKillProfile: (profile: BrowserProfile) => void | Promise<void>;
@@ -857,6 +857,7 @@ interface ProfilesDataTableProps {
 }
 
 export function ProfilesDataTable({
+  className,
   profiles,
   onLaunchProfile,
   onKillProfile,
@@ -2587,18 +2588,11 @@ export function ProfilesDataTable({
     meta: tableMeta,
   });
 
-  const platform = getCurrentOS();
-
   return (
-    <>
-      <ScrollArea
-        className={cn(
-          "rounded-md border [&>div[data-slot='scroll-area-viewport']>div]:overflow-visible",
-          platform === "macos" ? "h-[340px]" : "h-[280px]",
-        )}
-      >
+    <div className={cn("flex min-h-0 flex-col", className)}>
+      <ScrollArea className="min-h-0 flex-1 rounded-md border [&>div[data-slot='scroll-area-viewport']>div]:overflow-visible">
         <Table className="overflow-visible table-fixed">
-          <TableHeader className="overflow-visible">
+          <TableHeader className="sticky top-0 z-10 overflow-visible bg-background">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="overflow-visible">
                 {headerGroup.headers.map((header) => {
@@ -2828,6 +2822,6 @@ export function ProfilesDataTable({
         profileId={launchHookProfile?.id ?? null}
         currentLaunchHook={launchHookProfile?.launch_hook ?? null}
       />
-    </>
+    </div>
   );
 }

@@ -398,7 +398,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-5xl flex-col overflow-hidden">
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[min(calc(100vw-2rem),1280px)] flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle>{t("sync.teamAdmin.title")}</DialogTitle>
           <DialogDescription>

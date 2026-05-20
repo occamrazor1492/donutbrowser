@@ -360,7 +360,7 @@ export function SyncConfigDialog({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t("sync.title")}</DialogTitle>
             <DialogDescription>{t("sync.description")}</DialogDescription>

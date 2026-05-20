@@ -200,7 +200,7 @@ export function TeamProfilesDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-5xl flex-col overflow-hidden">
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[min(calc(100vw-2rem),1280px)] flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <LuServer className="w-5 h-5" />
