@@ -398,15 +398,15 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-5xl flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle>{t("sync.teamAdmin.title")}</DialogTitle>
           <DialogDescription>
             {t("sync.teamAdmin.description")}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex justify-end">
+        <div className="flex shrink-0 justify-end">
           <Button
             variant="outline"
             size="sm"
@@ -421,9 +421,9 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
-          className="min-h-0"
+          className="flex min-h-0 flex-1 flex-col"
         >
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid w-full shrink-0 grid-cols-4">
             <TabsTrigger value="users">
               {t("sync.teamAdmin.tabs.users")}
             </TabsTrigger>
@@ -438,7 +438,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
             </TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="mt-4 h-[60vh] pr-3">
+          <ScrollArea className="mt-4 min-h-0 flex-1 pr-3">
             <TabsContent value="users" className="mt-0 space-y-4">
               <div className="grid gap-3 md:grid-cols-[1fr_1fr_140px_auto]">
                 <div className="space-y-2">

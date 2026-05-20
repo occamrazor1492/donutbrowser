@@ -1243,8 +1243,9 @@ pub fn run() {
       #[allow(unused_variables)]
       let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
         .title("Donut Browser")
-        .inner_size(840.0, 500.0)
-        .resizable(false)
+        .inner_size(1120.0, 720.0)
+        .min_inner_size(840.0, 500.0)
+        .resizable(true)
         .fullscreen(false)
         .center()
         .focused(true)

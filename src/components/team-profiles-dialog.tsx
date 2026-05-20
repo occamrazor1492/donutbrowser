@@ -200,8 +200,8 @@ export function TeamProfilesDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-5xl flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <LuServer className="w-5 h-5" />
             {t("teamProfiles.title")}
@@ -209,9 +209,9 @@ export function TeamProfilesDialog({
           <DialogDescription>{t("teamProfiles.description")}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex min-h-0 flex-1 flex-col space-y-4">
           {hasBotBrowserProfiles && (
-            <div className="grid gap-2">
+            <div className="grid shrink-0 gap-2">
               <Label htmlFor="team-profile-executable">
                 {t("teamProfiles.executablePath")}
               </Label>
@@ -226,7 +226,7 @@ export function TeamProfilesDialog({
             </div>
           )}
 
-          <div className="flex justify-between items-center">
+          <div className="flex shrink-0 items-center justify-between">
             <div className="text-sm text-muted-foreground">
               {t("teamProfiles.count", { count: teamProfiles.length })}
             </div>
@@ -244,7 +244,7 @@ export function TeamProfilesDialog({
             </Button>
           </div>
 
-          <ScrollArea className="h-[520px] pr-3">
+          <ScrollArea className="min-h-0 flex-1 pr-3">
             {isLoading ? (
               <div className="py-10 text-sm text-center text-muted-foreground">
                 {t("teamProfiles.loading")}
