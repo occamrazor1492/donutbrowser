@@ -254,16 +254,26 @@ email: a@team.local
 password: a-password
 ```
 
-## 7. 创建第一个 BotBrowser profile
+## 7. 创建第一个共享 Chromium profile
 
 推荐桌面端操作：
 
 1. 点击 `Create Profile`。
-2. 选择 `BotBrowser`。
+2. 选择 `Chromium` / `Wayfern`。
 3. 输入 profile 名称。
-4. 选择已上传的 `.enc` 模板，或者填写本地 `.enc` 路径。
-5. 可选填写 BotBrowser/Chromium 可执行文件路径；留空会自动探测。
-6. 创建 profile。Donut 会写入本地 metadata、在服务端注册团队 profile，并把 sync mode 设为 `Regular`。
+4. 按需要配置代理、指纹、扩展或 DNS 选项。
+5. 创建 profile。
+
+只要已经登录 self-hosted 团队账号，Donut 现在会自动把这个 Wayfern/Chromium profile 当成团队环境处理：
+
+- 在本机创建 profile metadata 和指纹配置；
+- 在服务端注册对应的 `TeamProfile`，engine 为 `wayfern`；
+- sync mode 自动设为 `Regular`；
+- Donut 会短暂获取服务端 lock，上传初始 profile metadata/manifest，然后释放 lock。
+
+这才是正常 AdsPower 类产品的默认流程：默认共享 Chromium 环境不需要 BotBrowser `.enc` 模板。
+
+BotBrowser 仍然保留为高级 engine。只有当你明确想用某个 Chromium 兼容可执行文件配合预制 `.enc` 指纹 profile 时才选择 `BotBrowser`。这种情况下管理员需要先上传 `.enc` 模板，或者创建者填写本地 `.enc` 路径。
 
 CLI 调试备用方式：
 
@@ -298,7 +308,7 @@ cat > "$PROFILE_DIR/metadata.json" <<EOF
 EOF
 ```
 
-重启 Donut Desktop，profile 应该会出现在列表中。
+重启 Donut Desktop，profile 应该会出现在列表中。这个 CLI fallback 只用于 BotBrowser 调试；正常团队环境应该在桌面 UI 里创建 Wayfern/Chromium profile。
 
 ## 8. 成员加入共享 Profile
 
@@ -306,13 +316,14 @@ EOF
 
 1. 登录同一个自托管服务器。
 2. 打开顶部菜单，点击 `共享 Profiles`。
-3. 找到目标 BotBrowser profile。
-4. 可选填写本机 BotBrowser/Chromium 可执行文件路径。
-5. 点击 `加入本机`。
-6. 点击 `预检`，检查登录状态、启动权限、可执行文件路径、`.enc` 模板可用性和 lock 状态。
-7. 预检通过后点击 `启动`。
+3. 找到目标 Chromium/Wayfern profile。
+4. 点击 `加入本机`。
+5. 点击 `预检`，检查登录状态、启动权限、浏览器运行时/指纹数据和 lock 状态。
+6. 预检通过后点击 `启动`。
 
-这个 MVP 只支持从成员入口一键启动 BotBrowser 共享 profile。Wayfern 和 Camoufox 团队 profile 会保留服务端数据兼容，但这一轮先不开放一键启动。
+如果是高级 BotBrowser profile，Shared Profiles 会额外显示可选的 BotBrowser executable path，并在预检时检查 `.enc` 模板。
+
+Wayfern/Chromium 共享 profile 现在可以从成员入口一键加入和启动。Camoufox 团队 profile 记录仍然兼容服务端数据，但当前版本还不开放成员一键启动。
 
 常见预检失败处理：
 
@@ -320,8 +331,8 @@ EOF
 | --- | --- |
 | 自托管登录 | 回到 Sync settings 重新登录。 |
 | 启动权限 | 让管理员授予 `owner` 或 `editor` 权限。 |
-| 可执行文件 | 安装 BotBrowser/Chromium，或者在共享 Profiles 里填写可执行文件路径。 |
-| `.enc` 模板 | 让管理员上传并选择 BotBrowser `.enc` 模板。 |
+| 浏览器运行时 | 下载需要的 Wayfern/Chromium 运行时；如果是 BotBrowser profile，则填写有效的 BotBrowser executable path。 |
+| 指纹数据 | Wayfern 会自动生成指纹数据；如果是 BotBrowser profile，则让管理员上传并选择 `.enc` 模板。 |
 | Profile 锁 | 等另一个用户关闭 profile；如果锁已经异常残留，让管理员强制解锁。 |
 
 ## 9. 启动和共享
@@ -331,8 +342,8 @@ EOF
 ```text
 Donut 获取服务端 lock
 Donut 下载最新服务端 profile 状态
-如果本地没有 BotBrowser .enc asset，Donut 自动下载
-Donut 用 --bot-profile 启动 Chromium/BotBrowser
+仅 BotBrowser profile 会在本地缺少 .enc asset 时自动下载
+Donut 启动所选 engine
 Donut 持续发送 lock heartbeat
 浏览器关闭后，Donut 先等待 profile 文件稳定
 Donut 在仍持有 lock 时同步 cookies/local storage/profile files

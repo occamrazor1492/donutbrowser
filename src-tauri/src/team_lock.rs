@@ -405,11 +405,12 @@ pub async fn acquire_team_lock_if_needed(
   app_handle: &tauri::AppHandle,
   profile: &crate::profile::BrowserProfile,
 ) -> Result<(), String> {
-  let is_self_hosted = crate::self_hosted_auth::cached_user().is_some();
-  if !profile.is_sync_enabled() && !is_self_hosted {
+  if !profile.is_sync_enabled() {
     return Ok(());
   }
+  let is_self_hosted = crate::self_hosted_auth::cached_user().is_some();
   if is_self_hosted {
+    crate::self_hosted_team::register_team_profile(app_handle, profile).await?;
     return PROFILE_LOCK
       .acquire_self_hosted_lock(app_handle, &profile.id.to_string())
       .await;
@@ -441,10 +442,10 @@ pub async fn release_team_lock_if_needed(
   app_handle: &tauri::AppHandle,
   profile: &crate::profile::BrowserProfile,
 ) {
-  let is_self_hosted = crate::self_hosted_auth::cached_user().is_some();
-  if !profile.is_sync_enabled() && !is_self_hosted {
+  if !profile.is_sync_enabled() {
     return;
   }
+  let is_self_hosted = crate::self_hosted_auth::cached_user().is_some();
   if is_self_hosted {
     if let Err(e) = PROFILE_LOCK
       .release_self_hosted_lock(app_handle, &profile.id.to_string())

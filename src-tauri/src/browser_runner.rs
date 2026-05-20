@@ -2402,7 +2402,7 @@ pub async fn launch_browser_profile(
   let mut internal_proxy_settings: Option<ProxySettings> = None;
 
   // Resolve the most up-to-date profile from disk by ID to avoid using stale proxy_id/browser state
-  let profile_for_launch = match browser_runner
+  let mut profile_for_launch = match browser_runner
     .profile_manager
     .list_profiles()
     .map_err(|e| format!("Failed to list profiles: {e}"))
@@ -2422,9 +2422,38 @@ pub async fn launch_browser_profile(
     profile_for_launch.id
   );
 
+  if profile_for_launch.is_sync_enabled()
+    && !crate::botbrowser::is_botbrowser_profile(&profile_for_launch)
+  {
+    match crate::sync::SyncEngine::create_from_settings(&app_handle).await {
+      Ok(engine) => {
+        engine
+          .sync_profile(&app_handle, &profile_for_launch)
+          .await
+          .map_err(|e| format!("Failed to sync shared profile before launch: {e}"))?;
+        if let Ok(profiles) = browser_runner.profile_manager.list_profiles() {
+          if let Some(updated) = profiles
+            .into_iter()
+            .find(|candidate| candidate.id == profile_for_launch.id)
+          {
+            profile_for_launch = updated;
+          }
+        }
+      }
+      Err(e) if crate::self_hosted_auth::cached_user().is_some() => {
+        return Err(format!(
+          "Failed to prepare shared profile sync before launch: {e}"
+        ));
+      }
+      Err(e) => {
+        log::debug!("Sync not configured before browser launch: {e}");
+      }
+    }
+  }
+
   // Always start a local proxy before launching (non-Camoufox/Wayfern handled here; they have their own flow)
   // This ensures all traffic goes through the local proxy for monitoring and future features
-  if profile.browser != "camoufox" && profile.browser != "wayfern" {
+  if profile_for_launch.browser != "camoufox" && profile_for_launch.browser != "wayfern" {
     // Determine upstream proxy if configured; otherwise use DIRECT (no upstream)
     // Refresh cloud proxy credentials and inject profile-specific sid
     let mut upstream_proxy = BrowserRunner::instance()
@@ -2625,19 +2654,24 @@ pub async fn kill_browser_profile(
         };
 
         if let Some(stopped_profile) = stopped_profile {
-          if crate::botbrowser::is_botbrowser_profile(&stopped_profile) {
+          if crate::botbrowser::is_botbrowser_profile(&stopped_profile)
+            || (stopped_profile.browser == "wayfern" && stopped_profile.is_sync_enabled())
+          {
             let profiles_dir = browser_runner.profile_manager.get_profiles_dir();
-            let profile_data_path =
-              crate::botbrowser::profile_data_path(&stopped_profile, &profiles_dir);
+            let profile_data_path = if crate::botbrowser::is_botbrowser_profile(&stopped_profile) {
+              crate::botbrowser::profile_data_path(&stopped_profile, &profiles_dir)
+            } else {
+              stopped_profile.get_profile_data_path(&profiles_dir)
+            };
             let stable = crate::botbrowser::wait_for_profile_files_stable(&profile_data_path).await;
             if stable {
               log::info!(
-                "BotBrowser profile files are stable before close-time sync: {}",
+                "Profile files are stable before close-time sync: {}",
                 profile_data_path.display()
               );
             } else {
               log::warn!(
-                "Continuing close-time sync after BotBrowser profile stability timeout: {}",
+                "Continuing close-time sync after profile stability timeout: {}",
                 profile_data_path.display()
               );
             }

@@ -256,16 +256,26 @@ email: a@team.local
 password: a-password
 ```
 
-## 7. Create The First BotBrowser Profile
+## 7. Create The First Shared Chromium Profile
 
 Recommended desktop path:
 
 1. Click `Create Profile`.
-2. Choose `BotBrowser`.
+2. Choose `Chromium` / `Wayfern`.
 3. Enter a profile name.
-4. Select the uploaded `.enc` template, or enter a local `.enc` path.
-5. Optionally enter the BotBrowser/Chromium executable path. Leave it empty to use auto-detection.
-6. Create the profile. Donut writes local metadata, registers the team profile on the server, and sets sync mode to `Regular`.
+4. Configure proxy, fingerprint, extensions, or DNS options as needed.
+5. Create the profile.
+
+When a self-hosted team user is logged in, Donut now treats this Wayfern/Chromium profile as a team environment automatically:
+
+- local profile metadata and fingerprint settings are created on this device;
+- a matching `TeamProfile` is registered on the server with `engine: "wayfern"`;
+- sync mode is set to `Regular`;
+- Donut briefly acquires the server lock, uploads the initial profile metadata/manifest, then releases the lock.
+
+This is the normal AdsPower-style flow: no BotBrowser `.enc` template is required for the default shared Chromium environment.
+
+BotBrowser is still available as an advanced engine. Choose `BotBrowser` only when you intentionally want to launch a Chromium-compatible executable with a prebuilt `.enc` fingerprint profile. In that case an admin must upload a `.enc` template first, or the creator must provide a local `.enc` path.
 
 CLI fallback for debugging:
 
@@ -300,7 +310,7 @@ cat > "$PROFILE_DIR/metadata.json" <<EOF
 EOF
 ```
 
-Restart Donut Desktop. The profile should appear in the profile list.
+Restart Donut Desktop. The profile should appear in the profile list. This CLI fallback is only for BotBrowser debugging; normal team environments should be created from the desktop UI as Wayfern/Chromium profiles.
 
 ## 8. Join A Shared Profile As A Member
 
@@ -308,13 +318,14 @@ After an admin grants access, a member can add a shared profile without manually
 
 1. Login to the same self-hosted server.
 2. Open the header menu and click `Shared Profiles`.
-3. Find the shared BotBrowser profile.
-4. Optionally enter the local BotBrowser/Chromium executable path.
-5. Click `Add to local`.
-6. Click `Preflight` to verify login, permission, executable path, `.enc` template availability, and lock state.
-7. Click `Launch` after preflight passes.
+3. Find the shared Chromium/Wayfern profile.
+4. Click `Add to local`.
+5. Click `Preflight` to verify login, permission, browser runtime/fingerprint data, and lock state.
+6. Click `Launch` after preflight passes.
 
-Only BotBrowser shared profiles can be launched from this member flow in this MVP. Wayfern and Camoufox team profile records remain compatible server data, but their one-click member launch is intentionally disabled for now.
+For advanced BotBrowser profiles, Shared Profiles will also show an optional BotBrowser executable path field and will verify the `.enc` template during preflight.
+
+Wayfern/Chromium shared profiles can be joined and launched from this member flow. Camoufox team profile records remain compatible server data, but one-click member launch is not enabled yet.
 
 Common preflight failures:
 
@@ -322,8 +333,8 @@ Common preflight failures:
 | --- | --- |
 | Self-hosted login | Login again in Sync settings. |
 | Launch permission | Ask an admin for `owner` or `editor` permission. |
-| Executable | Install BotBrowser/Chromium or enter the executable path in Shared Profiles. |
-| `.enc` template | Ask an admin to upload/select a BotBrowser `.enc` template. |
+| Browser runtime | Download the required Wayfern/Chromium runtime, or enter a valid BotBrowser executable path for BotBrowser profiles. |
+| Fingerprint data | Wayfern generates fingerprint data automatically. For BotBrowser, ask an admin to upload/select a `.enc` template. |
 | Profile lock | Wait for the other user to close the profile, or ask an admin to force unlock if it is stale. |
 
 ## 9. Launch And Share
@@ -333,8 +344,8 @@ When user A launches the profile:
 ```text
 Donut gets a server lock
 Donut downloads the latest server profile state
-Donut downloads the BotBrowser .enc asset if missing locally
-Donut launches Chromium/BotBrowser with --bot-profile
+For BotBrowser only, Donut downloads the .enc asset if missing locally
+Donut launches the selected engine
 Donut keeps lock heartbeat alive
 After browser close, Donut waits for profile files to become stable
 Donut syncs cookies/local storage/profile files while the lock is still held

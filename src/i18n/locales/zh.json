@@ -315,7 +315,7 @@
     "camoufoxWarning": "Firefox（Camoufox）由第三方组织维护。在生产环境中，请使用 Chromium。",
     "platformUnavailable": "{{browser}} 在您的平台上尚不可用。",
     "botbrowser": {
-      "subtitle": "使用共享 .enc 模板的 Chromium 指纹执行层",
+      "subtitle": "高级 BotBrowser 引擎；需要已上传的 .enc 模板",
       "loginRequired": "创建 BotBrowser profile 前，请先登录自托管团队账号。",
       "template": "BotBrowser 模板",
       "templatePlaceholder": "选择 .enc 模板",
@@ -1698,16 +1698,16 @@
   },
   "teamProfiles": {
     "title": "共享 Profiles",
-    "description": "把团队共享的 BotBrowser profile 加入本机，并在预检通过后启动。",
-    "executablePath": "BotBrowser 可执行文件路径",
-    "executablePathPlaceholder": "可选路径，例如 /Applications/BotBrowser.app",
+    "description": "把团队共享的 Chromium 环境加入本机，并在预检通过后启动。只有高级 BotBrowser profile 才需要模板。",
+    "executablePath": "BotBrowser 可执行文件路径（高级）",
+    "executablePathPlaceholder": "仅 BotBrowser 需要，例如 /Applications/BotBrowser.app",
     "count": "{{count}} 个共享 profile",
     "loading": "正在加载共享 profiles...",
     "empty": "当前账号没有可用的共享 profile。",
     "template": "模板",
     "noTemplate": "未选择模板",
     "syncMode": "同步模式",
-    "unsupportedEngine": "这个团队 profile engine 会保留数据兼容，但当前版本只支持加入和启动 BotBrowser profile。",
+    "unsupportedEngine": "这个团队 profile engine 会保留数据兼容，但当前版本只支持一键加入和启动 Chromium 与 BotBrowser profile。",
     "viewerCannotLaunch": "Viewer 可以查看这个 profile，但启动需要 owner、editor 或 admin 权限。",
     "actions": {
       "addToLocal": "加入本机",
@@ -1718,9 +1718,9 @@
       "loadFailed": "加载共享 profiles 失败：{{error}}",
       "materialized": "已把共享 profile 加入本机",
       "materializeFailed": "加入共享 profile 失败：{{error}}",
-      "preflightPassed": "BotBrowser 预检通过",
-      "preflightFailed": "BotBrowser 预检失败",
-      "preflightError": "运行 BotBrowser 预检失败：{{error}}",
+      "preflightPassed": "共享 profile 预检通过",
+      "preflightFailed": "共享 profile 预检失败",
+      "preflightError": "运行共享 profile 预检失败：{{error}}",
       "launchFailed": "启动共享 profile 失败：{{error}}"
     },
     "permissions": {
@@ -1742,17 +1742,18 @@
       "botbrowser": "BotBrowser",
       "wayfern": "Wayfern",
       "camoufox": "Camoufox"
-    }
+    },
+    "templateNotRequired": "Chromium 不需要模板"
   },
   "botbrowserPreflight": {
-    "title": "BotBrowser 预检",
-    "failedSummary": "BotBrowser 预检失败：{{checks}}",
+    "title": "共享 Profile 预检",
+    "failedSummary": "共享 profile 预检失败：{{checks}}",
     "checks": {
       "selfHostedLogin": "自托管登录",
       "engine": "Engine 支持",
       "permission": "启动权限",
-      "executable": "可执行文件",
-      "botProfile": ".enc 模板",
+      "executable": "浏览器运行时",
+      "botProfile": "指纹数据",
       "lock": "Profile 锁"
     },
     "status": {
@@ -1762,18 +1763,18 @@
     "messages": {
       "passed": {
         "selfHostedLogin": "已经登录自托管账号。",
-        "engine": "这个共享 profile 使用 BotBrowser。",
+        "engine": "这个共享 profile 使用受支持的 engine。",
         "permission": "当前用户可以启动这个 profile。",
-        "executable": "已经找到 BotBrowser 可执行文件。",
-        "botProfile": "加密 BotBrowser 模板已在本地可用，或已下载完成。",
+        "executable": "浏览器运行时已可用，或会在加入 profile 后检查。",
+        "botProfile": "指纹数据已可用；Chromium profile 不需要 .enc 模板。",
         "lock": "当前没有其他用户持有这个 profile 的锁。"
       },
       "failed": {
         "selfHostedLogin": "请先登录自托管同步服务器。",
-        "engine": "当前版本只支持启动 BotBrowser 共享 profile。",
+        "engine": "当前版本只支持启动 Chromium 和 BotBrowser 共享 profile。",
         "permission": "请让管理员授予 owner 或 editor 权限。",
-        "executable": "请在这台设备上填写有效的 BotBrowser 可执行文件路径。",
-        "botProfile": "请先选择或上传 .enc 模板，然后再试。",
+        "executable": "请下载需要的浏览器运行时，或填写有效的 BotBrowser 可执行文件路径。",
+        "botProfile": "BotBrowser 需要先选择或上传 .enc 模板；Chromium profile 不需要模板。",
         "lock": "另一个用户正在使用这个 profile，请等对方关闭后再试。"
       }
     }

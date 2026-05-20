@@ -242,8 +242,8 @@ team_preflight_botbrowser_profile
 1. 登录同一个自托管服务器。
 2. 打开 `共享 Profiles`。
 3. 查看被分享的团队 profile，以及权限、engine、模板、lock 状态和本地状态。
-4. 对 BotBrowser profile 可选填写本机 BotBrowser 或 Chromium executable path。
-5. 点击 `加入本机`。
+4. 对 Wayfern/Chromium profile，点击 `加入本机` 会下载服务端 profile metadata 和状态。
+5. 对高级 BotBrowser profile，可选填写本机 BotBrowser 或 Chromium executable path。
 6. 运行 `预检`。
 7. 预检通过后点击 `启动`。
 
@@ -252,16 +252,19 @@ team_preflight_botbrowser_profile
 - `team_materialize_profile(profileId, executablePath?)` 创建或更新本地 `BrowserProfile`。
 - 本地 profile 保持和团队 profile 相同的 id。
 - 重复加入同一个共享 profile 会更新本地 metadata，不会创建重复 profile。
-- 生成的本地 profile 使用 `engine: "botbrowser"`、`browser: "botbrowser"`、`sync_mode: "Regular"` 和服务端模板 id。
+- Wayfern/Chromium profile 会下载服务端 metadata/profile state，并使用 `engine: "wayfern"`、`browser: "wayfern"` 和 `sync_mode: "Regular"`。
+- BotBrowser profile 使用 `engine: "botbrowser"`、`browser: "botbrowser"`、`sync_mode: "Regular"` 和服务端模板 id。
 
 当前限制：
 
-- 成员一键加入和启动只支持 BotBrowser profile。
-- Wayfern 和 Camoufox 团队 profile 记录仍然兼容服务端数据，但这个版本刻意不开放成员一键启动。
+- 成员一键加入和启动支持 Wayfern/Chromium 和高级 BotBrowser profile。
+- Camoufox 团队 profile 记录仍然兼容服务端数据，但这个版本刻意不开放成员一键启动。
 
-## BotBrowser 执行功能
+## 共享 Chromium 执行功能
 
-BotBrowser 是当前 MVP 的默认团队执行引擎。
+Wayfern/Chromium 是当前 MVP 的默认团队执行引擎。self-hosted 用户创建 Wayfern profile 时，Donut 会自动注册 team profile，启用 `Regular` sync，把初始 metadata/manifest 上传到团队前缀，并在每次启动/写入时使用 lock。
+
+BotBrowser 仍然作为高级 engine 保留，适合已经有 `.enc` 指纹模板的团队。
 
 当前 BotBrowser profile 字段：
 
@@ -309,7 +312,7 @@ botbrowser_config: {
 
 ## 预检功能
 
-启动共享 BotBrowser profile 前，客户端可以运行 `team_preflight_botbrowser_profile(profileId)`。
+启动共享 profile 前，客户端会运行 `team_preflight_botbrowser_profile(profileId)`。命令名为了兼容暂时保留，但检查范围已经覆盖 Wayfern/Chromium 和 BotBrowser profile。
 
 当前检查项：
 
@@ -317,8 +320,8 @@ botbrowser_config: {
 | --- | --- |
 | 自托管登录 | 用户已经登录 self-hosted server。 |
 | 权限 | 用户是 `admin`、`owner` 或 `editor`。 |
-| Executable | BotBrowser 或 Chromium 可执行文件存在。 |
-| `.enc` 模板 | Profile 已选择 BotBrowser 模板，并且模板本地存在或可下载。 |
+| 浏览器运行时 | Wayfern/Chromium runtime 可用，或 BotBrowser executable path 有效。 |
+| 指纹数据 | Wayfern/Chromium 已同步指纹 metadata；BotBrowser 有本地或可下载的 `.enc` 模板。 |
 | Lock | Profile 没有被其他用户锁定。 |
 
 UI 会在启动前显示可读的通过或失败结果。
@@ -417,7 +420,8 @@ https://s3.<team-domain>   -> MinIO S3 API
 - 支持已初始化的管理员账号。
 - 管理员可以创建、禁用、启用和更新用户。
 - 管理员可以上传 BotBrowser `.enc` 模板，并且模板仍被 live profile 引用时不能删除。
-- 用户和管理员可以创建 BotBrowser team profile。
+- 用户和管理员可以创建默认 Wayfern/Chromium team profile，不需要上传 `.enc` 模板。
+- 如果已有 `.enc` 模板，用户和管理员也可以创建高级 BotBrowser team profile。
 - 管理员和 owner 可以分配 `owner`、`editor` 和 `viewer` 权限。
 - 强制执行 viewer 只读行为。
 - 强制执行 lock、heartbeat、持锁上传、冲突、unlock 和管理员强制 unlock 行为。
@@ -484,17 +488,17 @@ https://s3.<team-domain>   -> MinIO S3 API
 - 被禁用用户旧 token 被拒绝。
 - Audit log 筛选。
 - 共享 profile materialize。
-- Preflight 的权限、executable、`.enc` 和 lock conflict 失败场景。
+- Preflight 的权限、浏览器运行时/指纹数据和 lock conflict 失败场景。
 
 ## 仍需手动验收
 
 以下项目需要真实桌面端和真实浏览器测试：
 
-- macOS 上真实 BotBrowser executable。
-- 真实 BotBrowser `.enc` 模板。
+- macOS 上真实 Wayfern/Chromium runtime。
+- 高级 BotBrowser 专项验收需要真实 BotBrowser executable 和 `.enc` 模板。
 - A/B 用户共享登录状态流程。
 - 浏览器关闭后 cookie/local storage 同步。
-- 第二台机器或干净用户环境下载同一个 profile 和模板。
+- 第二台机器或干净用户环境下载同一个共享 profile。
 - Windows executable path 选择和 Windows 进程行为。
 - Mac 正式签名和 notarization 流程。
 - Windows 签名安装包流程。
@@ -507,12 +511,12 @@ https://s3.<team-domain>   -> MinIO S3 API
 - 没有浏览器画面串流。
 - 服务器不远程运行浏览器。
 - 不支持同一个 profile 的实时多人协作编辑。
-- Wayfern 和 Camoufox 团队 profile 不支持成员一键启动。
+- Camoufox 团队 profile 暂不支持成员一键启动。
 - 还没有公开发行级别的 Mac 或 Windows 签名安装包。
 - 没有自动备份恢复 UI。
 - 没有组织级 SSO。
 - 没有 per-profile 存储配额 UI。
-- 没有内置 `.enc` 生成器，管理员需要提供 BotBrowser-compatible `.enc` 模板。
+- 高级 BotBrowser profile 没有内置 `.enc` 生成器；默认 Wayfern/Chromium 团队流程不需要 `.enc`。
 
 ## 最短可用路径
 
@@ -523,8 +527,7 @@ https://s3.<team-domain>   -> MinIO S3 API
 3. 在每个用户电脑上安装或构建桌面客户端。
 4. 管理员通过 self-hosted sync 登录。
 5. 管理员创建用户。
-6. 管理员上传 BotBrowser `.enc` 模板。
-7. 管理员或 owner 创建 BotBrowser team profile。
-8. 管理员给另一个用户授予 `editor`。
-9. 第二个用户打开 `共享 Profiles`，加入本机，运行预检，然后启动。
-10. 验证 lock conflict、关闭后同步和共享登录状态。
+6. 管理员或 owner 从 `Create Profile` 创建 Wayfern/Chromium team profile。
+7. 管理员给另一个用户授予 `editor`。
+8. 第二个用户打开 `共享 Profiles`，加入本机，运行预检，然后启动。
+9. 验证 lock conflict、关闭后同步和共享登录状态。

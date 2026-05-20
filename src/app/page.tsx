@@ -578,6 +578,7 @@ export default function Home() {
             error: error instanceof Error ? error.message : String(error),
           }),
         );
+        throw error;
       }
     },
     [selectedGroupId, t],
@@ -611,7 +612,12 @@ export default function Home() {
       try {
         if (
           selfHostedSyncConfigured &&
-          (profile.browser === "botbrowser" || profile.engine === "botbrowser")
+          profile.sync_mode &&
+          profile.sync_mode !== "Disabled" &&
+          (profile.browser === "botbrowser" ||
+            profile.engine === "botbrowser" ||
+            profile.browser === "wayfern" ||
+            profile.engine === "wayfern")
         ) {
           const preflight = await invoke<BotBrowserPreflightResult>(
             "team_preflight_botbrowser_profile",

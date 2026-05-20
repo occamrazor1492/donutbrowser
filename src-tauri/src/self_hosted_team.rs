@@ -209,6 +209,19 @@ fn can_launch_permission(permission: Option<&str>) -> bool {
   matches!(permission, Some("admin" | "owner" | "editor"))
 }
 
+fn profile_engine(profile: &BrowserProfile) -> String {
+  profile
+    .engine
+    .as_deref()
+    .filter(|value| !value.trim().is_empty())
+    .unwrap_or(&profile.browser)
+    .to_string()
+}
+
+fn is_supported_team_launch_engine(engine: &str) -> bool {
+  matches!(engine, "wayfern" | "botbrowser")
+}
+
 fn is_locked_by_another(
   profile: &TeamProfileRecord,
   user: &crate::self_hosted_auth::SelfHostedUser,
@@ -246,7 +259,7 @@ pub fn build_materialized_botbrowser_profile(
   executable_path: Option<String>,
 ) -> Result<BrowserProfile, String> {
   if team_profile.engine != "botbrowser" {
-    return Err("Only BotBrowser team profiles can be added locally in this version".to_string());
+    return Err("This materializer only accepts BotBrowser team profiles".to_string());
   }
 
   let profile_id = Uuid::parse_str(&team_profile.id)
@@ -315,6 +328,57 @@ pub fn build_materialized_botbrowser_profile(
   profile.botbrowser_config = Some(config);
 
   Ok(profile)
+}
+
+pub fn build_materialized_wayfern_profile(
+  team_profile: &TeamProfileRecord,
+  existing_profile: Option<BrowserProfile>,
+) -> Result<BrowserProfile, String> {
+  if team_profile.engine != "wayfern" {
+    return Err("Only Wayfern team profiles can use this materializer".to_string());
+  }
+
+  let profile_id = Uuid::parse_str(&team_profile.id)
+    .map_err(|e| format!("Invalid team profile id {}: {e}", team_profile.id))?;
+  let mut profile = existing_profile.ok_or_else(|| {
+    "Shared Chromium profile has not finished its first server sync yet".to_string()
+  })?;
+
+  profile.id = profile_id;
+  profile.name = team_profile.name.clone();
+  profile.browser = "wayfern".to_string();
+  profile.engine = Some("wayfern".to_string());
+  if profile.release_type.trim().is_empty() {
+    profile.release_type = "stable".to_string();
+  }
+  profile.sync_mode = SyncMode::Regular;
+  if profile.host_os.is_none() {
+    profile.host_os = Some(get_host_os());
+  }
+  profile.ephemeral = false;
+  profile.camoufox_config = None;
+  profile.botbrowser_config = None;
+  profile.process_id = None;
+
+  Ok(profile)
+}
+
+pub fn build_materialized_team_profile(
+  team_profile: &TeamProfileRecord,
+  existing_profile: Option<BrowserProfile>,
+  executable_path: Option<String>,
+) -> Result<BrowserProfile, String> {
+  match team_profile.engine.as_str() {
+    "botbrowser" => {
+      build_materialized_botbrowser_profile(team_profile, existing_profile, executable_path)
+    }
+    "wayfern" => build_materialized_wayfern_profile(team_profile, existing_profile),
+    "camoufox" => Err(
+      "Firefox/Camoufox shared profiles are saved for compatibility, but one-click shared launch is not enabled yet"
+        .to_string(),
+    ),
+    other => Err(format!("Unsupported shared profile engine: {other}")),
+  }
 }
 
 fn audit_query_path(
@@ -391,31 +455,92 @@ pub fn encode_file_base64(path: &Path) -> Result<String, String> {
   Ok(BASE64.encode(bytes))
 }
 
-pub async fn register_botbrowser_profile(
+pub async fn register_team_profile(
   app_handle: &tauri::AppHandle,
   profile: &BrowserProfile,
 ) -> Result<(), String> {
-  if !crate::botbrowser::is_botbrowser_profile(profile) {
+  if !profile.is_sync_enabled() {
     return Ok(());
   }
+  let engine = profile_engine(profile);
+  if !is_supported_team_launch_engine(&engine) {
+    return Ok(());
+  }
+
   let bot_profile_asset_id = profile
     .botbrowser_config
     .as_ref()
     .and_then(|config| config.bot_profile_asset_id.clone());
-  team_request(
+  let payload = json!({
+    "id": profile.id.to_string(),
+    "name": profile.name.clone(),
+    "engine": engine,
+    "botProfileAssetId": if crate::botbrowser::is_botbrowser_profile(profile) {
+      bot_profile_asset_id
+    } else {
+      None
+    },
+    "syncMode": "Regular",
+  });
+
+  let profile_id = profile.id.to_string();
+  match team_request(
     app_handle,
-    Method::POST,
-    "team-profiles",
-    Some(json!({
-      "id": profile.id.to_string(),
-      "name": profile.name.clone(),
-      "engine": "botbrowser",
-      "botProfileAssetId": bot_profile_asset_id,
-      "syncMode": "Regular",
-    })),
+    Method::GET,
+    &format!("team-profiles/{profile_id}"),
+    None,
   )
   .await
-  .map(|_| ())
+  {
+    Ok(_) => team_request(
+      app_handle,
+      Method::PATCH,
+      &format!("team-profiles/{profile_id}"),
+      Some(payload),
+    )
+    .await
+    .map(|_| ()),
+    Err(_) => team_request(app_handle, Method::POST, "team-profiles", Some(payload))
+      .await
+      .map(|_| ()),
+  }
+}
+
+pub async fn initialize_shared_team_profile(
+  app_handle: &tauri::AppHandle,
+  profile: &BrowserProfile,
+) -> Result<(), String> {
+  if crate::self_hosted_auth::cached_user().is_none() || !profile.is_sync_enabled() {
+    return Ok(());
+  }
+
+  register_team_profile(app_handle, profile).await?;
+
+  let profile_id = profile.id.to_string();
+  crate::team_lock::TEAM_LOCK
+    .acquire_self_hosted_lock(app_handle, &profile_id)
+    .await?;
+
+  let sync_result = match crate::sync::SyncEngine::create_from_settings(app_handle).await {
+    Ok(engine) => engine
+      .sync_profile(app_handle, profile)
+      .await
+      .map_err(|e| e.to_string()),
+    Err(error) => Err(error),
+  };
+
+  if let Err(error) = crate::team_lock::TEAM_LOCK
+    .release_self_hosted_lock(app_handle, &profile_id)
+    .await
+  {
+    log::warn!(
+      "Failed to release initial self-hosted profile lock for {}: {}",
+      profile_id,
+      error
+    );
+  }
+
+  sync_result
 }
 
 #[tauri::command]
@@ -518,15 +643,36 @@ pub async fn team_materialize_profile(
     .map_err(|e| format!("Failed to list local profiles: {e}"))?
     .into_iter()
     .find(|profile| profile.id == profile_uuid);
-  let profile =
-    build_materialized_botbrowser_profile(&team_profile, existing_profile, executable_path)?;
+
+  let existing_profile = if existing_profile.is_none() && team_profile.engine == "wayfern" {
+    let key_prefix = crate::self_hosted_auth::cached_team_prefix()
+      .ok_or_else(|| "Self-hosted team scope is not available".to_string())?;
+    let engine = crate::sync::SyncEngine::create_from_settings(&app_handle).await?;
+    engine
+      .download_profile_if_missing(&app_handle, &team_profile.id, &key_prefix)
+      .await
+      .map_err(|e| format!("Failed to download shared Chromium profile: {e}"))?;
+    manager
+      .list_profiles()
+      .map_err(|e| format!("Failed to reload local profiles: {e}"))?
+      .into_iter()
+      .find(|profile| profile.id == profile_uuid)
+  } else {
+    existing_profile
+  };
+
+  let profile = build_materialized_team_profile(&team_profile, existing_profile, executable_path)?;
 
   manager
     .save_profile(&profile)
     .map_err(|e| format!("Failed to save shared team profile locally: {e}"))?;
 
   let profiles_dir = manager.get_profiles_dir();
-  let profile_data_dir = crate::botbrowser::profile_data_path(&profile, &profiles_dir);
+  let profile_data_dir = if crate::botbrowser::is_botbrowser_profile(&profile) {
+    crate::botbrowser::profile_data_path(&profile, &profiles_dir)
+  } else {
+    profile.get_profile_data_path(&profiles_dir)
+  };
   std::fs::create_dir_all(&profile_data_dir).map_err(|e| {
     format!(
       "Failed to create local shared profile cache {}: {e}",
@@ -569,12 +715,12 @@ pub async fn team_preflight_botbrowser_profile(
     checks.push(preflight_check(
       "executable",
       false,
-      "BotBrowser executable cannot be checked before login",
+      "Browser runtime cannot be checked before login",
     ));
     checks.push(preflight_check(
       "botProfile",
       false,
-      "BotBrowser .enc template cannot be checked before login",
+      "Fingerprint data cannot be checked before login",
     ));
     checks.push(preflight_check(
       "lock",
@@ -608,14 +754,14 @@ pub async fn team_preflight_botbrowser_profile(
     }
   };
 
-  let is_botbrowser = team_profile.engine == "botbrowser";
+  let is_supported_engine = is_supported_team_launch_engine(&team_profile.engine);
   checks.push(preflight_check(
     "engine",
-    is_botbrowser,
-    if is_botbrowser {
-      "Team profile uses BotBrowser"
+    is_supported_engine,
+    if is_supported_engine {
+      "Team profile uses a supported shared engine"
     } else {
-      "Only BotBrowser team profiles can be launched in this version"
+      "This team profile engine cannot be launched from Shared Profiles yet"
     },
   ));
 
@@ -639,34 +785,79 @@ pub async fn team_preflight_botbrowser_profile(
     .map_err(|e| format!("Failed to list local profiles: {e}"))?
     .into_iter()
     .find(|profile| profile.id == profile_uuid);
-  let materialized_profile =
-    build_materialized_botbrowser_profile(&team_profile, existing_profile, None);
 
-  match materialized_profile.as_ref() {
-    Ok(profile) => match crate::botbrowser::resolve_executable_path(profile) {
-      Ok(path) => checks.push(preflight_check(
+  if team_profile.engine == "botbrowser" {
+    let materialized_profile =
+      build_materialized_botbrowser_profile(&team_profile, existing_profile, None);
+
+    match materialized_profile.as_ref() {
+      Ok(profile) => match crate::botbrowser::resolve_executable_path(profile) {
+        Ok(path) => checks.push(preflight_check(
+          "executable",
+          true,
+          format!("BotBrowser executable found at {}", path.display()),
+        )),
+        Err(error) => checks.push(preflight_check("executable", false, error)),
+      },
+      Err(error) => checks.push(preflight_check("executable", false, error.clone())),
+    }
+
+    match materialized_profile.as_ref() {
+      Ok(profile) => {
+        match crate::botbrowser::ensure_bot_profile_asset(&app_handle, profile).await {
+          Ok(path) => checks.push(preflight_check(
+            "botProfile",
+            true,
+            format!(
+              "BotBrowser .enc template is available at {}",
+              path.display()
+            ),
+          )),
+          Err(error) => checks.push(preflight_check("botProfile", false, error)),
+        }
+      }
+      Err(error) => checks.push(preflight_check("botProfile", false, error.clone())),
+    }
+  } else if team_profile.engine == "wayfern" {
+    let materialized_profile = build_materialized_wayfern_profile(&team_profile, existing_profile);
+    match materialized_profile.as_ref() {
+      Ok(profile) => {
+        let runner = crate::browser_runner::BrowserRunner::instance();
+        match runner.get_browser_executable_path(profile) {
+          Ok(path) => checks.push(preflight_check(
+            "executable",
+            true,
+            format!("Shared Chromium runtime found at {}", path.display()),
+          )),
+          Err(error) => checks.push(preflight_check(
+            "executable",
+            false,
+            format!("Shared Chromium runtime is not downloaded: {error}"),
+          )),
+        }
+      }
+      Err(_) => checks.push(preflight_check(
         "executable",
         true,
-        format!("BotBrowser executable found at {}", path.display()),
+        "Shared Chromium runtime will be checked after adding the profile locally",
       )),
-      Err(error) => checks.push(preflight_check("executable", false, error)),
-    },
-    Err(error) => checks.push(preflight_check("executable", false, error.clone())),
-  }
-
-  match materialized_profile.as_ref() {
-    Ok(profile) => match crate::botbrowser::ensure_bot_profile_asset(&app_handle, profile).await {
-      Ok(path) => checks.push(preflight_check(
-        "botProfile",
-        true,
-        format!(
-          "BotBrowser .enc template is available at {}",
-          path.display()
-        ),
-      )),
-      Err(error) => checks.push(preflight_check("botProfile", false, error)),
-    },
-    Err(error) => checks.push(preflight_check("botProfile", false, error.clone())),
+    }
+    checks.push(preflight_check(
+      "botProfile",
+      true,
+      "Shared Chromium profiles generate fingerprint data automatically; no .enc template is required",
+    ));
+  } else {
+    checks.push(preflight_check(
+      "executable",
+      false,
+      "This shared profile engine cannot be launched yet",
+    ));
+    checks.push(preflight_check(
+      "botProfile",
+      false,
+      "This shared profile engine cannot be launched yet",
+    ));
   }
 
   let lock_conflict = is_locked_by_another(&team_profile, &user);
@@ -861,6 +1052,21 @@ mod tests {
     }
   }
 
+  fn wayfern_team_profile() -> TeamProfileRecord {
+    TeamProfileRecord {
+      id: "b2ebaf10-22b2-44de-b68d-4f86477900aa".to_string(),
+      team_id: "team-1".to_string(),
+      owner_user_id: "user-1".to_string(),
+      name: "Shared Chromium".to_string(),
+      engine: "wayfern".to_string(),
+      bot_profile_asset_id: None,
+      sync_mode: Some("Regular".to_string()),
+      permissions: vec![],
+      bot_profile_asset: None,
+      lock: None,
+    }
+  }
+
   #[test]
   fn materializes_botbrowser_team_profile() {
     let team_profile = botbrowser_team_profile();
@@ -954,6 +1160,33 @@ mod tests {
   }
 
   #[test]
+  fn materializes_wayfern_team_profile_from_existing_metadata() {
+    let team_profile = wayfern_team_profile();
+    let existing = BrowserProfile {
+      id: Uuid::parse_str(&team_profile.id).expect("uuid"),
+      name: "Old Chromium name".to_string(),
+      browser: "wayfern".to_string(),
+      engine: Some("wayfern".to_string()),
+      version: "120.0.0".to_string(),
+      release_type: "stable".to_string(),
+      sync_mode: SyncMode::Regular,
+      host_os: Some(get_host_os()),
+      ..BrowserProfile::default()
+    };
+
+    let profile =
+      build_materialized_team_profile(&team_profile, Some(existing), None).expect("materialized");
+
+    assert_eq!(profile.id.to_string(), team_profile.id);
+    assert_eq!(profile.name, "Shared Chromium");
+    assert_eq!(profile.browser, "wayfern");
+    assert_eq!(profile.engine.as_deref(), Some("wayfern"));
+    assert_eq!(profile.version, "120.0.0");
+    assert_eq!(profile.sync_mode, SyncMode::Regular);
+    assert!(profile.botbrowser_config.is_none());
+  }
+
+  #[test]
   fn materialize_rejects_non_botbrowser_profiles() {
     let mut team_profile = botbrowser_team_profile();
     team_profile.engine = "wayfern".to_string();
@@ -961,7 +1194,7 @@ mod tests {
     let error = build_materialized_botbrowser_profile(&team_profile, None, None)
       .expect_err("non-botbrowser profile rejected");
 
-    assert!(error.contains("Only BotBrowser team profiles"));
+    assert!(error.contains("only accepts BotBrowser team profiles"));
   }
 
   #[test]

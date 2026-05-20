@@ -335,6 +335,10 @@ impl ProfileManager {
       }
     }
 
+    let should_create_self_hosted_team_profile = crate::self_hosted_auth::cached_user().is_some()
+      && !ephemeral
+      && matches!(browser, "wayfern" | "botbrowser");
+
     let profile = BrowserProfile {
       id: profile_id,
       name: name.to_string(),
@@ -352,7 +356,7 @@ impl ProfileManager {
       group_id: group_id.clone(),
       tags: Vec::new(),
       note: None,
-      sync_mode: if browser == "botbrowser" {
+      sync_mode: if browser == "botbrowser" || should_create_self_hosted_team_profile {
         SyncMode::Regular
       } else {
         SyncMode::Disabled
@@ -379,16 +383,6 @@ impl ProfileManager {
 
     log::info!("Profile '{name}' created successfully with ID: {profile_id}");
 
-    if browser == "botbrowser" {
-      if let Err(e) =
-        crate::self_hosted_team::register_botbrowser_profile(app_handle, &profile).await
-      {
-        let _ = fs::remove_file(&profile_file);
-        let _ = fs::remove_dir_all(&profile_uuid_dir);
-        return Err(format!("Failed to register BotBrowser team profile: {e}").into());
-      }
-    }
-
     // Create user.js with common Firefox preferences and apply proxy settings if provided
     // Skip for ephemeral profiles since the data dir is created at launch time
     if !ephemeral && browser != "botbrowser" {
@@ -402,6 +396,16 @@ impl ProfileManager {
       } else {
         // Create user.js with common Firefox preferences but no proxy
         self.disable_proxy_settings_in_profile(&profile_data_dir)?;
+      }
+    }
+
+    if should_create_self_hosted_team_profile {
+      if let Err(e) =
+        crate::self_hosted_team::initialize_shared_team_profile(app_handle, &profile).await
+      {
+        let _ = fs::remove_file(&profile_file);
+        let _ = fs::remove_dir_all(&profile_uuid_dir);
+        return Err(format!("Failed to create shared team profile: {e}").into());
       }
     }
 
@@ -2283,13 +2287,19 @@ async fn handle_profile_stopped_after_status_check(
   };
 
   if let Some(stopped_profile) = stopped_profile {
-    if crate::botbrowser::is_botbrowser_profile(&stopped_profile) {
+    if crate::botbrowser::is_botbrowser_profile(&stopped_profile)
+      || (stopped_profile.browser == "wayfern" && stopped_profile.is_sync_enabled())
+    {
       let profiles_dir = profile_manager.get_profiles_dir();
-      let profile_data_path = crate::botbrowser::profile_data_path(&stopped_profile, &profiles_dir);
+      let profile_data_path = if crate::botbrowser::is_botbrowser_profile(&stopped_profile) {
+        crate::botbrowser::profile_data_path(&stopped_profile, &profiles_dir)
+      } else {
+        stopped_profile.get_profile_data_path(&profiles_dir)
+      };
       let stable = crate::botbrowser::wait_for_profile_files_stable(&profile_data_path).await;
       if !stable {
         log::warn!(
-          "Continuing close-time sync after BotBrowser profile stability timeout: {}",
+          "Continuing close-time sync after profile stability timeout: {}",
           profile_data_path.display()
         );
       }

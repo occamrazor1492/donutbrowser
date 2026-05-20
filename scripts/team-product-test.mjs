@@ -14,7 +14,9 @@ const state = {
   aToken: "",
   bToken: "",
   userIds: [],
+  profileIds: [],
   profileId: "",
+  wayfernProfileId: "",
   assetId: "",
 };
 
@@ -125,6 +127,13 @@ async function cleanup() {
     }).catch((error) => log(`cleanup user ${userId} skipped: ${error.message}`));
   }
 
+  for (const profileId of state.profileIds) {
+    await requestJson("DELETE", `/v1/team-profiles/${profileId}`, {
+      token: state.adminToken,
+      expected: [200, 404],
+    }).catch((error) => log(`cleanup profile ${profileId} skipped: ${error.message}`));
+  }
+
   if (state.assetId) {
     await requestJson("DELETE", `/v1/admin/bot-profiles/${state.assetId}`, {
       token: state.adminToken,
@@ -220,6 +229,7 @@ async function main() {
         },
       });
       state.profileId = profile.body.id;
+      state.profileIds.push(profile.body.id);
       assert(profile.body.engine === "botbrowser", "profile engine was not botbrowser");
       assert(
         profile.body.permissions.some(
@@ -228,6 +238,70 @@ async function main() {
         ),
         "profile creator did not receive owner permission",
       );
+    });
+
+    await step("member can create a Chromium team profile without a BotBrowser asset", async () => {
+      const profile = await requestJson("POST", "/v1/team-profiles", {
+        token: state.aToken,
+        expected: 201,
+        body: {
+          name: `Chromium profile ${RUN_ID}`,
+          engine: "wayfern",
+        },
+      });
+      state.wayfernProfileId = profile.body.id;
+      state.profileIds.push(profile.body.id);
+      assert(profile.body.engine === "wayfern", "Chromium profile engine was not wayfern");
+      assert(
+        !profile.body.botProfileAssetId,
+        "Wayfern/Chromium profile unexpectedly required a BotBrowser asset",
+      );
+      assert(
+        profile.body.permissions.some(
+          (permission) =>
+            permission.userId === userA.id && permission.permission === "owner",
+        ),
+        "Chromium profile creator did not receive owner permission",
+      );
+
+      if (!state.bToken) {
+        state.bToken = (await login(userB.email, userB.password)).token;
+      }
+      await requestJson("POST", `/v1/team-profiles/${state.wayfernProfileId}/permissions`, {
+        token: state.adminToken,
+        expected: 201,
+        body: { userId: userB.id, permission: "editor" },
+      });
+      const sharedList = await requestJson("GET", "/v1/team-profiles", {
+        token: state.bToken,
+      });
+      assert(
+        sharedList.body.some(
+          (item) => item.id === state.wayfernProfileId && item.engine === "wayfern",
+        ),
+        "shared Wayfern/Chromium profile did not appear in editor list",
+      );
+
+      await requestJson("POST", `/v1/team-profiles/${state.wayfernProfileId}/lock`, {
+        token: state.bToken,
+        expected: 201,
+      });
+      const upload = await requestJson("POST", "/v1/objects/presign-upload", {
+        token: state.bToken,
+        body: {
+          key: `profiles/${state.wayfernProfileId}/metadata.json`,
+          contentType: "application/json",
+        },
+      });
+      await putBytes(
+        upload.body.url,
+        Buffer.from(JSON.stringify({ runId: RUN_ID, engine: "wayfern" })),
+        "application/json",
+      );
+      await requestJson("POST", `/v1/team-profiles/${state.wayfernProfileId}/unlock`, {
+        token: state.bToken,
+        expected: 201,
+      });
     });
 
     await step("referenced BotBrowser assets cannot be deleted", async () => {

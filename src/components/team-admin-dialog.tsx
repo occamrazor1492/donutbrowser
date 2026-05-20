@@ -89,7 +89,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
   const [profileName, setProfileName] = useState("");
   const [profileEngine, setProfileEngine] = useState<
     "botbrowser" | "wayfern" | "camoufox"
-  >("botbrowser");
+  >("wayfern");
   const [profileAssetId, setProfileAssetId] = useState(NO_ASSET);
   const [profileEdits, setProfileEdits] = useState<
     Record<string, ProfileEditState>
@@ -288,7 +288,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
         },
       });
       setProfileName("");
-      setProfileEngine("botbrowser");
+      setProfileEngine("wayfern");
       setProfileAssetId(NO_ASSET);
       await loadProfiles();
       await loadAuditLogs();
@@ -750,6 +750,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                   <Select
                     value={profileAssetId}
                     onValueChange={setProfileAssetId}
+                    disabled={profileEngine !== "botbrowser"}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -844,6 +845,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                               },
                             }))
                           }
+                          disabled={edit.engine !== "botbrowser"}
                         >
                           <SelectTrigger>
                             <SelectValue />

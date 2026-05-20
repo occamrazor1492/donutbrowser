@@ -93,6 +93,13 @@ export function TeamProfilesDialog({
     () => new Map(localProfiles.map((profile) => [profile.id, profile])),
     [localProfiles],
   );
+  const hasBotBrowserProfiles = useMemo(
+    () => teamProfiles.some((profile) => profile.engine === "botbrowser"),
+    [teamProfiles],
+  );
+
+  const isLaunchSupportedEngine = (engine: TeamProfileRecord["engine"]) =>
+    engine === "wayfern" || engine === "botbrowser";
 
   const loadProfiles = useCallback(async () => {
     setIsLoading(true);
@@ -203,19 +210,21 @@ export function TeamProfilesDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="team-profile-executable">
-              {t("teamProfiles.executablePath")}
-            </Label>
-            <Input
-              id="team-profile-executable"
-              value={executablePath}
-              onChange={(event) => {
-                setExecutablePath(event.target.value);
-              }}
-              placeholder={t("teamProfiles.executablePathPlaceholder")}
-            />
-          </div>
+          {hasBotBrowserProfiles && (
+            <div className="grid gap-2">
+              <Label htmlFor="team-profile-executable">
+                {t("teamProfiles.executablePath")}
+              </Label>
+              <Input
+                id="team-profile-executable"
+                value={executablePath}
+                onChange={(event) => {
+                  setExecutablePath(event.target.value);
+                }}
+                placeholder={t("teamProfiles.executablePathPlaceholder")}
+              />
+            </div>
+          )}
 
           <div className="flex justify-between items-center">
             <div className="text-sm text-muted-foreground">
@@ -254,7 +263,7 @@ export function TeamProfilesDialog({
                   );
                   const canLaunch =
                     canLaunchPermission(permission) &&
-                    teamProfile.engine === "botbrowser";
+                    isLaunchSupportedEngine(teamProfile.engine);
                   const preflight = preflightResults[teamProfile.id];
                   const locked = isActiveLock(teamProfile);
                   const isBusy = busyProfileId === teamProfile.id;
@@ -302,7 +311,9 @@ export function TeamProfilesDialog({
                           </span>
                           <span className="ml-2">
                             {teamProfile.botProfileAsset?.name ??
-                              t("teamProfiles.noTemplate")}
+                              (teamProfile.engine === "botbrowser"
+                                ? t("teamProfiles.noTemplate")
+                                : t("teamProfiles.templateNotRequired"))}
                           </span>
                         </div>
                         <div>
@@ -313,13 +324,13 @@ export function TeamProfilesDialog({
                         </div>
                       </div>
 
-                      {teamProfile.engine !== "botbrowser" && (
+                      {!isLaunchSupportedEngine(teamProfile.engine) && (
                         <div className="rounded-md border border-warning/50 bg-warning/10 p-3 text-sm text-warning-foreground">
                           {t("teamProfiles.unsupportedEngine")}
                         </div>
                       )}
 
-                      {teamProfile.engine === "botbrowser" &&
+                      {isLaunchSupportedEngine(teamProfile.engine) &&
                         !canLaunchPermission(permission) && (
                           <div className="rounded-md border border-warning/50 bg-warning/10 p-3 text-sm text-warning-foreground">
                             {t("teamProfiles.viewerCannotLaunch")}
@@ -388,7 +399,8 @@ export function TeamProfilesDialog({
                           size="sm"
                           isLoading={isBusy}
                           disabled={
-                            teamProfile.engine !== "botbrowser" || isBusy
+                            !isLaunchSupportedEngine(teamProfile.engine) ||
+                            isBusy
                           }
                           onClick={() => {
                             void handlePreflight(teamProfile.id);

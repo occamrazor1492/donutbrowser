@@ -315,7 +315,7 @@
     "camoufoxWarning": "Firefox (Camoufox) is maintained by a third-party organization. For production use, please use Chromium.",
     "platformUnavailable": "{{browser}} is not available on your platform yet.",
     "botbrowser": {
-      "subtitle": "Chromium fingerprint engine using a shared .enc template",
+      "subtitle": "Advanced BotBrowser engine; requires an uploaded .enc template",
       "loginRequired": "Log in to a self-hosted team account before creating BotBrowser profiles.",
       "template": "BotBrowser template",
       "templatePlaceholder": "Select a .enc template",
@@ -1698,16 +1698,16 @@
   },
   "teamProfiles": {
     "title": "Shared Profiles",
-    "description": "Add BotBrowser profiles shared with your self-hosted team to this device and launch them after preflight checks pass.",
-    "executablePath": "BotBrowser executable path",
-    "executablePathPlaceholder": "Optional path, for example /Applications/BotBrowser.app",
+    "description": "Add shared Chromium team profiles to this device and launch them after preflight checks pass. BotBrowser templates are only needed for advanced BotBrowser profiles.",
+    "executablePath": "BotBrowser executable path (advanced)",
+    "executablePathPlaceholder": "Only needed for BotBrowser, for example /Applications/BotBrowser.app",
     "count": "{{count}} shared profiles",
     "loading": "Loading shared profiles...",
     "empty": "No shared profiles are available for this account.",
     "template": "Template",
     "noTemplate": "No template selected",
     "syncMode": "Sync mode",
-    "unsupportedEngine": "This team profile engine is saved for compatibility, but only BotBrowser profiles can be added and launched in this version.",
+    "unsupportedEngine": "This team profile engine is saved for compatibility, but one-click shared launch is only enabled for Chromium and BotBrowser profiles right now.",
     "viewerCannotLaunch": "Viewer access can inspect this profile, but launching requires owner, editor, or admin permission.",
     "actions": {
       "addToLocal": "Add to local",
@@ -1718,9 +1718,9 @@
       "loadFailed": "Failed to load shared profiles: {{error}}",
       "materialized": "Shared profile added to this device",
       "materializeFailed": "Failed to add shared profile: {{error}}",
-      "preflightPassed": "BotBrowser preflight passed",
-      "preflightFailed": "BotBrowser preflight failed",
-      "preflightError": "Failed to run BotBrowser preflight: {{error}}",
+      "preflightPassed": "Shared profile preflight passed",
+      "preflightFailed": "Shared profile preflight failed",
+      "preflightError": "Failed to run shared profile preflight: {{error}}",
       "launchFailed": "Failed to launch shared profile: {{error}}"
     },
     "permissions": {
@@ -1742,17 +1742,18 @@
       "botbrowser": "BotBrowser",
       "wayfern": "Wayfern",
       "camoufox": "Camoufox"
-    }
+    },
+    "templateNotRequired": "Not required for Chromium"
   },
   "botbrowserPreflight": {
-    "title": "BotBrowser Preflight",
-    "failedSummary": "BotBrowser preflight failed: {{checks}}",
+    "title": "Shared Profile Preflight",
+    "failedSummary": "Shared profile preflight failed: {{checks}}",
     "checks": {
       "selfHostedLogin": "Self-hosted login",
       "engine": "Engine support",
       "permission": "Launch permission",
-      "executable": "Executable",
-      "botProfile": ".enc template",
+      "executable": "Browser runtime",
+      "botProfile": "Fingerprint data",
       "lock": "Profile lock"
     },
     "status": {
@@ -1762,18 +1763,18 @@
     "messages": {
       "passed": {
         "selfHostedLogin": "Self-hosted account is logged in.",
-        "engine": "This shared profile uses BotBrowser.",
+        "engine": "This shared profile uses a supported engine.",
         "permission": "Current user can launch this profile.",
-        "executable": "BotBrowser executable was found.",
-        "botProfile": "The encrypted BotBrowser template is available locally or was downloaded.",
+        "executable": "The browser runtime is available or will be checked after adding the profile.",
+        "botProfile": "Fingerprint data is available; Chromium profiles do not require a .enc template.",
         "lock": "No other user currently holds the profile lock."
       },
       "failed": {
         "selfHostedLogin": "Log in to the self-hosted sync server first.",
-        "engine": "Only BotBrowser shared profiles can be launched in this version.",
+        "engine": "Only Chromium and BotBrowser shared profiles can be launched in this version.",
         "permission": "Ask an admin for owner or editor permission.",
-        "executable": "Set a valid BotBrowser executable path on this device.",
-        "botProfile": "Select or upload a .enc template, then try again.",
+        "executable": "Download the required browser runtime or set a valid BotBrowser executable path.",
+        "botProfile": "For BotBrowser, select or upload a .enc template. Chromium profiles do not need one.",
         "lock": "Another user is currently using this profile. Try again after they close it."
       }
     }
