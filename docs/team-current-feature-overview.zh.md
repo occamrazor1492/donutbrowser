@@ -2,7 +2,7 @@
 
 语言：[English](./team-current-feature-overview.md) | [中文](./team-current-feature-overview.zh.md)
 
-这份文档梳理当前团队版自托管 BotBrowser 构建已经具备的功能、服务器和客户端分别负责什么，以及哪些能力仍然属于内部测试级别，还不是完整公开发行软件。
+这份文档梳理当前团队版自托管浏览器构建已经具备的功能、服务器和客户端分别负责什么，以及哪些能力仍然属于内部测试级别，还不是完整公开发行软件。
 
 ## 产品定位
 
@@ -13,7 +13,8 @@
 - 团队 profile 权威数据保存在自己的服务器。
 - 多个用户用团队账号登录。
 - 管理员管理用户、BotBrowser 模板、团队 profile、权限、锁和审计日志。
-- BotBrowser 作为默认 Chromium 指纹执行层。
+- Wayfern/Chromium 作为默认团队共享浏览器环境。
+- BotBrowser 作为高级 Chromium 指纹执行层保留。
 - Mac/Windows 桌面客户端在每个用户自己的电脑上运行浏览器进程。
 
 它不是：
@@ -23,6 +24,18 @@
 - 商业化托管 SaaS。
 - 已完整签名的公开发行桌面软件。
 - 同一个 profile 的实时多人协作编辑系统。
+
+## 三种浏览器环境和共享状态
+
+当前版本支持三类浏览器环境，但共享能力不同：
+
+| 环境 | engine/browser | 当前共享状态 | 备注 |
+| --- | --- | --- | --- |
+| Wayfern/Chromium | `wayfern` / `wayfern` | 默认支持，推荐团队日常使用 | self-hosted 登录后创建 Chromium profile 会自动注册 team profile，不需要 `.enc` 模板。 |
+| BotBrowser | `botbrowser` / `botbrowser` | 支持，但属于高级模式 | 需要 BotBrowser `.enc` 模板或本地 `.enc` 路径，并且每台客户端需要有效 executable path。 |
+| Camoufox/Firefox | `camoufox` / `camoufox` | 当前不开放成员一键共享启动 | 服务端 metadata 兼容保留，但不作为本轮团队共享验收路径。 |
+
+因此，用户创建和共享环境时应优先选择 `Chromium` / `Wayfern`。只有团队已经准备好 BotBrowser `.enc` 模板并且明确需要 BotBrowser 时，才选择 `BotBrowser`。不要把 Camoufox 当作当前版本的共享环境主路径。
 
 ## 服务端功能
 
@@ -163,7 +176,8 @@ GET  /v1/objects/subscribe
 - 如果配置了 Donut Cloud，仍然优先使用 Donut Cloud；否则使用 self-hosted JWT。
 - self-hosted 登录后 team key prefix 会解析成 `teams/{teamId}/`。
 - 原来的本地 profile 列表仍然保留。
-- BotBrowser 团队 profile 可以创建、加入本机、预检、启动、同步和分享。
+- Wayfern/Chromium 团队 profile 可以无模板创建、加入本机、预检、启动、同步和分享。
+- 高级 BotBrowser 团队 profile 可以在有 `.enc` 模板时创建、加入本机、预检、启动、同步和分享。
 
 当前团队模式 Tauri commands：
 

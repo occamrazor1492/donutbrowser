@@ -2,7 +2,7 @@
 
 Languages: [English](./team-current-feature-overview.md) | [中文](./team-current-feature-overview.zh.md)
 
-This document describes what the current team self-hosted BotBrowser build can do today, what runs on the server, what runs on each desktop client, and which parts are still internal-test level rather than polished product release.
+This document describes what the current team self-hosted browser build can do today, what runs on the server, what runs on each desktop client, and which parts are still internal-test level rather than polished product release.
 
 ## Product Position
 
@@ -13,7 +13,8 @@ It is designed for:
 - Team-owned profile data stored on your own server.
 - Multiple users logging in with team accounts.
 - Admin-managed users, BotBrowser templates, team profiles, permissions, locks, and audit logs.
-- BotBrowser as the default Chromium fingerprint execution layer.
+- Wayfern/Chromium as the default shared team browser environment.
+- BotBrowser retained as an advanced Chromium fingerprint execution layer.
 - Local Mac/Windows desktop clients running the browser process on each user's own machine.
 
 It is not designed as:
@@ -23,6 +24,18 @@ It is not designed as:
 - A commercial hosted SaaS.
 - A fully signed public desktop release.
 - A real-time multi-user editing system for one profile.
+
+## Three Browser Environments And Sharing Status
+
+The current version supports three browser environments, but their sharing support is different:
+
+| Environment | engine/browser | Current sharing status | Notes |
+| --- | --- | --- | --- |
+| Wayfern/Chromium | `wayfern` / `wayfern` | Default supported path, recommended for normal team use | Creating a Chromium profile while logged into self-hosted automatically registers a team profile. No `.enc` template is required. |
+| BotBrowser | `botbrowser` / `botbrowser` | Supported, but advanced | Requires a BotBrowser `.enc` template or local `.enc` path, and each client needs a valid executable path. |
+| Camoufox/Firefox | `camoufox` / `camoufox` | No member one-click shared launch yet | Server metadata compatibility is retained, but it is not the current shared-team acceptance path. |
+
+In practice, users should create and share `Chromium` / `Wayfern` environments first. Choose `BotBrowser` only when the team has prepared `.enc` templates and explicitly needs BotBrowser. Do not use Camoufox as the main shared environment path in this version.
 
 ## Server Features
 
