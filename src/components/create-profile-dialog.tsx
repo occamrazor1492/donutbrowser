@@ -665,10 +665,10 @@ export function CreateProfileDialog({
                           onClick={() => {
                             handleBrowserSelect("wayfern");
                           }}
-                          className="flex gap-3 justify-start items-center p-4 w-full h-16 border-2 transition-colors hover:border-primary/50"
+                          className="flex min-h-20 w-full items-start justify-start gap-3 border-2 p-4 text-left transition-colors hover:border-primary/50"
                           variant="outline"
                         >
-                          <div className="flex justify-center items-center w-8 h-8">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center">
                             {(() => {
                               const IconComponent = getBrowserIcon("wayfern");
                               return IconComponent ? (
@@ -676,52 +676,28 @@ export function CreateProfileDialog({
                               ) : null;
                             })()}
                           </div>
-                          <div className="text-left">
+                          <div className="space-y-1">
                             <div className="font-medium">
                               {t("createProfile.chromiumLabel")}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {t("createProfile.chromiumSubtitle")}
                             </div>
+                            <div className="text-xs text-muted-foreground">
+                              {t("createProfile.chromiumTeamSharing")}
+                            </div>
                           </div>
                         </Button>
-
-                        {selfHostedUser && (
-                          <Button
-                            onClick={() => {
-                              handleBrowserSelect("botbrowser");
-                            }}
-                            className="flex gap-3 justify-start items-center p-4 w-full h-16 border-2 transition-colors hover:border-primary/50"
-                            variant="outline"
-                          >
-                            <div className="flex justify-center items-center w-8 h-8">
-                              {(() => {
-                                const IconComponent = getBrowserIcon("wayfern");
-                                return IconComponent ? (
-                                  <IconComponent className="w-6 h-6" />
-                                ) : null;
-                              })()}
-                            </div>
-                            <div className="text-left">
-                              <div className="font-medium">
-                                {browserDisplayName("botbrowser")}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {t("createProfile.botbrowser.subtitle")}
-                              </div>
-                            </div>
-                          </Button>
-                        )}
 
                         {/* Camoufox (Firefox) - Second */}
                         <Button
                           onClick={() => {
                             handleBrowserSelect("camoufox");
                           }}
-                          className="flex gap-3 justify-start items-center p-4 w-full h-16 border-2 transition-colors hover:border-primary/50"
+                          className="flex min-h-20 w-full items-start justify-start gap-3 border-2 p-4 text-left transition-colors hover:border-primary/50"
                           variant="outline"
                         >
-                          <div className="flex justify-center items-center w-8 h-8">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center">
                             {(() => {
                               const IconComponent = getBrowserIcon("camoufox");
                               return IconComponent ? (
@@ -729,12 +705,15 @@ export function CreateProfileDialog({
                               ) : null;
                             })()}
                           </div>
-                          <div className="text-left">
+                          <div className="space-y-1">
                             <div className="font-medium">
                               {t("createProfile.firefoxLabel")}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {t("createProfile.firefoxSubtitle")}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {t("createProfile.firefoxTeamSharingUnavailable")}
                             </div>
                           </div>
                         </Button>

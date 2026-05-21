@@ -18,6 +18,7 @@ import {
   LuPuzzle,
   LuRefreshCw,
   LuSettings,
+  LuShare2,
   LuShield,
   LuShieldCheck,
   LuTrash2,
@@ -64,6 +65,7 @@ interface ProfileInfoDialogProps {
   onConfigureCamoufox?: (profile: BrowserProfile) => void;
   onCopyCookiesToProfile?: (profile: BrowserProfile) => void;
   onOpenCookieManagement?: (profile: BrowserProfile) => void;
+  onPublishTeamProfile?: (profile: BrowserProfile) => void;
   onAssignExtensionGroup?: (profileIds: string[]) => void;
   onOpenBypassRules?: (profile: BrowserProfile) => void;
   onOpenDnsBlocklist?: (profile: BrowserProfile) => void;
@@ -112,6 +114,7 @@ export function ProfileInfoDialog({
   onConfigureCamoufox,
   onCopyCookiesToProfile,
   onOpenCookieManagement,
+  onPublishTeamProfile,
   onAssignExtensionGroup,
   onOpenBypassRules,
   onOpenDnsBlocklist,
@@ -256,6 +259,19 @@ export function ProfileInfoDialog({
       },
       disabled: isCrossOs,
       hidden: profile.ephemeral === true,
+    },
+    {
+      icon: <LuShare2 className="w-4 h-4" />,
+      label: t("profiles.actions.shareToTeam"),
+      onClick: () => {
+        handleAction(() => onPublishTeamProfile?.(profile));
+      },
+      disabled: isDisabled,
+      runningBadge: isRunning,
+      hidden:
+        !onPublishTeamProfile ||
+        profile.ephemeral === true ||
+        !(profile.browser === "wayfern" || profile.engine === "wayfern"),
     },
     {
       icon: <LuGroup className="w-4 h-4" />,

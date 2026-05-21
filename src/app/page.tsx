@@ -29,9 +29,11 @@ import { ProfileSyncDialog } from "@/components/profile-sync-dialog";
 import { ProxyAssignmentDialog } from "@/components/proxy-assignment-dialog";
 import { ProxyManagementDialog } from "@/components/proxy-management-dialog";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { ShareProfileDialog } from "@/components/share-profile-dialog";
 import { SyncAllDialog } from "@/components/sync-all-dialog";
 import { SyncConfigDialog } from "@/components/sync-config-dialog";
 import { SyncFollowerDialog } from "@/components/sync-follower-dialog";
+import { TeamAdminDialog } from "@/components/team-admin-dialog";
 import { TeamProfilesDialog } from "@/components/team-profiles-dialog";
 import { WayfernTermsDialog } from "@/components/wayfern-terms-dialog";
 import { WindowResizeWarningDialog } from "@/components/window-resize-warning-dialog";
@@ -69,6 +71,17 @@ type BrowserTypeString = "botbrowser" | "camoufox" | "wayfern";
 interface PendingUrl {
   id: string;
   url: string;
+}
+
+interface SelfHostedAuthState {
+  server_url: string;
+  user: {
+    id: string;
+    email: string;
+    role: "admin" | "member";
+    teamId: string;
+    teamName?: string | null;
+  };
 }
 
 export default function Home() {
@@ -124,25 +137,37 @@ export default function Home() {
 
   const [selfHostedSyncConfigured, setSelfHostedSyncConfigured] =
     useState(false);
+  const [selfHostedUser, setSelfHostedUser] = useState<
+    SelfHostedAuthState["user"] | null
+  >(null);
 
   const checkSelfHostedSync = useCallback(async () => {
     try {
       const settings = await invoke<SyncSettings>("get_sync_settings");
+      const authState = await invoke<SelfHostedAuthState | null>(
+        "get_self_hosted_user",
+      );
       const hasConfig = Boolean(
         settings.sync_server_url && settings.sync_token,
       );
       setSelfHostedSyncConfigured(hasConfig && !cloudUser);
+      setSelfHostedUser(!cloudUser ? (authState?.user ?? null) : null);
     } catch {
       setSelfHostedSyncConfigured(false);
+      setSelfHostedUser(null);
     }
   }, [cloudUser]);
 
   const syncUnlocked = crossOsUnlocked || selfHostedSyncConfigured;
+  const showTeamMenu = Boolean(selfHostedUser) && !cloudUser;
+  const showTeamAdmin = selfHostedUser?.role === "admin" && !cloudUser;
 
   const [createProfileDialogOpen, setCreateProfileDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [integrationsDialogOpen, setIntegrationsDialogOpen] = useState(false);
   const [teamProfilesDialogOpen, setTeamProfilesDialogOpen] = useState(false);
+  const [teamAdminDialogOpen, setTeamAdminDialogOpen] = useState(false);
+  const [shareProfile, setShareProfile] = useState<BrowserProfile | null>(null);
   const [importProfileDialogOpen, setImportProfileDialogOpen] = useState(false);
   const [proxyManagementDialogOpen, setProxyManagementDialogOpen] =
     useState(false);
@@ -1128,8 +1153,11 @@ export default function Home() {
             onSyncConfigDialogOpen={setSyncConfigDialogOpen}
             onIntegrationsDialogOpen={setIntegrationsDialogOpen}
             onExtensionManagementDialogOpen={setExtensionManagementDialogOpen}
+            onTeamAdminDialogOpen={setTeamAdminDialogOpen}
             onTeamProfilesDialogOpen={setTeamProfilesDialogOpen}
-            showTeamProfiles={selfHostedSyncConfigured}
+            showTeamMenu={showTeamMenu}
+            showTeamAdmin={showTeamAdmin}
+            showExtensions={crossOsUnlocked}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
           />
@@ -1167,6 +1195,13 @@ export default function Home() {
             onAssignExtensionGroup={handleAssignExtensionGroup}
             onOpenProfileSyncDialog={handleOpenProfileSyncDialog}
             onToggleProfileSync={handleToggleProfileSync}
+            onPublishTeamProfile={
+              showTeamMenu
+                ? (profile) => {
+                    setShareProfile(profile);
+                  }
+                : undefined
+            }
             crossOsUnlocked={crossOsUnlocked}
             syncUnlocked={syncUnlocked}
             getProfileSyncInfo={getProfileSyncInfo}
@@ -1215,6 +1250,32 @@ export default function Home() {
           void checkSelfHostedSync();
         }}
         onLaunchProfile={launchProfile}
+      />
+
+      <TeamAdminDialog
+        isOpen={teamAdminDialogOpen}
+        onClose={() => {
+          setTeamAdminDialogOpen(false);
+        }}
+      />
+
+      <ShareProfileDialog
+        isOpen={shareProfile !== null}
+        profile={shareProfile}
+        onClose={() => {
+          setShareProfile(null);
+        }}
+        onPublished={() => {
+          void checkSelfHostedSync();
+          setShareProfile(null);
+        }}
+        onOpenTeamAdmin={
+          showTeamAdmin
+            ? () => {
+                setTeamAdminDialogOpen(true);
+              }
+            : undefined
+        }
       />
 
       <ImportProfileDialog

@@ -1,8 +1,10 @@
+#[cfg(test)]
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use chrono::{DateTime, Utc};
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+#[cfg(test)]
 use std::path::Path;
 use uuid::Uuid;
 
@@ -49,15 +51,6 @@ pub struct TeamUserUpdateInput {
 pub struct TeamPermissionInput {
   pub user_id: String,
   pub permission: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TeamBotProfileUploadInput {
-  pub name: String,
-  pub file_path: String,
-  pub browser_major_version: Option<String>,
-  pub platform: Option<String>,
 }
 
 struct TeamAuth {
@@ -222,6 +215,10 @@ fn is_supported_team_launch_engine(engine: &str) -> bool {
   matches!(engine, "wayfern" | "botbrowser")
 }
 
+fn is_wayfern_profile(profile: &BrowserProfile) -> bool {
+  profile.browser == "wayfern" || profile.engine.as_deref() == Some("wayfern")
+}
+
 fn is_locked_by_another(
   profile: &TeamProfileRecord,
   user: &crate::self_hosted_auth::SelfHostedUser,
@@ -381,6 +378,27 @@ pub fn build_materialized_team_profile(
   }
 }
 
+pub fn prepare_wayfern_profile_for_team_publish(
+  mut profile: BrowserProfile,
+) -> Result<BrowserProfile, String> {
+  if !is_wayfern_profile(&profile) {
+    return Err("Only Wayfern/Chromium profiles can be shared with the team".to_string());
+  }
+  if profile.ephemeral {
+    return Err("Ephemeral profiles cannot be shared with the team".to_string());
+  }
+
+  profile.browser = "wayfern".to_string();
+  profile.engine = Some("wayfern".to_string());
+  profile.sync_mode = SyncMode::Regular;
+  profile.host_os.get_or_insert_with(get_host_os);
+  profile.process_id = None;
+  profile.camoufox_config = None;
+  profile.botbrowser_config = None;
+
+  Ok(profile)
+}
+
 fn audit_query_path(
   limit: Option<u32>,
   action: Option<String>,
@@ -445,6 +463,7 @@ pub fn format_team_api_error(status: StatusCode, body: &str) -> String {
   }
 }
 
+#[cfg(test)]
 pub fn encode_file_base64(path: &Path) -> Result<String, String> {
   let bytes = std::fs::read(path).map_err(|e| {
     format!(
@@ -583,40 +602,6 @@ pub async fn team_list_bot_profiles(app_handle: tauri::AppHandle) -> Result<Valu
 }
 
 #[tauri::command]
-pub async fn team_upload_bot_profile_asset(
-  app_handle: tauri::AppHandle,
-  input: TeamBotProfileUploadInput,
-) -> Result<Value, String> {
-  let content_base64 = encode_file_base64(Path::new(&input.file_path))?;
-  team_request(
-    &app_handle,
-    Method::POST,
-    "admin/bot-profiles",
-    Some(json!({
-      "name": input.name,
-      "contentBase64": content_base64,
-      "browserMajorVersion": input.browser_major_version,
-      "platform": input.platform,
-    })),
-  )
-  .await
-}
-
-#[tauri::command]
-pub async fn team_delete_bot_profile_asset(
-  app_handle: tauri::AppHandle,
-  asset_id: String,
-) -> Result<Value, String> {
-  team_request(
-    &app_handle,
-    Method::DELETE,
-    &format!("admin/bot-profiles/{asset_id}"),
-    None,
-  )
-  .await
-}
-
-#[tauri::command]
 pub async fn team_list_profiles(app_handle: tauri::AppHandle) -> Result<Value, String> {
   team_request(&app_handle, Method::GET, "team-profiles", None).await
 }
@@ -685,6 +670,50 @@ pub async fn team_materialize_profile(
   }
   if let Err(e) = crate::events::emit_empty("profiles-changed") {
     log::warn!("Failed to emit profiles-changed after materializing profile: {e}");
+  }
+
+  Ok(profile)
+}
+
+#[tauri::command]
+pub async fn team_publish_wayfern_profile(
+  app_handle: tauri::AppHandle,
+  profile_id: String,
+) -> Result<BrowserProfile, String> {
+  crate::self_hosted_auth::cached_user()
+    .ok_or_else(|| "Self-hosted user is not logged in".to_string())?;
+
+  let profile_uuid =
+    Uuid::parse_str(&profile_id).map_err(|e| format!("Invalid profile id {profile_id}: {e}"))?;
+  let manager = crate::profile::manager::ProfileManager::instance();
+  let profile = manager
+    .list_profiles()
+    .map_err(|e| format!("Failed to list local profiles: {e}"))?
+    .into_iter()
+    .find(|profile| profile.id == profile_uuid)
+    .ok_or_else(|| "Local profile was not found".to_string())?;
+
+  let is_running = manager
+    .check_browser_status(app_handle.clone(), &profile)
+    .await
+    .map_err(|e| format!("Failed to check whether the profile is running: {e}"))?;
+  if is_running {
+    return Err("Close this profile before sharing it with the team".to_string());
+  }
+
+  let profile = prepare_wayfern_profile_for_team_publish(profile)?;
+
+  manager
+    .save_profile(&profile)
+    .map_err(|e| format!("Failed to save team sharing settings locally: {e}"))?;
+
+  initialize_shared_team_profile(&app_handle, &profile).await?;
+
+  if let Err(e) = crate::events::emit("profile-updated", &profile) {
+    log::warn!("Failed to emit published profile update: {e}");
+  }
+  if let Err(e) = crate::events::emit_empty("profiles-changed") {
+    log::warn!("Failed to emit profiles-changed after publishing team profile: {e}");
   }
 
   Ok(profile)
@@ -1184,6 +1213,46 @@ mod tests {
     assert_eq!(profile.version, "120.0.0");
     assert_eq!(profile.sync_mode, SyncMode::Regular);
     assert!(profile.botbrowser_config.is_none());
+  }
+
+  #[test]
+  fn prepares_wayfern_profile_for_team_publish() {
+    let profile = BrowserProfile {
+      id: Uuid::new_v4(),
+      name: "Local Chromium".to_string(),
+      browser: "wayfern".to_string(),
+      engine: Some("wayfern".to_string()),
+      version: "120.0.0".to_string(),
+      release_type: "stable".to_string(),
+      sync_mode: SyncMode::Disabled,
+      process_id: Some(123),
+      botbrowser_config: Some(BotBrowserConfig::default()),
+      ..BrowserProfile::default()
+    };
+
+    let profile = prepare_wayfern_profile_for_team_publish(profile).expect("prepared");
+
+    assert_eq!(profile.browser, "wayfern");
+    assert_eq!(profile.engine.as_deref(), Some("wayfern"));
+    assert_eq!(profile.sync_mode, SyncMode::Regular);
+    assert!(profile.host_os.is_some());
+    assert!(profile.process_id.is_none());
+    assert!(profile.botbrowser_config.is_none());
+  }
+
+  #[test]
+  fn rejects_non_wayfern_team_publish() {
+    let profile = BrowserProfile {
+      id: Uuid::new_v4(),
+      name: "Firefox".to_string(),
+      browser: "camoufox".to_string(),
+      engine: Some("camoufox".to_string()),
+      ..BrowserProfile::default()
+    };
+
+    let error = prepare_wayfern_profile_for_team_publish(profile).expect_err("rejected");
+
+    assert!(error.contains("Only Wayfern"));
   }
 
   #[test]

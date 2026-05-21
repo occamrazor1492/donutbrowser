@@ -44,18 +44,17 @@ pnpm test
 | 认证 | 管理员登录和 `/v1/me` | JWT 可用，并返回 `mode: "team"` |
 | 用户 | 管理员创建 A/B/C 用户并查看列表 | 新用户出现在管理员用户列表中 |
 | 管理权限 | 普通成员访问 admin 用户列表 | 请求返回 403 |
-| BotBrowser assets | 管理员上传 `.enc` bytes 并查看 asset 列表 | asset 存储到 `teams/{teamId}/bot_profiles/{id}.enc`，用于高级 BotBrowser profile |
+| BotBrowser assets | 管理员通过兼容 API 上传 `.enc` bytes 并查看 asset 列表 | asset 存储到 `teams/{teamId}/bot_profiles/{id}.enc`，用于历史或高级 BotBrowser 记录 |
 | Chromium profile 创建 | 成员 A 在 self-hosted 登录状态下创建 Wayfern/Chromium profile | profile engine 为 `wayfern`，sync mode 为 `Regular`，A 自动获得 owner 权限，初始 metadata/manifest 已上传 |
-| BotBrowser profile 创建 | 成员 A 创建引用 asset 的高级 BotBrowser profile | profile engine 为 `botbrowser`，A 自动获得 owner 权限 |
+| Chromium 共享动作 | 成员 A 对已有本地 Wayfern profile 点击 `共享到团队` | profile 注册成 team profile，sync mode 变为 `Regular`，当前本地状态已上传 |
 | Asset 引用 | 管理员删除仍被 live profile 引用的模板 | 请求返回 409 |
 | 隔离性 | 未共享的 B list/get/download/upload/lock A 的 profile | profile 被隐藏或请求返回 403 |
-| Viewer | 管理员给 B viewer 权限 | B 能读 profile metadata 和下载 `.enc`，但不能上传或加锁 |
+| Viewer | 管理员给 B viewer 权限 | B 能读 profile metadata，但不能上传、加锁、加入为可启动 profile 或启动 |
 | 共享列表 | 管理员给 B editor 权限 | B 的 `team_list_profiles` 结果包含该共享 profile |
 | 本地加入 Chromium | B 把共享 Wayfern/Chromium profile 加入本机 | 本地 `BrowserProfile` 使用团队 profile id、`engine: "wayfern"`、browser `wayfern` 和 sync mode `Regular` |
-| 本地加入 BotBrowser | B 把共享 BotBrowser profile 加入本机 | 本地 `BrowserProfile` 使用团队 profile id、`engine: "botbrowser"`、sync mode `Regular` 和已选模板 id |
 | 重复加入 | B 再次加入同一个共享 profile | 更新已有本地 profile metadata，不创建重复 profile |
 | 预检权限 | Viewer 运行共享 profile 预检 | 权限检查失败，并返回可读结果 |
-| 预检运行时/资源 | Editor 在缺浏览器运行时或缺 BotBrowser `.enc` 时运行预检 | 失败项明确指出缺运行时或模板 |
+| 预检运行时 | Editor 在缺 Chromium 运行时时运行预检 | 失败项明确指出缺运行时 |
 | Asset 权限 | Viewer 尝试上传 `bot_profiles/*.enc` | 请求返回 403 |
 | Lock gate | Editor B 未持有 lock 时上传 | upload presign 返回 403 |
 | Editor sync | Editor B 获取 lock 后通过 presigned URL 上传 metadata | 上传成功，`stat` 能看到对象 |
@@ -71,21 +70,19 @@ pnpm test
 
 ## 手动桌面验收
 
-这些用例需要真实 Donut Desktop。默认 Chromium 流程不需要 `.enc` 文件；BotBrowser 专项用例需要真实 BotBrowser 兼容 `.enc` 文件。
+这些用例需要真实 Donut Desktop。默认 Chromium 流程不需要 `.enc` 文件；BotBrowser 专项用例在本 MVP 中只作为兼容项。
 
 | 模块 | 用例 | 预期结果 |
 | --- | --- | --- |
 | 桌面登录 | 打开 Donut，配置 self-hosted URL、email、password | 重启应用后登录状态仍然存在 |
-| Team Admin UI | 管理员打开 Sync settings 并点击团队管理 | 可在桌面端管理用户、模板、profile、权限、lock 和审计日志 |
-| Shared Profiles UI | B 打开顶部菜单并点击共享 Profiles | B 能看到所有授权给自己的 profile，以及权限、engine、模板、lock 和本地状态 |
+| Team Admin UI | 管理员打开主界面 Team 菜单并点击团队管理 | 可在桌面端管理用户、Wayfern profile、权限、lock 和审计日志 |
+| 共享动作 | A 对本地 Wayfern profile 点击共享到团队 | 发布弹窗说明服务器权威源，sync 被启用，profile 出现在团队管理里 |
+| Shared Profiles UI | B 打开 Team → 共享 Profiles | B 能看到所有授权给自己的 profile，以及权限、engine、lock 和本地状态 |
 | 加入 Chromium 共享 profile | B 对 Wayfern/Chromium profile 点击加入本机 | 本地主列表出现该 profile，保持相同 profile id，并使用 sync mode `Regular` |
-| 加入 BotBrowser 共享 profile | B 对 BotBrowser profile 点击加入本机 | 本地主列表出现该 profile，并保持相同 profile id/template id |
-| 不支持 engine | B 看到 Camoufox 团队 profile | UI 显示当前不支持一键启动 |
+| 不支持 engine | B 看到 BotBrowser 或 Camoufox 团队 profile | UI 显示当前不支持一键启动 |
 | 预检 UI | 在共享 Profiles 里运行预检 | 登录、权限、浏览器运行时/指纹数据和 lock 检查都有可读 pass/fail 文案 |
-| BotBrowser 路径 | 选择或自动探测 BotBrowser/Chromium 可执行文件 | 启动 profile 时不再重复询问 |
 | Chromium profile 创建 | self-hosted 登录后创建 Wayfern/Chromium profile | profile 不需要选择模板，出现在本地列表和团队列表中 |
-| BotBrowser profile 创建 | 创建 BotBrowser profile 并绑定已上传 `.enc` asset | profile 出现在本地列表和团队列表中 |
-| 启动参数 | 启动 profile | 进程包含 `--bot-profile`、`--user-data-dir`、`--remote-debugging-port`、`--disable-blink-features=AutomationControlled` |
+| 启动参数 | 启动共享 Wayfern profile | 进程使用共享本地 profile data dir 和正常 Wayfern Chromium 启动参数 |
 | Lock UI | A 启动 profile，B 同时启动同一个 profile | B 看到冲突并无法启动 |
 | 状态同步 | A 登录测试网站后关闭浏览器，B 在 unlock 后启动 | B 能看到 A 保留的登录状态 |
 | 关闭稳定等待 | A 写入 cookie/local storage 后关闭共享 Chromium/BotBrowser profile | Donut 等待 profile 文件稳定后上传；超时会记录 warning，但仍尝试同步 |

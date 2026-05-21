@@ -12,9 +12,9 @@ It is designed for:
 
 - Team-owned profile data stored on your own server.
 - Multiple users logging in with team accounts.
-- Admin-managed users, BotBrowser templates, team profiles, permissions, locks, and audit logs.
+- Admin-managed users, shared Chromium profiles, permissions, locks, and audit logs.
 - Wayfern/Chromium as the default shared team browser environment.
-- BotBrowser retained as an advanced Chromium fingerprint execution layer.
+- BotBrowser retained only as compatibility data and an advanced engine outside the current team MVP path.
 - Local Mac/Windows desktop clients running the browser process on each user's own machine.
 
 It is not designed as:
@@ -31,11 +31,11 @@ The current version supports three browser environments, but their sharing suppo
 
 | Environment | engine/browser | Current sharing status | Notes |
 | --- | --- | --- | --- |
-| Wayfern/Chromium | `wayfern` / `wayfern` | Default supported path, recommended for normal team use | Creating a Chromium profile while logged into self-hosted automatically registers a team profile. No `.enc` template is required. |
-| BotBrowser | `botbrowser` / `botbrowser` | Supported, but advanced | Requires a BotBrowser `.enc` template or local `.enc` path, and each client needs a valid executable path. |
+| Wayfern/Chromium | `wayfern` / `wayfern` | Default supported path, recommended for normal team use | Create locally, then use `Share to Team` or the existing self-hosted sync flow to register and upload it. No `.enc` template is required. |
+| BotBrowser | `botbrowser` / `botbrowser` | Compatibility only in the current client MVP | Existing server records and `.enc` assets are retained, but the normal client sharing flow does not ask members to import templates. |
 | Camoufox/Firefox | `camoufox` / `camoufox` | No member one-click shared launch yet | Server metadata compatibility is retained, but it is not the current shared-team acceptance path. |
 
-In practice, users should create and share `Chromium` / `Wayfern` environments first. Choose `BotBrowser` only when the team has prepared `.enc` templates and explicitly needs BotBrowser. Do not use Camoufox as the main shared environment path in this version.
+In practice, users should create and share `Chromium` / `Wayfern` environments first. BotBrowser and Camoufox data is kept for compatibility, but neither is the primary shared team workflow in this version.
 
 ## Server Features
 
@@ -86,7 +86,7 @@ Current roles:
 
 | Role | Meaning |
 | --- | --- |
-| `admin` | Can manage team users, BotBrowser templates, profiles, permissions, locks, and audit logs. |
+| `admin` | Can manage team users, shared Chromium profiles, permissions, locks, and audit logs. |
 | `member` | Can use profiles they own or have been granted access to. |
 
 Current profile permissions:
@@ -176,8 +176,8 @@ Current desktop features:
 - `Donut Cloud` remains first priority when configured; otherwise self-hosted JWT mode is used.
 - Team key prefix resolves to `teams/{teamId}/` after self-hosted login.
 - Existing local profile list remains available.
-- Wayfern/Chromium team profiles can be created without a template, added to local, preflighted, launched, synced, and shared.
-- Advanced BotBrowser team profiles can still be created with `.enc` templates for teams that need that engine.
+- Wayfern/Chromium team profiles can be created without a template, published with `Share to Team`, added to local, preflighted, launched, synced, and shared.
+- BotBrowser/Camoufox records remain compatible server data, but the current desktop sharing flow is Wayfern-first.
 
 Current Tauri commands for team mode:
 
@@ -187,8 +187,6 @@ team_create_user
 team_update_user
 
 team_list_bot_profiles
-team_upload_bot_profile_asset
-team_delete_bot_profile_asset
 
 team_list_profiles
 team_create_profile
@@ -201,6 +199,7 @@ team_unlock_profile
 
 team_list_audit_logs
 team_materialize_profile
+team_publish_wayfern_profile
 team_preflight_botbrowser_profile
 ```
 
@@ -212,8 +211,7 @@ Current error mapping:
 - Lock conflict.
 - Team API not reachable.
 - S3 or presigned URL failure.
-- Missing BotBrowser executable.
-- Missing or unavailable `.enc` template.
+- Missing Wayfern/Chromium runtime.
 
 ## Admin UI Features
 
@@ -233,8 +231,7 @@ Current `Team Admin` tabs:
 | Tab | Current abilities |
 | --- | --- |
 | Users | List users, create users, reset password, switch `admin` or `member`, disable or enable users. |
-| BotBrowser Templates | Upload `.enc` templates, list templates, delete templates when unused. |
-| Profiles | List team profiles, edit name, edit engine/template, delete profiles, assign permissions, remove permissions, force unlock. |
+| Profiles | List Wayfern/Chromium team profiles, edit names, delete profiles, assign permissions, remove permissions, and force unlock. |
 | Audit Logs | View recent logs, filter by action, target type, target id, and user. |
 
 All user-facing admin UI copy goes through the translation system and is present in all seven locale files.
@@ -255,11 +252,10 @@ Current member flow:
 
 1. Login to the same self-hosted server.
 2. Open `Shared Profiles`.
-3. See shared team profiles and their permission, engine, template, lock state, and local status.
+3. See shared team profiles and their permission, engine, lock state, and local status.
 4. For Wayfern/Chromium profiles, click `Add to local` to download the server profile metadata and state.
-5. For advanced BotBrowser profiles, optionally enter a local BotBrowser or Chromium executable path.
-6. Run `Preflight`.
-7. Click `Launch` after checks pass.
+5. Run `Preflight`.
+6. Click `Launch` after checks pass.
 
 Current materialization behavior:
 
@@ -267,66 +263,30 @@ Current materialization behavior:
 - The local profile keeps the same id as the team profile.
 - Re-adding the same shared profile updates local metadata instead of creating a duplicate.
 - Wayfern/Chromium profiles download their server metadata/profile state and use `engine: "wayfern"`, `browser: "wayfern"`, and `sync_mode: "Regular"`.
-- BotBrowser profiles use `engine: "botbrowser"`, `browser: "botbrowser"`, `sync_mode: "Regular"`, and the server template id.
-
 Current limitation:
 
-- The member one-click shared profile launcher supports Wayfern/Chromium and advanced BotBrowser profiles.
-- Camoufox team profile records remain compatible server data, but one-click member launch is intentionally disabled in this version.
+- The member one-click shared profile launcher supports Wayfern/Chromium profiles.
+- BotBrowser and Camoufox team profile records remain compatible server data, but one-click member launch is intentionally disabled in this version.
 
 ## Shared Chromium Execution Features
 
-Wayfern/Chromium is the default team execution engine for this MVP. When a self-hosted user creates a Wayfern profile, Donut registers it as a team profile, enables `Regular` sync, uploads the initial metadata/manifest under the team prefix, and then uses locks for every launch/write cycle.
+Wayfern/Chromium is the default team execution engine for this MVP. A user can create a local Wayfern profile and click `Share to Team` from the main profile list or profile info actions. Donut then registers it as a team profile, enables `Regular` sync, uploads the current metadata/manifest under the team prefix, and uses locks for every launch/write cycle.
 
-BotBrowser remains available as an advanced engine for teams that already have `.enc` fingerprint templates.
-
-Current BotBrowser profile fields:
-
-```ts
-engine: "botbrowser";
-browser: "botbrowser";
-botbrowser_config: {
-  executable_path?: string;
-  bot_profile_asset_id?: string;
-  bot_profile_path?: string;
-  extra_args?: string[];
-  locale?: string;
-  timezone?: string;
-  languages?: string;
-  noise_seed?: number;
-  local_dns?: boolean;
-  port_protection?: boolean;
-};
-```
-
-Current launch arguments include:
+Current shared Wayfern behavior:
 
 ```text
---user-data-dir={localProfileDir}
---bot-profile={localEncPath}
---remote-debugging-address=127.0.0.1
---remote-debugging-port={port}
---disable-blink-features=AutomationControlled
---no-first-run
---restore-last-session
---proxy-server={proxyUrl}
---bot-title={profile.name}
+local Wayfern profile
+-> Share to Team
+-> register TeamProfile(engine=wayfern)
+-> acquire lock
+-> upload current profile state
+-> release lock
+-> members join from Shared Profiles
 ```
-
-Current executable behavior:
-
-- macOS auto-detects common Chromium locations such as `/Applications/Chromium.app/Contents/MacOS/Chromium`.
-- Windows users can provide an executable path in the UI.
-- Linux/server-worker launch is not the target of this MVP.
-
-Current proxy behavior:
-
-- Donut proxy settings are converted into BotBrowser `--proxy-server=scheme://user:pass@host:port`.
-- HTTP, SOCKS5, and SOCKS5H are covered in the test plan.
 
 ## Preflight Features
 
-Before launching a shared profile, the client runs `team_preflight_botbrowser_profile(profileId)`. The command name is kept for compatibility, but the checks now cover both Wayfern/Chromium and BotBrowser profiles.
+Before launching a shared profile, the client runs `team_preflight_botbrowser_profile(profileId)`. The command name is kept for compatibility, but the current client MVP treats Wayfern/Chromium as the only launchable shared engine.
 
 Current checks:
 
@@ -334,8 +294,8 @@ Current checks:
 | --- | --- |
 | Self-hosted login | The user is logged into the self-hosted server. |
 | Permission | The user is `admin`, `owner`, or `editor`. |
-| Browser runtime | The Wayfern/Chromium runtime is available, or the BotBrowser executable path is valid. |
-| Fingerprint data | Wayfern/Chromium has synced fingerprint metadata; BotBrowser has a local or downloadable `.enc` template. |
+| Browser runtime | The Wayfern/Chromium runtime is available. |
+| Fingerprint data | Wayfern/Chromium has synced fingerprint metadata and does not need a `.enc` template. |
 | Lock | The profile is not locked by another user. |
 
 The UI shows readable pass or fail results before launch.
@@ -351,8 +311,7 @@ User clicks launch
 Client checks permission
 Client acquires profile lock
 Client downloads latest profile state
-Client downloads BotBrowser .enc template if missing
-Client launches BotBrowser or Chromium
+Client launches Chromium/Wayfern
 Client sends lock heartbeat while browser is running
 Browser exits
 Client waits for profile files to become stable
@@ -370,7 +329,7 @@ Current lock behavior:
 
 Current close-sync behavior:
 
-- After BotBrowser exits, the client waits for profile files to stabilize before upload.
+- After Wayfern exits, the client waits for profile files to stabilize before upload.
 - Stability means two consecutive samples of file size and modified time do not change.
 - The wait covers common Chromium storage files, including SQLite/WAL, LocalStorage, Cookies, and related profile files.
 - Maximum wait is 5 seconds.

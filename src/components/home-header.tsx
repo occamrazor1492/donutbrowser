@@ -8,7 +8,7 @@ import {
   LuPlug,
   LuPuzzle,
   LuSearch,
-  LuServer,
+  LuShare2,
   LuUsers,
   LuX,
 } from "react-icons/lu";
@@ -176,8 +176,11 @@ interface Props {
   onSyncConfigDialogOpen: (open: boolean) => void;
   onIntegrationsDialogOpen: (open: boolean) => void;
   onExtensionManagementDialogOpen: (open: boolean) => void;
+  onTeamAdminDialogOpen: (open: boolean) => void;
   onTeamProfilesDialogOpen: (open: boolean) => void;
-  showTeamProfiles: boolean;
+  showTeamMenu: boolean;
+  showTeamAdmin: boolean;
+  showExtensions: boolean;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
 }
@@ -191,8 +194,11 @@ const HomeHeader = ({
   onSyncConfigDialogOpen,
   onIntegrationsDialogOpen,
   onExtensionManagementDialogOpen,
+  onTeamAdminDialogOpen,
   onTeamProfilesDialogOpen,
-  showTeamProfiles,
+  showTeamMenu,
+  showTeamAdmin,
+  showExtensions,
   searchQuery,
   onSearchQueryChange,
 }: Props) => {
@@ -268,6 +274,40 @@ const HomeHeader = ({
             </button>
           )}
         </div>
+        {showTeamMenu && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex h-[36px] items-center gap-2 border-foreground/20 hover:text-foreground"
+              >
+                <LuUsers className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("header.team")}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {showTeamAdmin && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    onTeamAdminDialogOpen(true);
+                  }}
+                >
+                  <LuUsers className="mr-2 h-4 w-4" />
+                  {t("header.menu.teamAdmin")}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={() => {
+                  onTeamProfilesDialogOpen(true);
+                }}
+              >
+                <LuShare2 className="mr-2 h-4 w-4" />
+                {t("header.menu.teamProfiles")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <span>
@@ -312,14 +352,16 @@ const HomeHeader = ({
               <LuUsers className="mr-2 w-4 h-4" />
               {t("header.menu.groups")}
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                onExtensionManagementDialogOpen(true);
-              }}
-            >
-              <LuPuzzle className="mr-2 w-4 h-4" />
-              {t("header.menu.extensions")}
-            </DropdownMenuItem>
+            {showExtensions && (
+              <DropdownMenuItem
+                onClick={() => {
+                  onExtensionManagementDialogOpen(true);
+                }}
+              >
+                <LuPuzzle className="mr-2 w-4 h-4" />
+                {t("header.menu.extensions")}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={() => {
                 onSyncConfigDialogOpen(true);
@@ -328,16 +370,6 @@ const HomeHeader = ({
               <LuCloud className="mr-2 w-4 h-4" />
               {t("header.menu.syncService")}
             </DropdownMenuItem>
-            {showTeamProfiles && (
-              <DropdownMenuItem
-                onClick={() => {
-                  onTeamProfilesDialogOpen(true);
-                }}
-              >
-                <LuServer className="mr-2 w-4 h-4" />
-                {t("header.menu.teamProfiles")}
-              </DropdownMenuItem>
-            )}
             <DropdownMenuItem
               onClick={() => {
                 onIntegrationsDialogOpen(true);

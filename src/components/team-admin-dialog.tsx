@@ -1,7 +1,6 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,7 +9,6 @@ import {
   LuRefreshCw,
   LuSave,
   LuTrash2,
-  LuUpload,
 } from "react-icons/lu";
 import { LoadingButton } from "@/components/loading-button";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +35,6 @@ import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import type {
   SelfHostedTeamUser,
   TeamAuditLog,
-  TeamBotProfileAsset,
   TeamProfilePermissionLevel,
   TeamProfileRecord,
 } from "@/types";
@@ -49,19 +46,12 @@ interface TeamAdminDialogProps {
 
 interface ProfileEditState {
   name: string;
-  engine: "botbrowser" | "wayfern" | "camoufox";
-  botProfileAssetId: string;
 }
 
-const NO_ASSET = "__none__";
 const ALL_USERS = "__all__";
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
-}
-
-function isAssetUsed(assetId: string, profiles: TeamProfileRecord[]) {
-  return profiles.some((profile) => profile.botProfileAssetId === assetId);
 }
 
 export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
@@ -70,7 +60,6 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [users, setUsers] = useState<SelfHostedTeamUser[]>([]);
-  const [assets, setAssets] = useState<TeamBotProfileAsset[]>([]);
   const [profiles, setProfiles] = useState<TeamProfileRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<TeamAuditLog[]>([]);
 
@@ -81,16 +70,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
     {},
   );
 
-  const [assetName, setAssetName] = useState("");
-  const [assetFilePath, setAssetFilePath] = useState("");
-  const [assetBrowserVersion, setAssetBrowserVersion] = useState("");
-  const [assetPlatform, setAssetPlatform] = useState("");
-
   const [profileName, setProfileName] = useState("");
-  const [profileEngine, setProfileEngine] = useState<
-    "botbrowser" | "wayfern" | "camoufox"
-  >("wayfern");
-  const [profileAssetId, setProfileAssetId] = useState(NO_ASSET);
   const [profileEdits, setProfileEdits] = useState<
     Record<string, ProfileEditState>
   >({});
@@ -110,17 +90,14 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
     () => users.filter((user) => !user.disabledAt),
     [users],
   );
+  const wayfernProfiles = useMemo(
+    () => profiles.filter((profile) => profile.engine === "wayfern"),
+    [profiles],
+  );
 
   const loadUsers = useCallback(async () => {
     const result = await invoke<SelfHostedTeamUser[]>("team_list_users");
     setUsers(result);
-  }, []);
-
-  const loadAssets = useCallback(async () => {
-    const result = await invoke<TeamBotProfileAsset[]>(
-      "team_list_bot_profiles",
-    );
-    setAssets(result);
   }, []);
 
   const loadProfiles = useCallback(async () => {
@@ -132,8 +109,6 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
           profile.id,
           {
             name: profile.name,
-            engine: profile.engine,
-            botProfileAssetId: profile.botProfileAssetId ?? NO_ASSET,
           },
         ]),
       ),
@@ -154,14 +129,14 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
   const loadAll = useCallback(async () => {
     setIsLoading(true);
     try {
-      await Promise.all([loadUsers(), loadAssets(), loadProfiles()]);
+      await Promise.all([loadUsers(), loadProfiles()]);
       await loadAuditLogs();
     } catch (error) {
       showErrorToast(errorMessage(error));
     } finally {
       setIsLoading(false);
     }
-  }, [loadAuditLogs, loadAssets, loadProfiles, loadUsers]);
+  }, [loadAuditLogs, loadProfiles, loadUsers]);
 
   useEffect(() => {
     if (isOpen) {
@@ -211,67 +186,6 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
     }
   };
 
-  const pickAssetFile = async () => {
-    try {
-      const selected = await open({
-        multiple: false,
-        directory: false,
-        filters: [
-          { name: t("sync.teamAdmin.assets.encFile"), extensions: ["enc"] },
-        ],
-      });
-      if (typeof selected === "string") {
-        setAssetFilePath(selected);
-        if (!assetName) {
-          setAssetName(selected.split(/[\\/]/).pop() ?? "");
-        }
-      }
-    } catch (error) {
-      showErrorToast(errorMessage(error));
-    }
-  };
-
-  const uploadAsset = async () => {
-    if (!assetName.trim() || !assetFilePath.trim()) return;
-    setIsSaving(true);
-    try {
-      await invoke("team_upload_bot_profile_asset", {
-        input: {
-          name: assetName.trim(),
-          filePath: assetFilePath,
-          browserMajorVersion: assetBrowserVersion.trim() || null,
-          platform: assetPlatform.trim() || null,
-        },
-      });
-      setAssetName("");
-      setAssetFilePath("");
-      setAssetBrowserVersion("");
-      setAssetPlatform("");
-      await loadAssets();
-      await loadAuditLogs();
-      showSuccessToast(t("sync.teamAdmin.toasts.assetUploaded"));
-    } catch (error) {
-      showErrorToast(errorMessage(error));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const deleteAsset = async (asset: TeamBotProfileAsset) => {
-    if (!window.confirm(t("sync.teamAdmin.assets.deleteConfirm"))) return;
-    setIsSaving(true);
-    try {
-      await invoke("team_delete_bot_profile_asset", { assetId: asset.id });
-      await loadAssets();
-      await loadAuditLogs();
-      showSuccessToast(t("sync.teamAdmin.toasts.assetDeleted"));
-    } catch (error) {
-      showErrorToast(errorMessage(error));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const createProfile = async () => {
     if (!profileName.trim()) return;
     setIsSaving(true);
@@ -279,17 +193,12 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
       await invoke("team_create_profile", {
         input: {
           name: profileName.trim(),
-          engine: profileEngine,
-          botProfileAssetId:
-            profileEngine === "botbrowser" && profileAssetId !== NO_ASSET
-              ? profileAssetId
-              : null,
+          engine: "wayfern",
+          botProfileAssetId: null,
           syncMode: "Regular",
         },
       });
       setProfileName("");
-      setProfileEngine("wayfern");
-      setProfileAssetId(NO_ASSET);
       await loadProfiles();
       await loadAuditLogs();
       showSuccessToast(t("sync.teamAdmin.toasts.profileCreated"));
@@ -309,11 +218,8 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
         profileId: profile.id,
         input: {
           name: edit.name.trim(),
-          engine: edit.engine,
-          botProfileAssetId:
-            edit.engine === "botbrowser" && edit.botProfileAssetId !== NO_ASSET
-              ? edit.botProfileAssetId
-              : null,
+          engine: "wayfern",
+          botProfileAssetId: null,
           syncMode: profile.syncMode,
         },
       });
@@ -398,7 +304,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[min(calc(100vw-2rem),1280px)] flex-col overflow-hidden">
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] w-[min(calc(100vw-2rem),1280px)] max-w-[min(calc(100vw-2rem),1280px)] flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle>{t("sync.teamAdmin.title")}</DialogTitle>
           <DialogDescription>
@@ -423,12 +329,9 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
           onValueChange={setActiveTab}
           className="flex min-h-0 flex-1 flex-col"
         >
-          <TabsList className="grid w-full shrink-0 grid-cols-4">
+          <TabsList className="grid w-full shrink-0 grid-cols-3">
             <TabsTrigger value="users">
               {t("sync.teamAdmin.tabs.users")}
-            </TabsTrigger>
-            <TabsTrigger value="assets">
-              {t("sync.teamAdmin.tabs.assets")}
             </TabsTrigger>
             <TabsTrigger value="profiles">
               {t("sync.teamAdmin.tabs.profiles")}
@@ -440,7 +343,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
 
           <ScrollArea className="mt-4 min-h-0 flex-1 pr-3">
             <TabsContent value="users" className="mt-0 space-y-4">
-              <div className="grid gap-3 md:grid-cols-[1fr_1fr_140px_auto]">
+              <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_140px_auto]">
                 <div className="space-y-2">
                   <Label>{t("sync.email")}</Label>
                   <Input
@@ -481,6 +384,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                 </div>
                 <div className="flex items-end">
                   <LoadingButton
+                    className="w-full lg:w-auto"
                     onClick={() => void createUser()}
                     isLoading={isSaving}
                     disabled={!newUserEmail.trim() || !newUserPassword.trim()}
@@ -598,119 +502,8 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
               </div>
             </TabsContent>
 
-            <TabsContent value="assets" className="mt-0 space-y-4">
-              <div className="grid gap-3 md:grid-cols-[1fr_1fr_120px_120px_auto]">
-                <div className="space-y-2">
-                  <Label>{t("sync.teamAdmin.assets.name")}</Label>
-                  <Input
-                    value={assetName}
-                    onChange={(event) => setAssetName(event.target.value)}
-                    placeholder={t("sync.teamAdmin.assets.namePlaceholder")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("sync.teamAdmin.assets.file")}</Label>
-                  <div className="flex gap-2">
-                    <Input value={assetFilePath} readOnly />
-                    <Button
-                      variant="outline"
-                      onClick={() => void pickAssetFile()}
-                    >
-                      {t("common.buttons.select")}
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("sync.teamAdmin.assets.browserVersion")}</Label>
-                  <Input
-                    value={assetBrowserVersion}
-                    onChange={(event) =>
-                      setAssetBrowserVersion(event.target.value)
-                    }
-                    placeholder="124"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("sync.teamAdmin.assets.platform")}</Label>
-                  <Input
-                    value={assetPlatform}
-                    onChange={(event) => setAssetPlatform(event.target.value)}
-                    placeholder={t("sync.teamAdmin.assets.platformPlaceholder")}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <LoadingButton
-                    onClick={() => void uploadAsset()}
-                    isLoading={isSaving}
-                    disabled={!assetName.trim() || !assetFilePath.trim()}
-                  >
-                    <LuUpload className="mr-2 h-4 w-4" />
-                    {t("sync.teamAdmin.assets.upload")}
-                  </LoadingButton>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto rounded-md border">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("sync.teamAdmin.assets.name")}
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("sync.teamAdmin.assets.browserVersion")}
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("sync.teamAdmin.assets.platform")}
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("sync.teamAdmin.assets.used")}
-                      </th>
-                      <th className="px-3 py-2 text-right font-medium">
-                        {t("sync.teamAdmin.actions")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assets.map((asset) => {
-                      const used = isAssetUsed(asset.id, profiles);
-                      return (
-                        <tr key={asset.id} className="border-t">
-                          <td className="px-3 py-2">{asset.name}</td>
-                          <td className="px-3 py-2">
-                            {asset.browserMajorVersion ??
-                              t("common.labels.none")}
-                          </td>
-                          <td className="px-3 py-2">
-                            {asset.platform ?? t("common.labels.none")}
-                          </td>
-                          <td className="px-3 py-2">
-                            <Badge variant={used ? "default" : "secondary"}>
-                              {used
-                                ? t("sync.teamAdmin.assets.inUse")
-                                : t("sync.teamAdmin.assets.notUsed")}
-                            </Badge>
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={used}
-                              onClick={() => void deleteAsset(asset)}
-                            >
-                              <LuTrash2 className="h-4 w-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </TabsContent>
-
             <TabsContent value="profiles" className="mt-0 space-y-4">
-              <div className="grid gap-3 md:grid-cols-[1fr_150px_1fr_auto]">
+              <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_auto]">
                 <div className="space-y-2">
                   <Label>{t("sync.teamAdmin.profiles.name")}</Label>
                   <Input
@@ -719,56 +512,9 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                     placeholder={t("sync.teamAdmin.profiles.namePlaceholder")}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("sync.teamAdmin.profiles.engine")}</Label>
-                  <Select
-                    value={profileEngine}
-                    onValueChange={(value) =>
-                      setProfileEngine(
-                        value as "botbrowser" | "wayfern" | "camoufox",
-                      )
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="botbrowser">
-                        {t("sync.teamAdmin.engines.botbrowser")}
-                      </SelectItem>
-                      <SelectItem value="wayfern">
-                        {t("sync.teamAdmin.engines.wayfern")}
-                      </SelectItem>
-                      <SelectItem value="camoufox">
-                        {t("sync.teamAdmin.engines.camoufox")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("sync.teamAdmin.profiles.template")}</Label>
-                  <Select
-                    value={profileAssetId}
-                    onValueChange={setProfileAssetId}
-                    disabled={profileEngine !== "botbrowser"}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_ASSET}>
-                        {t("profileInfo.values.none")}
-                      </SelectItem>
-                      {assets.map((asset) => (
-                        <SelectItem key={asset.id} value={asset.id}>
-                          {asset.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="flex items-end">
                   <LoadingButton
+                    className="w-full lg:w-auto"
                     onClick={() => void createProfile()}
                     isLoading={isSaving}
                     disabled={!profileName.trim()}
@@ -780,18 +526,16 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
               </div>
 
               <div className="space-y-3">
-                {profiles.map((profile) => {
+                {wayfernProfiles.map((profile) => {
                   const edit = profileEdits[profile.id] ?? {
                     name: profile.name,
-                    engine: profile.engine,
-                    botProfileAssetId: profile.botProfileAssetId ?? NO_ASSET,
                   };
                   return (
                     <div
                       key={profile.id}
                       className="space-y-3 rounded-md border p-3"
                     >
-                      <div className="grid gap-3 md:grid-cols-[1fr_140px_1fr_auto_auto]">
+                      <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_auto_auto_auto]">
                         <Input
                           value={edit.name}
                           onChange={(event) =>
@@ -804,63 +548,9 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                             }))
                           }
                         />
-                        <Select
-                          value={edit.engine}
-                          onValueChange={(value) =>
-                            setProfileEdits((prev) => ({
-                              ...prev,
-                              [profile.id]: {
-                                ...edit,
-                                engine: value as
-                                  | "botbrowser"
-                                  | "wayfern"
-                                  | "camoufox",
-                              },
-                            }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="botbrowser">
-                              {t("sync.teamAdmin.engines.botbrowser")}
-                            </SelectItem>
-                            <SelectItem value="wayfern">
-                              {t("sync.teamAdmin.engines.wayfern")}
-                            </SelectItem>
-                            <SelectItem value="camoufox">
-                              {t("sync.teamAdmin.engines.camoufox")}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={edit.botProfileAssetId}
-                          onValueChange={(value) =>
-                            setProfileEdits((prev) => ({
-                              ...prev,
-                              [profile.id]: {
-                                ...edit,
-                                botProfileAssetId: value,
-                              },
-                            }))
-                          }
-                          disabled={edit.engine !== "botbrowser"}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={NO_ASSET}>
-                              {t("profileInfo.values.none")}
-                            </SelectItem>
-                            {assets.map((asset) => (
-                              <SelectItem key={asset.id} value={asset.id}>
-                                {asset.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Badge variant="secondary" className="self-center">
+                          {t("sync.teamAdmin.engines.wayfern")}
+                        </Badge>
                         <Button
                           variant="outline"
                           size="sm"
@@ -914,7 +604,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                         ))}
                       </div>
 
-                      <div className="grid gap-2 md:grid-cols-[1fr_160px_auto]">
+                      <div className="grid gap-2 lg:grid-cols-[minmax(220px,1fr)_160px_auto]">
                         <Select
                           value={permissionUserId[profile.id] ?? ""}
                           onValueChange={(value) =>
@@ -962,6 +652,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                           </SelectContent>
                         </Select>
                         <Button
+                          className="w-full lg:w-auto"
                           variant="outline"
                           disabled={!permissionUserId[profile.id]}
                           onClick={() => void setPermission(profile)}
@@ -976,7 +667,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
             </TabsContent>
 
             <TabsContent value="audit" className="mt-0 space-y-4">
-              <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto]">
+              <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
                 <Input
                   value={auditAction}
                   onChange={(event) => setAuditAction(event.target.value)}
@@ -1007,7 +698,11 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" onClick={() => void loadAuditLogs()}>
+                <Button
+                  className="w-full lg:w-auto"
+                  variant="outline"
+                  onClick={() => void loadAuditLogs()}
+                >
                   {t("common.buttons.search")}
                 </Button>
               </div>

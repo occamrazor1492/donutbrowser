@@ -13,13 +13,13 @@
 | 环境 | UI 名称 | 当前是否适合团队共享 | 是否需要 `.enc` 模板 | 什么时候用 |
 | --- | --- | --- | --- | --- |
 | Wayfern/Chromium | `Chromium` / `Wayfern` | 是，默认推荐 | 不需要 | 团队日常共享环境。创建后会自动注册为 team profile，关闭后同步 cookies、LocalStorage 和 profile 文件。 |
-| BotBrowser | `BotBrowser` | 是，但属于高级模式 | 通常需要 | 只有你已经有 BotBrowser `.enc` 指纹模板，或者明确要用 BotBrowser 兼容可执行文件时使用。 |
+| BotBrowser | `BotBrowser` | 当前客户端 MVP 只做兼容保留 | 通常需要 | 已有记录/asset 会保留，但正常成员共享流程不使用 BotBrowser 模板。 |
 | Camoufox/Firefox | `Firefox` / `Camoufox` | 当前不推荐作为共享环境 | 不适用 | 仍可保留本地/数据兼容；当前版本不开放成员从 `共享 Profiles` 一键加入和启动。 |
 
 所以答案不是“只有一种浏览器完全存在”，而是：
 
 - **默认可共享、最像商业指纹浏览器产品流程的是 Wayfern/Chromium。**
-- **BotBrowser 也可以共享，但要准备 `.enc` 模板和本机可执行文件路径，适合高级专项测试。**
+- **BotBrowser 记录/asset 会保留兼容，但这个 MVP 不把它作为正常团队流程。**
 - **Camoufox 现在先不要拿来做团队共享验收。**
 
 团队共享时，服务器保存 profile 权威数据；每个用户电脑只保存本地缓存和运行浏览器进程。一个 profile 同一时间只允许一个用户写入，靠 lock 防止 A/B 同时改同一个环境。
@@ -202,18 +202,11 @@ curl -sS http://127.0.0.1:12342/v1/admin/users \
   -H "authorization: Bearer $TOKEN"
 ```
 
-## 4. 可选：上传 BotBrowser `.enc` 模板
+## 4. 兼容保留：BotBrowser `.enc` 模板
 
 如果你只是要创建普通团队共享环境，可以跳过本节，直接使用第 7 步的 Wayfern/Chromium。默认共享 Chromium 环境不需要 `.enc`。
 
-只有创建高级 BotBrowser profile 时才需要模板。
-
-推荐桌面端操作：
-
-1. 在 `团队管理` 打开 `BotBrowser 模板`。
-2. 选择本地 `.enc` 文件。
-3. 填写模板名称、浏览器大版本和平台。
-4. 点击 `上传`。
+当前客户端 MVP 会把 BotBrowser 模板管理从默认 `团队管理` 流程里隐藏。这些 API 只保留给历史数据和高级兼容测试。
 
 CLI 备用方式：
 
@@ -267,7 +260,7 @@ COREPACK_HOME=/private/tmp/corepack-cache corepack pnpm tauri dev
 http://127.0.0.1:12342
 ```
 
-管理员登录后会看到 `团队管理` 按钮。这个面板可以管理团队用户、BotBrowser 模板、团队 profile、profile 权限、强制解锁和带 action/profile/user 筛选的审计日志。普通成员使用同一个自托管登录入口，但不会看到管理员面板。
+管理员登录后会在主界面看到 `团队` 菜单。`团队管理` 可以管理团队用户、Wayfern/Chromium 团队 profile、profile 权限、强制解锁和带 action/profile/user 筛选的审计日志。普通成员使用同一个自托管登录入口，并能看到 `共享 Profiles`。
 
 4. 使用团队用户登录，例如：
 
@@ -286,7 +279,9 @@ password: a-password
 4. 按需要配置代理、指纹、扩展或 DNS 选项。
 5. 创建 profile。
 
-只要已经登录 self-hosted 团队账号，Donut 现在会自动把这个 Wayfern/Chromium profile 当成团队环境处理：
+创建页里也能看到 `Firefox` / `Camoufox`，但这个版本它只适合本机使用，不支持从 `共享 Profiles` 给成员一键加入和启动。团队共享环境请选 `Chromium` / `Wayfern`。
+
+创建本地 Wayfern/Chromium profile 后，在主列表行内点击 `共享到团队`，或者打开 profile 详情动作并选择 `共享到团队`。Donut 会把这个 profile 当成团队环境处理：
 
 - 在本机创建 profile metadata 和指纹配置；
 - 在服务端注册对应的 `TeamProfile`，engine 为 `wayfern`；
@@ -295,7 +290,7 @@ password: a-password
 
 这才是正常 AdsPower 类产品的默认流程：默认共享 Chromium 环境不需要 BotBrowser `.enc` 模板，也不需要成员自己导入任何模板文件。
 
-BotBrowser 仍然保留为高级 engine。只有当你明确想用某个 Chromium 兼容可执行文件配合预制 `.enc` 指纹 profile 时才选择 `BotBrowser`。这种情况下管理员需要先上传 `.enc` 模板，或者创建者填写本地 `.enc` 路径。
+BotBrowser 和 Camoufox 会保留兼容数据，但当前客户端共享流程优先 Wayfern/Chromium。这个版本不要把 BotBrowser 模板作为团队默认设置路径。
 
 CLI 调试备用方式：
 
@@ -346,7 +341,7 @@ EOF
 
 推荐桌面端授权流程：
 
-1. 管理员或 owner 打开 `Sync settings` → `团队管理`。
+1. 管理员或 owner 打开主界面的 `团队` 菜单 → `团队管理`。
 2. 打开 `Profiles`。
 3. 找到目标 profile。
 4. 选择团队成员和权限，日常使用选 `Editor`。
@@ -366,15 +361,13 @@ curl -sS http://127.0.0.1:12342/v1/team-profiles/$PROFILE_ID/permissions \
 管理员授权后，成员不需要手动创建本地 profile，可以直接加入共享 profile：
 
 1. 登录同一个自托管服务器。
-2. 打开顶部菜单，点击 `共享 Profiles`。
+2. 打开主界面的 `团队` 菜单，点击 `共享 Profiles`。
 3. 找到目标 Chromium/Wayfern profile。
 4. 点击 `加入本机`。
 5. 点击 `预检`，检查登录状态、启动权限、浏览器运行时/指纹数据和 lock 状态。
 6. 预检通过后点击 `启动`。
 
-如果是高级 BotBrowser profile，Shared Profiles 会额外显示可选的 BotBrowser executable path，并在预检时检查 `.enc` 模板。
-
-Wayfern/Chromium 共享 profile 现在可以从成员入口一键加入和启动。BotBrowser 共享 profile 也可以加入和启动，但预检会额外检查 executable path 和 `.enc` 模板。Camoufox 团队 profile 记录仍然兼容服务端数据，但当前版本还不开放成员一键启动。
+Wayfern/Chromium 共享 profile 现在可以从成员入口一键加入和启动。BotBrowser 和 Camoufox 团队 profile 记录仍然兼容服务端数据，但当前客户端 MVP 不开放成员一键启动。
 
 常见预检失败处理：
 
@@ -382,8 +375,8 @@ Wayfern/Chromium 共享 profile 现在可以从成员入口一键加入和启动
 | --- | --- |
 | 自托管登录 | 回到 Sync settings 重新登录。 |
 | 启动权限 | 让管理员授予 `owner` 或 `editor` 权限。 |
-| 浏览器运行时 | 下载需要的 Wayfern/Chromium 运行时；如果是 BotBrowser profile，则填写有效的 BotBrowser executable path。 |
-| 指纹数据 | Wayfern 会自动生成指纹数据；如果是 BotBrowser profile，则让管理员上传并选择 `.enc` 模板。 |
+| 浏览器运行时 | 下载需要的 Wayfern/Chromium 运行时。 |
+| 指纹数据 | Wayfern 会自动生成指纹数据，不需要 `.enc` 模板。 |
 | Profile 锁 | 等另一个用户关闭 profile；如果锁已经异常残留，让管理员强制解锁。 |
 
 ## 10. 启动、同步和互斥锁
@@ -393,8 +386,7 @@ Wayfern/Chromium 共享 profile 现在可以从成员入口一键加入和启动
 ```text
 Donut 获取服务端 lock
 Donut 下载最新服务端 profile 状态
-仅 BotBrowser profile 会在本地缺少 .enc asset 时自动下载
-Donut 启动所选 engine
+Donut 启动 Chromium/Wayfern
 Donut 持续发送 lock heartbeat
 浏览器关闭后，Donut 先等待 profile 文件稳定
 Donut 在仍持有 lock 时同步 cookies/local storage/profile files
@@ -410,13 +402,14 @@ Donut 释放 lock
 1. 管理员创建用户 A 和用户 B。
 2. A 登录 self-hosted。
 3. A 创建 `Chromium` / `Wayfern` profile，例如 `test`。
-4. A 启动 `test`，登录一个测试网站，然后关闭浏览器。
-5. 管理员或 A 在 `团队管理` → `Profiles` 给 B 授予 `editor`。
-6. B 登录同一个 self-hosted server。
-7. B 打开 `共享 Profiles`，找到 `test`，点击 `加入本机`。
-8. B 点击 `预检`，确认登录、权限、运行时、指纹数据和 lock 都通过。
-9. B 点击 `启动`，应该能看到 A 同步到服务器的登录状态。
-10. A 和 B 同时启动 `test` 时，后启动的一方应该被 lock 拒绝。
+4. A 对 `test` 点击 `共享到团队`。
+5. A 启动 `test`，登录一个测试网站，然后关闭浏览器。
+6. 管理员或 A 在 `团队` → `团队管理` → `Profiles` 给 B 授予 `editor`。
+7. B 登录同一个 self-hosted server。
+8. B 打开 `团队` → `共享 Profiles`，找到 `test`，点击 `加入本机`。
+9. B 点击 `预检`，确认登录、权限、运行时、指纹数据和 lock 都通过。
+10. B 点击 `启动`，应该能看到 A 同步到服务器的登录状态。
+11. A 和 B 同时启动 `test` 时，后启动的一方应该被 lock 拒绝。
 
 ## 12. 停止服务端
 

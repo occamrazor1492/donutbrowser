@@ -13,13 +13,13 @@ The desktop app currently exposes three browser environments. They are not at th
 | Environment | UI name | Suitable for team sharing now | Needs `.enc` template | When to use it |
 | --- | --- | --- | --- | --- |
 | Wayfern/Chromium | `Chromium` / `Wayfern` | Yes, default and recommended | No | Normal team shared environments. Donut registers the profile as a team profile, then syncs cookies, LocalStorage, and profile files after browser close. |
-| BotBrowser | `BotBrowser` | Yes, but advanced | Usually yes | Use only when you already have BotBrowser `.enc` fingerprint templates, or explicitly need a BotBrowser-compatible executable. |
+| BotBrowser | `BotBrowser` | Compatibility only in this client MVP | Usually yes | Existing records/assets are kept, but the normal member sharing flow does not use BotBrowser templates. |
 | Camoufox/Firefox | `Firefox` / `Camoufox` | Not recommended for shared use yet | N/A | Kept for local use and data compatibility. This version does not allow members to one-click join and launch it from `Shared Profiles`. |
 
 So the answer is not “only one browser exists.” The accurate rule is:
 
 - **The default, product-like shared workflow is Wayfern/Chromium.**
-- **BotBrowser can also be shared, but it requires an `.enc` template and local executable path, so treat it as advanced.**
+- **BotBrowser records/assets are kept for compatibility, but do not use them as the normal team workflow in this MVP.**
 - **Do not use Camoufox for team sharing acceptance yet.**
 
 For shared team profiles, the server is the authoritative source. Each user's desktop only keeps local cache and runs the browser process. One profile has one active writer at a time, enforced by profile locks so two users cannot write the same environment simultaneously.
@@ -204,18 +204,11 @@ curl -sS http://127.0.0.1:12342/v1/admin/users \
   -H "authorization: Bearer $TOKEN"
 ```
 
-## 4. Optional: Upload A BotBrowser `.enc` Template
+## 4. Compatibility Only: BotBrowser `.enc` Templates
 
 If you only need a normal shared team environment, skip this section and use Wayfern/Chromium in step 7. The default shared Chromium environment does not need `.enc`.
 
-Templates are only required for advanced BotBrowser profiles.
-
-Recommended desktop path:
-
-1. In `Team Admin`, open `BotBrowser Templates`.
-2. Select a local `.enc` file.
-3. Add template name, browser major version, and platform.
-4. Click `Upload`.
+The current client MVP hides BotBrowser template management from the default `Team Admin` path. These APIs remain only for legacy data and advanced compatibility testing.
 
 CLI fallback:
 
@@ -269,7 +262,7 @@ In Donut Desktop:
 http://127.0.0.1:12342
 ```
 
-Admin users will see a `Team Admin` button after login. That panel manages team users, BotBrowser templates, team profiles, profile permissions, force unlock, and audit logs with action/profile/user filters. Non-admin members use the same self-hosted login but do not see the admin panel.
+Admin users will see a main-screen `Team` menu after login. `Team Admin` manages team users, Wayfern/Chromium team profiles, profile permissions, force unlock, and audit logs with action/profile/user filters. Non-admin members use the same self-hosted login and see `Shared Profiles`.
 
 4. Login with a team user, for example:
 
@@ -288,16 +281,18 @@ Recommended desktop path:
 4. Configure proxy, fingerprint, extensions, or DNS options as needed.
 5. Create the profile.
 
-When a self-hosted team user is logged in, Donut now treats this Wayfern/Chromium profile as a team environment automatically:
+The create screen also shows `Firefox` / `Camoufox`, but in this version it is local-only for team usage: members cannot one-click join and launch it from `Shared Profiles`. Use `Chromium` / `Wayfern` for shared team environments.
+
+After creating the local Wayfern/Chromium profile, click the row `Share to Team` action or open the profile info actions and choose `Share to Team`. Donut then treats this profile as a team environment:
 
 - local profile metadata and fingerprint settings are created on this device;
 - a matching `TeamProfile` is registered on the server with `engine: "wayfern"`;
 - sync mode is set to `Regular`;
 - Donut briefly acquires the server lock, uploads the initial profile metadata/manifest, then releases the lock.
 
-This is the normal AdsPower-style flow: no BotBrowser `.enc` template is required for the default shared Chromium environment, and members do not need to import any template file manually.
+This is the normal AdsPower-style flow for this MVP: no BotBrowser `.enc` template is required for the default shared Chromium environment, and members do not import template files manually.
 
-BotBrowser is still available as an advanced engine. Choose `BotBrowser` only when you intentionally want to launch a Chromium-compatible executable with a prebuilt `.enc` fingerprint profile. In that case an admin must upload a `.enc` template first, or the creator must provide a local `.enc` path.
+BotBrowser and Camoufox are retained for compatibility, but the current client sharing flow is Wayfern/Chromium-first. Do not use BotBrowser templates as the normal team setup path in this version.
 
 CLI fallback for debugging:
 
@@ -348,7 +343,7 @@ For another user to actually use the environment, normally grant `editor`:
 
 Recommended desktop sharing flow:
 
-1. Admin or owner opens `Sync settings` → `Team Admin`.
+1. Admin or owner opens the main `Team` menu → `Team Admin`.
 2. Open `Profiles`.
 3. Find the target profile.
 4. Select the team member and permission. Use `Editor` for normal usage.
@@ -368,15 +363,13 @@ curl -sS http://127.0.0.1:12342/v1/team-profiles/$PROFILE_ID/permissions \
 After an admin grants access, a member can add a shared profile without manually creating a local profile:
 
 1. Login to the same self-hosted server.
-2. Open the header menu and click `Shared Profiles`.
+2. Open the main `Team` menu and click `Shared Profiles`.
 3. Find the shared Chromium/Wayfern profile.
 4. Click `Add to local`.
 5. Click `Preflight` to verify login, permission, browser runtime/fingerprint data, and lock state.
 6. Click `Launch` after preflight passes.
 
-For advanced BotBrowser profiles, Shared Profiles will also show an optional BotBrowser executable path field and will verify the `.enc` template during preflight.
-
-Wayfern/Chromium shared profiles can be joined and launched from this member flow. BotBrowser shared profiles can also be joined and launched, but preflight additionally checks the executable path and `.enc` template. Camoufox team profile records remain compatible server data, but one-click member launch is not enabled yet.
+Wayfern/Chromium shared profiles can be joined and launched from this member flow. BotBrowser and Camoufox team profile records remain compatible server data, but one-click member launch is not enabled in the current client MVP.
 
 Common preflight failures:
 
@@ -384,8 +377,8 @@ Common preflight failures:
 | --- | --- |
 | Self-hosted login | Login again in Sync settings. |
 | Launch permission | Ask an admin for `owner` or `editor` permission. |
-| Browser runtime | Download the required Wayfern/Chromium runtime, or enter a valid BotBrowser executable path for BotBrowser profiles. |
-| Fingerprint data | Wayfern generates fingerprint data automatically. For BotBrowser, ask an admin to upload/select a `.enc` template. |
+| Browser runtime | Download the required Wayfern/Chromium runtime. |
+| Fingerprint data | Wayfern generates fingerprint data automatically. No `.enc` template is required. |
 | Profile lock | Wait for the other user to close the profile, or ask an admin to force unlock if it is stale. |
 
 ## 10. Launch, Sync, And Locking
@@ -395,8 +388,7 @@ When user A launches the profile:
 ```text
 Donut gets a server lock
 Donut downloads the latest server profile state
-For BotBrowser only, Donut downloads the .enc asset if missing locally
-Donut launches the selected engine
+Donut launches Chromium/Wayfern
 Donut keeps lock heartbeat alive
 After browser close, Donut waits for profile files to become stable
 Donut syncs cookies/local storage/profile files while the lock is still held
@@ -412,13 +404,14 @@ Use two users to prove sharing works end to end:
 1. Admin creates user A and user B.
 2. A logs in to self-hosted.
 3. A creates a `Chromium` / `Wayfern` profile, for example `test`.
-4. A launches `test`, logs in to a test website, then closes the browser.
-5. Admin or A grants B `editor` in `Team Admin` → `Profiles`.
-6. B logs in to the same self-hosted server.
-7. B opens `Shared Profiles`, finds `test`, and clicks `Add to local`.
-8. B runs `Preflight` and verifies login, permission, runtime, fingerprint data, and lock checks pass.
-9. B clicks `Launch` and should see the login state A synced to the server.
-10. If A and B launch `test` at the same time, the second launcher should be rejected by the lock.
+4. A clicks `Share to Team` for `test`.
+5. A launches `test`, logs in to a test website, then closes the browser.
+6. Admin or A grants B `editor` in `Team` → `Team Admin` → `Profiles`.
+7. B logs in to the same self-hosted server.
+8. B opens `Team` → `Shared Profiles`, finds `test`, and clicks `Add to local`.
+9. B runs `Preflight` and verifies login, permission, runtime, fingerprint data, and lock checks pass.
+10. B clicks `Launch` and should see the login state A synced to the server.
+11. If A and B launch `test` at the same time, the second launcher should be rejected by the lock.
 
 ## 12. Stop The Server
 

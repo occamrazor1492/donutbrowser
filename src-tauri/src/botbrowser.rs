@@ -412,17 +412,33 @@ mod tests {
 
   #[tokio::test]
   async fn stable_wait_times_out_for_changing_file() {
+    use std::sync::{
+      atomic::{AtomicBool, AtomicUsize, Ordering},
+      Arc,
+    };
+
     let dir = tempfile::tempdir().expect("tempdir");
     let path = dir.path().join("Local Storage");
     std::fs::write(&path, b"0").expect("write fixture");
 
     let writer_path = path.clone();
-    let writer = tokio::spawn(async move {
-      for i in 2..100 {
+    let stop = Arc::new(AtomicBool::new(false));
+    let writes = Arc::new(AtomicUsize::new(0));
+    let writer_stop = Arc::clone(&stop);
+    let writer_writes = Arc::clone(&writes);
+    let writer = std::thread::spawn(move || {
+      let mut i = 2usize;
+      while !writer_stop.load(Ordering::SeqCst) {
         std::fs::write(&writer_path, "x".repeat(i)).expect("rewrite fixture");
-        tokio::time::sleep(Duration::from_millis(2)).await;
+        writer_writes.fetch_add(1, Ordering::SeqCst);
+        i += 1;
+        std::thread::sleep(Duration::from_millis(1));
       }
     });
+
+    while writes.load(Ordering::SeqCst) < 3 {
+      tokio::time::sleep(Duration::from_millis(1)).await;
+    }
 
     let stable = wait_for_profile_files_stable_with_timing(
       dir.path(),
@@ -430,7 +446,8 @@ mod tests {
       Duration::from_millis(10),
     )
     .await;
-    writer.abort();
+    stop.store(true, Ordering::SeqCst);
+    writer.join().expect("writer thread");
 
     assert!(!stable);
   }

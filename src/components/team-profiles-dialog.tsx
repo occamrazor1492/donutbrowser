@@ -14,8 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import type {
@@ -84,7 +82,6 @@ export function TeamProfilesDialog({
   const [teamProfiles, setTeamProfiles] = useState<TeamProfileRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [busyProfileId, setBusyProfileId] = useState<string | null>(null);
-  const [executablePath, setExecutablePath] = useState("");
   const [preflightResults, setPreflightResults] = useState<
     Record<string, BotBrowserPreflightResult>
   >({});
@@ -93,13 +90,8 @@ export function TeamProfilesDialog({
     () => new Map(localProfiles.map((profile) => [profile.id, profile])),
     [localProfiles],
   );
-  const hasBotBrowserProfiles = useMemo(
-    () => teamProfiles.some((profile) => profile.engine === "botbrowser"),
-    [teamProfiles],
-  );
-
   const isLaunchSupportedEngine = (engine: TeamProfileRecord["engine"]) =>
-    engine === "wayfern" || engine === "botbrowser";
+    engine === "wayfern";
 
   const loadProfiles = useCallback(async () => {
     setIsLoading(true);
@@ -142,7 +134,7 @@ export function TeamProfilesDialog({
   const materializeProfile = async (profileId: string) => {
     const profile = await invoke<BrowserProfile>("team_materialize_profile", {
       profileId,
-      executablePath: executablePath.trim() || null,
+      executablePath: null,
     });
     onMaterialized(profile);
     showSuccessToast(t("teamProfiles.toasts.materialized"));
@@ -210,22 +202,6 @@ export function TeamProfilesDialog({
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col space-y-4">
-          {hasBotBrowserProfiles && (
-            <div className="grid shrink-0 gap-2">
-              <Label htmlFor="team-profile-executable">
-                {t("teamProfiles.executablePath")}
-              </Label>
-              <Input
-                id="team-profile-executable"
-                value={executablePath}
-                onChange={(event) => {
-                  setExecutablePath(event.target.value);
-                }}
-                placeholder={t("teamProfiles.executablePathPlaceholder")}
-              />
-            </div>
-          )}
-
           <div className="flex shrink-0 items-center justify-between">
             <div className="text-sm text-muted-foreground">
               {t("teamProfiles.count", { count: teamProfiles.length })}
@@ -310,10 +286,10 @@ export function TeamProfilesDialog({
                             {t("teamProfiles.template")}
                           </span>
                           <span className="ml-2">
-                            {teamProfile.botProfileAsset?.name ??
-                              (teamProfile.engine === "botbrowser"
-                                ? t("teamProfiles.noTemplate")
-                                : t("teamProfiles.templateNotRequired"))}
+                            {teamProfile.engine === "wayfern"
+                              ? t("teamProfiles.templateNotRequired")
+                              : (teamProfile.botProfileAsset?.name ??
+                                t("teamProfiles.noTemplate"))}
                           </span>
                         </div>
                         <div>

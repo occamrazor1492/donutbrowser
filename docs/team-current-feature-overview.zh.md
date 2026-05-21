@@ -12,9 +12,9 @@
 
 - 团队 profile 权威数据保存在自己的服务器。
 - 多个用户用团队账号登录。
-- 管理员管理用户、BotBrowser 模板、团队 profile、权限、锁和审计日志。
+- 管理员管理用户、共享 Chromium profile、权限、锁和审计日志。
 - Wayfern/Chromium 作为默认团队共享浏览器环境。
-- BotBrowser 作为高级 Chromium 指纹执行层保留。
+- BotBrowser 仅作为兼容数据和当前团队 MVP 主流程之外的高级 engine 保留。
 - Mac/Windows 桌面客户端在每个用户自己的电脑上运行浏览器进程。
 
 它不是：
@@ -31,11 +31,11 @@
 
 | 环境 | engine/browser | 当前共享状态 | 备注 |
 | --- | --- | --- | --- |
-| Wayfern/Chromium | `wayfern` / `wayfern` | 默认支持，推荐团队日常使用 | self-hosted 登录后创建 Chromium profile 会自动注册 team profile，不需要 `.enc` 模板。 |
-| BotBrowser | `botbrowser` / `botbrowser` | 支持，但属于高级模式 | 需要 BotBrowser `.enc` 模板或本地 `.enc` 路径，并且每台客户端需要有效 executable path。 |
+| Wayfern/Chromium | `wayfern` / `wayfern` | 默认支持，推荐团队日常使用 | 本地创建后点击 `共享到团队`，或沿用 self-hosted 同步流程注册并上传；不需要 `.enc` 模板。 |
+| BotBrowser | `botbrowser` / `botbrowser` | 当前客户端 MVP 只做兼容保留 | 已有服务端记录和 `.enc` asset 会保留，但正常客户端共享流程不再要求成员导入模板。 |
 | Camoufox/Firefox | `camoufox` / `camoufox` | 当前不开放成员一键共享启动 | 服务端 metadata 兼容保留，但不作为本轮团队共享验收路径。 |
 
-因此，用户创建和共享环境时应优先选择 `Chromium` / `Wayfern`。只有团队已经准备好 BotBrowser `.enc` 模板并且明确需要 BotBrowser 时，才选择 `BotBrowser`。不要把 Camoufox 当作当前版本的共享环境主路径。
+因此，用户创建和共享环境时应优先选择 `Chromium` / `Wayfern`。BotBrowser 和 Camoufox 数据会保留兼容，但都不是当前版本的团队共享主流程。
 
 ## 服务端功能
 
@@ -176,8 +176,8 @@ GET  /v1/objects/subscribe
 - 如果配置了 Donut Cloud，仍然优先使用 Donut Cloud；否则使用 self-hosted JWT。
 - self-hosted 登录后 team key prefix 会解析成 `teams/{teamId}/`。
 - 原来的本地 profile 列表仍然保留。
-- Wayfern/Chromium 团队 profile 可以无模板创建、加入本机、预检、启动、同步和分享。
-- 高级 BotBrowser 团队 profile 可以在有 `.enc` 模板时创建、加入本机、预检、启动、同步和分享。
+- Wayfern/Chromium 团队 profile 可以无模板创建、通过 `共享到团队` 发布、加入本机、预检、启动、同步和分享。
+- BotBrowser/Camoufox 记录仍然兼容服务端数据，但当前桌面端共享流程以 Wayfern 为主。
 
 当前团队模式 Tauri commands：
 
@@ -187,8 +187,6 @@ team_create_user
 team_update_user
 
 team_list_bot_profiles
-team_upload_bot_profile_asset
-team_delete_bot_profile_asset
 
 team_list_profiles
 team_create_profile
@@ -201,6 +199,7 @@ team_unlock_profile
 
 team_list_audit_logs
 team_materialize_profile
+team_publish_wayfern_profile
 team_preflight_botbrowser_profile
 ```
 
@@ -212,8 +211,7 @@ team_preflight_botbrowser_profile
 - Lock conflict。
 - Team API 不可访问。
 - S3 或 presigned URL 失败。
-- 缺少 BotBrowser executable。
-- 缺少或无法下载 `.enc` 模板。
+- 缺少 Wayfern/Chromium runtime。
 
 ## 管理员 UI 功能
 
@@ -233,8 +231,7 @@ team_preflight_botbrowser_profile
 | Tab | 当前能力 |
 | --- | --- |
 | 用户 | 查看用户、创建用户、重置密码、切换 `admin` 或 `member`、禁用或启用用户。 |
-| BotBrowser 模板 | 上传 `.enc` 模板、查看模板列表、删除未被引用的模板。 |
-| Profiles | 查看团队 profile、修改名称、修改 engine/template、删除 profile、分配权限、移除权限、强制 unlock。 |
+| Profiles | 查看 Wayfern/Chromium 团队 profile、修改名称、删除 profile、分配权限、移除权限、强制 unlock。 |
 | Audit Logs | 查看最近日志，按 action、target type、target id 和 user 筛选。 |
 
 管理员 UI 的用户可见文案都走翻译系统，并同步在 7 个 locale 文件里。
@@ -255,11 +252,10 @@ team_preflight_botbrowser_profile
 
 1. 登录同一个自托管服务器。
 2. 打开 `共享 Profiles`。
-3. 查看被分享的团队 profile，以及权限、engine、模板、lock 状态和本地状态。
+3. 查看被分享的团队 profile，以及权限、engine、lock 状态和本地状态。
 4. 对 Wayfern/Chromium profile，点击 `加入本机` 会下载服务端 profile metadata 和状态。
-5. 对高级 BotBrowser profile，可选填写本机 BotBrowser 或 Chromium executable path。
-6. 运行 `预检`。
-7. 预检通过后点击 `启动`。
+5. 运行 `预检`。
+6. 预检通过后点击 `启动`。
 
 当前 materialize 行为：
 
@@ -267,66 +263,30 @@ team_preflight_botbrowser_profile
 - 本地 profile 保持和团队 profile 相同的 id。
 - 重复加入同一个共享 profile 会更新本地 metadata，不会创建重复 profile。
 - Wayfern/Chromium profile 会下载服务端 metadata/profile state，并使用 `engine: "wayfern"`、`browser: "wayfern"` 和 `sync_mode: "Regular"`。
-- BotBrowser profile 使用 `engine: "botbrowser"`、`browser: "botbrowser"`、`sync_mode: "Regular"` 和服务端模板 id。
-
 当前限制：
 
-- 成员一键加入和启动支持 Wayfern/Chromium 和高级 BotBrowser profile。
-- Camoufox 团队 profile 记录仍然兼容服务端数据，但这个版本刻意不开放成员一键启动。
+- 成员一键加入和启动支持 Wayfern/Chromium profile。
+- BotBrowser 和 Camoufox 团队 profile 记录仍然兼容服务端数据，但这个版本刻意不开放成员一键启动。
 
 ## 共享 Chromium 执行功能
 
-Wayfern/Chromium 是当前 MVP 的默认团队执行引擎。self-hosted 用户创建 Wayfern profile 时，Donut 会自动注册 team profile，启用 `Regular` sync，把初始 metadata/manifest 上传到团队前缀，并在每次启动/写入时使用 lock。
+Wayfern/Chromium 是当前 MVP 的默认团队执行引擎。用户可以先创建本地 Wayfern profile，然后在主列表或 profile 详情动作里点击 `共享到团队`。Donut 会注册 team profile、启用 `Regular` sync、把当前 metadata/manifest 上传到团队前缀，并在每次启动/写入时使用 lock。
 
-BotBrowser 仍然作为高级 engine 保留，适合已经有 `.enc` 指纹模板的团队。
-
-当前 BotBrowser profile 字段：
-
-```ts
-engine: "botbrowser";
-browser: "botbrowser";
-botbrowser_config: {
-  executable_path?: string;
-  bot_profile_asset_id?: string;
-  bot_profile_path?: string;
-  extra_args?: string[];
-  locale?: string;
-  timezone?: string;
-  languages?: string;
-  noise_seed?: number;
-  local_dns?: boolean;
-  port_protection?: boolean;
-};
-```
-
-当前启动参数包括：
+当前共享 Wayfern 流程：
 
 ```text
---user-data-dir={localProfileDir}
---bot-profile={localEncPath}
---remote-debugging-address=127.0.0.1
---remote-debugging-port={port}
---disable-blink-features=AutomationControlled
---no-first-run
---restore-last-session
---proxy-server={proxyUrl}
---bot-title={profile.name}
+本地 Wayfern profile
+-> 共享到团队
+-> 注册 TeamProfile(engine=wayfern)
+-> 获取 lock
+-> 上传当前 profile 状态
+-> 释放 lock
+-> 成员从 Shared Profiles 加入
 ```
-
-当前 executable 行为：
-
-- macOS 会自动探测常见 Chromium 路径，例如 `/Applications/Chromium.app/Contents/MacOS/Chromium`。
-- Windows 用户可以在 UI 里填写 executable path。
-- Linux/server worker 启动不是当前 MVP 目标。
-
-当前代理行为：
-
-- Donut proxy 配置会转换成 BotBrowser 的 `--proxy-server=scheme://user:pass@host:port`。
-- HTTP、SOCKS5 和 SOCKS5H 在测试计划中覆盖。
 
 ## 预检功能
 
-启动共享 profile 前，客户端会运行 `team_preflight_botbrowser_profile(profileId)`。命令名为了兼容暂时保留，但检查范围已经覆盖 Wayfern/Chromium 和 BotBrowser profile。
+启动共享 profile 前，客户端会运行 `team_preflight_botbrowser_profile(profileId)`。命令名为了兼容暂时保留，但当前客户端 MVP 只把 Wayfern/Chromium 作为可启动共享 engine。
 
 当前检查项：
 
@@ -334,8 +294,8 @@ botbrowser_config: {
 | --- | --- |
 | 自托管登录 | 用户已经登录 self-hosted server。 |
 | 权限 | 用户是 `admin`、`owner` 或 `editor`。 |
-| 浏览器运行时 | Wayfern/Chromium runtime 可用，或 BotBrowser executable path 有效。 |
-| 指纹数据 | Wayfern/Chromium 已同步指纹 metadata；BotBrowser 有本地或可下载的 `.enc` 模板。 |
+| 浏览器运行时 | Wayfern/Chromium runtime 可用。 |
+| 指纹数据 | Wayfern/Chromium 已同步指纹 metadata，不需要 `.enc` 模板。 |
 | Lock | Profile 没有被其他用户锁定。 |
 
 UI 会在启动前显示可读的通过或失败结果。
@@ -351,8 +311,7 @@ UI 会在启动前显示可读的通过或失败结果。
 客户端检查权限
 客户端申请 profile lock
 客户端下载最新 profile 状态
-客户端缺少 BotBrowser .enc 模板时自动下载
-客户端启动 BotBrowser 或 Chromium
+客户端启动 Chromium/Wayfern
 浏览器运行期间客户端持续发送 lock heartbeat
 浏览器退出
 客户端等待 profile 文件稳定
@@ -370,7 +329,7 @@ UI 会在启动前显示可读的通过或失败结果。
 
 当前关闭后同步行为：
 
-- BotBrowser 退出后，客户端会等待 profile 文件稳定再上传。
+- Wayfern 退出后，客户端会等待 profile 文件稳定再上传。
 - 稳定的定义是连续两次采样文件 size 和 modified time 都不变。
 - 等待覆盖常见 Chromium 存储文件，包括 SQLite/WAL、LocalStorage、Cookies 和相关 profile 文件。
 - 最长等待 5 秒。

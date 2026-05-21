@@ -187,8 +187,10 @@
       "integrations": "統合",
       "importProfile": "プロファイルをインポート",
       "extensions": "拡張機能",
-      "teamProfiles": "Shared Profiles"
-    }
+      "teamProfiles": "Shared Profiles",
+      "teamAdmin": "Team Admin"
+    },
+    "team": "Team"
   },
   "profiles": {
     "title": "プロファイル",
@@ -222,7 +224,8 @@
       "assignToGroup": "グループに割り当て",
       "changeFingerprint": "フィンガープリントを変更",
       "copyCookiesToProfile": "Cookieをプロファイルにコピー",
-      "launchHook": "起動フックURL"
+      "launchHook": "起動フックURL",
+      "shareToTeam": "Share to Team"
     },
     "synchronizer": {
       "launchWithSync": "シンクロナイザーで起動",
@@ -310,8 +313,10 @@
     },
     "chromiumLabel": "Chromium",
     "chromiumSubtitle": "Wayfern搭載",
+    "chromiumTeamSharing": "作成後にチームへ共有できます。",
     "firefoxLabel": "Firefox",
     "firefoxSubtitle": "Camoufox搭載",
+    "firefoxTeamSharingUnavailable": "このバージョンではローカル専用です。チーム共有は現在 Chromium プロファイルのみ対応しています。",
     "camoufoxWarning": "Firefox（Camoufox）はサードパーティの組織によって管理されています。本番環境での使用にはChromiumをご利用ください。",
     "platformUnavailable": "{{browser}} はまだお使いのプラットフォームで利用できません。",
     "botbrowser": {
@@ -611,7 +616,7 @@
     "teamAdmin": {
       "open": "Team Admin",
       "title": "Team Admin",
-      "description": "Manage self-hosted team users, BotBrowser templates, profiles, permissions, and audit logs.",
+      "description": "Manage self-hosted team users, shared Chromium profiles, permissions, locks, and audit logs.",
       "actions": "Actions",
       "tabs": {
         "users": "Users",
@@ -1698,7 +1703,7 @@
   },
   "teamProfiles": {
     "title": "Shared Profiles",
-    "description": "Add shared Chromium team profiles to this device and launch them after preflight checks pass. BotBrowser templates are only needed for advanced BotBrowser profiles.",
+    "description": "Add shared Chromium team profiles to this device and launch them after preflight checks pass.",
     "executablePath": "BotBrowser executable path (advanced)",
     "executablePathPlaceholder": "Only needed for BotBrowser, for example /Applications/BotBrowser.app",
     "count": "{{count}} shared profiles",
@@ -1707,7 +1712,7 @@
     "template": "Template",
     "noTemplate": "No template selected",
     "syncMode": "Sync mode",
-    "unsupportedEngine": "This team profile engine is saved for compatibility, but one-click shared launch is only enabled for Chromium and BotBrowser profiles right now.",
+    "unsupportedEngine": "This team profile engine is saved for compatibility, but one-click shared launch is only enabled for Chromium profiles right now.",
     "viewerCannotLaunch": "Viewer access can inspect this profile, but launching requires owner, editor, or admin permission.",
     "actions": {
       "addToLocal": "Add to local",
@@ -1771,12 +1776,35 @@
       },
       "failed": {
         "selfHostedLogin": "Log in to the self-hosted sync server first.",
-        "engine": "Only Chromium and BotBrowser shared profiles can be launched in this version.",
+        "engine": "Only Chromium shared profiles can be launched in this version.",
         "permission": "Ask an admin for owner or editor permission.",
-        "executable": "Download the required browser runtime or set a valid BotBrowser executable path.",
-        "botProfile": "For BotBrowser, select or upload a .enc template. Chromium profiles do not need one.",
+        "executable": "Download the required Chromium runtime before launching this shared profile.",
+        "botProfile": "Chromium profiles generate fingerprint data automatically and do not need a .enc template.",
         "lock": "Another user is currently using this profile. Try again after they close it."
       }
+    }
+  },
+  "shareProfile": {
+    "title": "Share Profile",
+    "description": "Publish this local Wayfern/Chromium profile to the self-hosted team server so other members can join it from Shared Profiles.",
+    "publishHint": "Publishing enables Regular sync, uploads the current local state, and creates a team profile. Give other users editor access from Team Admin after publishing.",
+    "alreadySharedHint": "This profile is already configured for team sync. Publishing again refreshes its server metadata and uploads the latest local state.",
+    "openTeamAdmin": "Team Admin",
+    "engine": {
+      "wayfern": "Chromium / Wayfern",
+      "unsupported": "Unsupported engine"
+    },
+    "actions": {
+      "publish": "Publish to Team",
+      "resync": "Refresh Team Copy"
+    },
+    "errors": {
+      "wayfernOnly": "Only Wayfern/Chromium profiles can be shared in this MVP.",
+      "ephemeral": "Temporary profiles cannot be shared with the team."
+    },
+    "toasts": {
+      "published": "Profile shared with the team",
+      "publishFailed": "Failed to share profile: {{error}}"
     }
   }
 }

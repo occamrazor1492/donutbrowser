@@ -44,18 +44,17 @@ pnpm test
 | Auth | Admin login and `/v1/me` | JWT is accepted and returns `mode: "team"` |
 | Users | Admin creates A/B/C users and lists users | Created users are visible to admin |
 | Admin security | Member calls admin user list | Request is rejected with 403 |
-| BotBrowser assets | Admin uploads `.enc` bytes and lists assets | Asset is stored under `teams/{teamId}/bot_profiles/{id}.enc` for advanced BotBrowser profiles |
+| BotBrowser assets | Admin uploads `.enc` bytes and lists assets through compatibility APIs | Asset is stored under `teams/{teamId}/bot_profiles/{id}.enc` for legacy or advanced BotBrowser records |
 | Chromium profile creation | Member A creates a Wayfern/Chromium profile while logged into self-hosted | Profile engine is `wayfern`; sync mode is `Regular`; A receives owner permission; initial metadata/manifest is uploaded |
-| BotBrowser profile creation | Member A creates an advanced BotBrowser profile referencing asset | Profile engine is `botbrowser`; A receives owner permission |
+| Chromium share action | Member A clicks `Share to Team` for an existing local Wayfern profile | Profile is registered as a team profile, sync mode becomes `Regular`, and current local state is uploaded |
 | Asset references | Admin deletes a template used by a live profile | Request is rejected with 409 |
 | Isolation | Unshared B lists/gets/downloads/uploads/locks A profile | Profile is hidden or rejected with 403 |
-| Viewer | Admin grants B viewer | B can read profile metadata and download `.enc`; B cannot upload or lock |
+| Viewer | Admin grants B viewer | B can read profile metadata; B cannot upload, lock, materialize for launch, or launch |
 | Shared list | Admin grants B editor | B's `team_list_profiles` result includes the shared profile |
 | Materialize Chromium | B adds shared Wayfern/Chromium profile locally | Local `BrowserProfile` uses the team profile id, `engine: "wayfern"`, browser `wayfern`, and sync mode `Regular` |
-| Materialize BotBrowser | B adds shared BotBrowser profile locally | Local `BrowserProfile` uses the team profile id, `engine: "botbrowser"`, sync mode `Regular`, and the selected template id |
 | Materialize idempotency | B adds the same shared profile again | Existing local profile metadata is updated; no duplicate profile is created |
 | Preflight permission | Viewer runs shared profile preflight | Permission check fails with a readable result |
-| Preflight runtime/assets | Editor runs preflight with missing browser runtime or missing BotBrowser `.enc` | The failing check identifies the missing runtime/template |
+| Preflight runtime | Editor runs preflight with missing Chromium runtime | The failing check identifies the missing runtime |
 | Asset permissions | Viewer tries to upload `bot_profiles/*.enc` | Request is rejected with 403 |
 | Lock gate | Editor B uploads before lock | Upload presign is rejected with 403 |
 | Editor sync | Editor B locks and uploads metadata through presigned URL | Upload succeeds and `stat` sees the object |
@@ -71,21 +70,19 @@ pnpm test
 
 ## Manual Desktop Acceptance
 
-These cases require the real Donut Desktop app. The default Chromium flow does not require a `.enc` file; BotBrowser-specific cases require a real BotBrowser-compatible `.enc` file.
+These cases require the real Donut Desktop app. The default Chromium flow does not require a `.enc` file; BotBrowser-specific cases are compatibility-only for this MVP.
 
 | Area | Case | Expected result |
 | --- | --- | --- |
 | Desktop login | Open Donut, configure self-hosted URL, email, password | Login survives app restart |
-| Team Admin UI | Admin opens Sync settings and clicks Team Admin | Users, templates, profiles, permissions, locks, and audit logs are manageable in desktop UI |
-| Shared Profiles UI | B opens the header menu and clicks Shared Profiles | B sees every profile shared with their account, with permission, engine, template, lock, and local status |
+| Team Admin UI | Admin opens the main Team menu and clicks Team Admin | Users, Wayfern profiles, permissions, locks, and audit logs are manageable in desktop UI |
+| Share action | A clicks Share to Team on a local Wayfern profile | Publish dialog explains server authority, sync is enabled, and the profile appears in Team Admin |
+| Shared Profiles UI | B opens Team → Shared Profiles | B sees every profile shared with their account, with permission, engine, lock, and local status |
 | Shared Chromium add | B clicks Add to local for a Wayfern/Chromium profile | The local profile appears in the main list, keeps the same profile id, and uses sync mode `Regular` |
-| Shared BotBrowser add | B clicks Add to local for a BotBrowser profile | The local profile appears in the main list and keeps the same profile id/template id |
-| Shared unsupported engine | B sees a Camoufox team profile | UI shows it as not supported for one-click launch |
+| Shared unsupported engine | B sees a BotBrowser or Camoufox team profile | UI shows it as not supported for one-click launch |
 | Preflight UI | Run preflight from Shared Profiles | Login, permission, browser runtime/fingerprint data, and lock checks are displayed with readable pass/fail text |
-| BotBrowser path | Choose or auto-detect BotBrowser/Chromium executable | Profile launch does not ask again |
 | Chromium profile create | Create Wayfern/Chromium profile while logged into self-hosted | Profile appears locally and in team list without selecting a template |
-| BotBrowser profile create | Create BotBrowser profile and assign uploaded `.enc` asset | Profile appears locally and in team list |
-| Launch args | Start profile | Process includes `--bot-profile`, `--user-data-dir`, `--remote-debugging-port`, `--disable-blink-features=AutomationControlled` |
+| Launch args | Start shared Wayfern profile | Process uses the shared local profile data dir and normal Wayfern Chromium launch arguments |
 | Lock UI | A starts profile; B starts same profile | B sees conflict and cannot start |
 | State sync | A logs into a test site, closes browser; B starts after unlock | B sees A's persisted login state |
 | Close-time stability | A closes a shared Chromium/BotBrowser profile after writing cookies/local storage | Donut waits for stable profile files before uploading; timeout logs a warning but still attempts sync |

@@ -24,6 +24,7 @@ import {
   LuInfo,
   LuLock,
   LuPuzzle,
+  LuShare2,
   LuTrash2,
   LuTriangleAlert,
   LuUsers,
@@ -183,6 +184,7 @@ interface TableMeta {
   onCloneProfile?: (profile: BrowserProfile) => void;
   onCopyCookiesToProfile?: (profile: BrowserProfile) => void;
   onOpenCookieManagement?: (profile: BrowserProfile) => void;
+  onPublishTeamProfile?: (profile: BrowserProfile) => void;
 
   // Traffic snapshots (lightweight real-time data)
   trafficSnapshots: Record<string, TrafficSnapshot>;
@@ -829,6 +831,7 @@ interface ProfilesDataTableProps {
   onConfigureCamoufox: (profile: BrowserProfile) => void;
   onCopyCookiesToProfile?: (profile: BrowserProfile) => void;
   onOpenCookieManagement?: (profile: BrowserProfile) => void;
+  onPublishTeamProfile?: (profile: BrowserProfile) => void;
   runningProfiles: Set<string>;
   isUpdating: (browser: string) => boolean;
   onDeleteSelectedProfiles: (profileIds: string[]) => Promise<void>;
@@ -867,6 +870,7 @@ export function ProfilesDataTable({
   onConfigureCamoufox,
   onCopyCookiesToProfile,
   onOpenCookieManagement,
+  onPublishTeamProfile,
   runningProfiles,
   isUpdating,
   onAssignProfilesToGroup,
@@ -1579,6 +1583,7 @@ export function ProfilesDataTable({
       onConfigureCamoufox,
       onCopyCookiesToProfile,
       onOpenCookieManagement,
+      onPublishTeamProfile,
 
       // Traffic snapshots (lightweight real-time data)
       trafficSnapshots,
@@ -1655,6 +1660,7 @@ export function ProfilesDataTable({
       onConfigureCamoufox,
       onCopyCookiesToProfile,
       onOpenCookieManagement,
+      onPublishTeamProfile,
       syncStatuses,
       onOpenProfileSyncDialog,
       onToggleProfileSync,
@@ -2541,9 +2547,35 @@ export function ProfilesDataTable({
         cell: ({ row, table }) => {
           const meta = table.options.meta as TableMeta;
           const profile = row.original;
+          const canShareToTeam =
+            !!meta.onPublishTeamProfile &&
+            (profile.browser === "wayfern" || profile.engine === "wayfern") &&
+            profile.ephemeral !== true;
 
           return (
-            <div className="flex justify-end items-center">
+            <div className="flex justify-end items-center gap-1">
+              {canShareToTeam && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      disabled={!meta.isClient}
+                      onClick={() => {
+                        meta.onPublishTeamProfile?.(profile);
+                      }}
+                    >
+                      <span className="sr-only">
+                        {t("profiles.actions.shareToTeam")}
+                      </span>
+                      <LuShare2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("profiles.actions.shareToTeam")}
+                  </TooltipContent>
+                </Tooltip>
+              )}
               <Button
                 variant="ghost"
                 className="p-0 w-8 h-8"
@@ -2714,6 +2746,7 @@ export function ProfilesDataTable({
               onConfigureCamoufox={onConfigureCamoufox}
               onCopyCookiesToProfile={onCopyCookiesToProfile}
               onOpenCookieManagement={onOpenCookieManagement}
+              onPublishTeamProfile={onPublishTeamProfile}
               onAssignExtensionGroup={onAssignExtensionGroup}
               onOpenBypassRules={(profile) => {
                 setBypassRulesProfile(profile);

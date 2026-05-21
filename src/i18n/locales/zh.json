@@ -187,8 +187,10 @@
       "integrations": "集成",
       "importProfile": "导入配置文件",
       "extensions": "扩展程序",
-      "teamProfiles": "共享 Profiles"
-    }
+      "teamProfiles": "共享 Profiles",
+      "teamAdmin": "团队管理"
+    },
+    "team": "团队"
   },
   "profiles": {
     "title": "配置文件",
@@ -222,7 +224,8 @@
       "assignToGroup": "分配到组",
       "changeFingerprint": "更改指纹",
       "copyCookiesToProfile": "复制 Cookies 到配置文件",
-      "launchHook": "启动钩子 URL"
+      "launchHook": "启动钩子 URL",
+      "shareToTeam": "共享到团队"
     },
     "synchronizer": {
       "launchWithSync": "使用同步器启动",
@@ -310,8 +313,10 @@
     },
     "chromiumLabel": "Chromium",
     "chromiumSubtitle": "由 Wayfern 驱动",
+    "chromiumTeamSharing": "创建后可以共享给团队。",
     "firefoxLabel": "Firefox",
     "firefoxSubtitle": "由 Camoufox 驱动",
+    "firefoxTeamSharingUnavailable": "此版本仅本机使用；团队共享目前只支持 Chromium 环境。",
     "camoufoxWarning": "Firefox（Camoufox）由第三方组织维护。在生产环境中，请使用 Chromium。",
     "platformUnavailable": "{{browser}} 在您的平台上尚不可用。",
     "botbrowser": {
@@ -611,7 +616,7 @@
     "teamAdmin": {
       "open": "团队管理",
       "title": "团队管理",
-      "description": "管理自托管团队用户、BotBrowser 模板、团队 profile、权限和审计日志。",
+      "description": "管理自托管团队用户、共享 Chromium 环境、权限、锁和审计日志。",
       "actions": "操作",
       "tabs": {
         "users": "用户",
@@ -1698,7 +1703,7 @@
   },
   "teamProfiles": {
     "title": "共享 Profiles",
-    "description": "把团队共享的 Chromium 环境加入本机，并在预检通过后启动。只有高级 BotBrowser profile 才需要模板。",
+    "description": "把团队共享的 Chromium 环境加入本机，并在预检通过后启动。",
     "executablePath": "BotBrowser 可执行文件路径（高级）",
     "executablePathPlaceholder": "仅 BotBrowser 需要，例如 /Applications/BotBrowser.app",
     "count": "{{count}} 个共享 profile",
@@ -1707,7 +1712,7 @@
     "template": "模板",
     "noTemplate": "未选择模板",
     "syncMode": "同步模式",
-    "unsupportedEngine": "这个团队 profile engine 会保留数据兼容，但当前版本只支持一键加入和启动 Chromium 与 BotBrowser profile。",
+    "unsupportedEngine": "这个团队 profile engine 会保留兼容数据，但当前版本只支持一键启动 Chromium 共享环境。",
     "viewerCannotLaunch": "Viewer 可以查看这个 profile，但启动需要 owner、editor 或 admin 权限。",
     "actions": {
       "addToLocal": "加入本机",
@@ -1771,12 +1776,35 @@
       },
       "failed": {
         "selfHostedLogin": "请先登录自托管同步服务器。",
-        "engine": "当前版本只支持启动 Chromium 和 BotBrowser 共享 profile。",
+        "engine": "当前版本只支持启动 Chromium 共享环境。",
         "permission": "请让管理员授予 owner 或 editor 权限。",
-        "executable": "请下载需要的浏览器运行时，或填写有效的 BotBrowser 可执行文件路径。",
-        "botProfile": "BotBrowser 需要先选择或上传 .enc 模板；Chromium profile 不需要模板。",
+        "executable": "启动共享环境前，请先下载所需的 Chromium 运行时。",
+        "botProfile": "Chromium 环境会自动生成指纹数据，不需要 .enc 模板。",
         "lock": "另一个用户正在使用这个 profile，请等对方关闭后再试。"
       }
+    }
+  },
+  "shareProfile": {
+    "title": "共享环境",
+    "description": "把这个本地 Wayfern/Chromium 环境发布到自托管团队服务器，其他成员可以从 Shared Profiles 加入。",
+    "publishHint": "发布会开启 Regular 同步、上传当前本地状态，并创建团队 profile。发布后请在团队管理里给其他用户分配 editor 权限。",
+    "alreadySharedHint": "这个环境已经配置为团队同步。再次发布会刷新服务端 metadata，并上传最新本地状态。",
+    "openTeamAdmin": "团队管理",
+    "engine": {
+      "wayfern": "Chromium / Wayfern",
+      "unsupported": "暂不支持的内核"
+    },
+    "actions": {
+      "publish": "发布到团队",
+      "resync": "刷新团队副本"
+    },
+    "errors": {
+      "wayfernOnly": "当前 MVP 只支持共享 Wayfern/Chromium 环境。",
+      "ephemeral": "临时环境不能共享给团队。"
+    },
+    "toasts": {
+      "published": "已共享到团队",
+      "publishFailed": "共享环境失败：{{error}}"
     }
   }
 }
