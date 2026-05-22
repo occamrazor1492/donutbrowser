@@ -46,12 +46,14 @@ pnpm test
 | 管理权限 | 普通成员访问 admin 用户列表 | 请求返回 403 |
 | BotBrowser assets | 管理员通过兼容 API 上传 `.enc` bytes 并查看 asset 列表 | asset 存储到 `teams/{teamId}/bot_profiles/{id}.enc`，用于历史或高级 BotBrowser 记录 |
 | Chromium profile 创建 | 成员 A 在 self-hosted 登录状态下创建 Wayfern/Chromium profile | profile engine 为 `wayfern`，sync mode 为 `Regular`，A 自动获得 owner 权限，初始 metadata/manifest 已上传 |
+| Cloak profile 创建 | 成员 A 在 self-hosted 登录状态下创建 Cloak Chromium 团队 profile | profile engine 为 `cloak`，sync mode 为 `Regular`，A 自动获得 owner 权限，不需要 `.enc` asset |
 | Chromium 共享动作 | 成员 A 对已有本地 Wayfern profile 点击 `共享到团队` | profile 注册成 team profile，sync mode 变为 `Regular`，当前本地状态已上传 |
 | Asset 引用 | 管理员删除仍被 live profile 引用的模板 | 请求返回 409 |
 | 隔离性 | 未共享的 B list/get/download/upload/lock A 的 profile | profile 被隐藏或请求返回 403 |
 | Viewer | 管理员给 B viewer 权限 | B 能读 profile metadata，但不能上传、加锁、加入为可启动 profile 或启动 |
 | 共享列表 | 管理员给 B editor 权限 | B 的 `team_list_profiles` 结果包含该共享 profile |
 | 本地加入 Chromium | B 把共享 Wayfern/Chromium profile 加入本机 | 本地 `BrowserProfile` 使用团队 profile id、`engine: "wayfern"`、browser `wayfern` 和 sync mode `Regular` |
+| 本地加入 Cloak | B 把共享 Cloak Chromium profile 加入本机 | 本地 `BrowserProfile` 使用团队 profile id、`engine: "cloak"`、browser `cloak`、确定性的指纹 seed 和 sync mode `Regular` |
 | 重复加入 | B 再次加入同一个共享 profile | 更新已有本地 profile metadata，不创建重复 profile |
 | 预检权限 | Viewer 运行共享 profile 预检 | 权限检查失败，并返回可读结果 |
 | 预检运行时 | Editor 在缺 Chromium 运行时时运行预检 | 失败项明确指出缺运行时 |
@@ -70,24 +72,26 @@ pnpm test
 
 ## 手动桌面验收
 
-这些用例需要真实 Donut Desktop。默认 Chromium 流程不需要 `.enc` 文件；BotBrowser 专项用例在本 MVP 中只作为兼容项。
+这些用例需要真实 Donut Desktop。默认 Wayfern/Cloak Chromium 流程不需要 `.enc` 文件；BotBrowser 专项用例在本 MVP 中只作为兼容项。
 
 | 模块 | 用例 | 预期结果 |
 | --- | --- | --- |
 | 桌面登录 | 打开 Donut，配置 self-hosted URL、email、password | 重启应用后登录状态仍然存在 |
-| Team Admin UI | 管理员打开主界面 Team 菜单并点击团队管理 | 可在桌面端管理用户、Wayfern profile、权限、lock 和审计日志 |
-| 共享动作 | A 对本地 Wayfern profile 点击共享到团队 | 发布弹窗说明服务器权威源，sync 被启用，profile 出现在团队管理里 |
+| Team Admin UI | 管理员打开主界面 Team 菜单并点击团队管理 | 可在桌面端管理用户、Wayfern/Cloak profile、权限、lock 和审计日志 |
+| 共享动作 | A 对本地 Wayfern 或 Cloak profile 点击共享到团队 | 发布弹窗说明服务器权威源，sync 被启用，profile 出现在团队管理里 |
 | Shared Profiles UI | B 打开 Team → 共享 Profiles | B 能看到所有授权给自己的 profile，以及权限、engine、lock 和本地状态 |
 | 加入 Chromium 共享 profile | B 对 Wayfern/Chromium profile 点击加入本机 | 本地主列表出现该 profile，保持相同 profile id，并使用 sync mode `Regular` |
+| 加入 Cloak 共享 profile | B 对 Cloak Chromium profile 点击加入本机 | 本地主列表出现该 profile，保持相同 profile id，启动时使用安装包内置 Cloak runtime |
 | 不支持 engine | B 看到 BotBrowser 或 Camoufox 团队 profile | UI 显示当前不支持一键启动 |
 | 预检 UI | 在共享 Profiles 里运行预检 | 登录、权限、浏览器运行时/指纹数据和 lock 检查都有可读 pass/fail 文案 |
 | Chromium profile 创建 | self-hosted 登录后创建 Wayfern/Chromium profile | profile 不需要选择模板，出现在本地列表和团队列表中 |
 | 启动参数 | 启动共享 Wayfern profile | 进程使用共享本地 profile data dir 和正常 Wayfern Chromium 启动参数 |
+| Cloak 启动参数 | 启动共享 Cloak profile | 进程使用共享本地 profile data dir、`--fingerprint=<seed>` 和内置 CloakBrowser 可执行文件 |
 | Lock UI | A 启动 profile，B 同时启动同一个 profile | B 看到冲突并无法启动 |
 | 状态同步 | A 登录测试网站后关闭浏览器，B 在 unlock 后启动 | B 能看到 A 保留的登录状态 |
 | 关闭稳定等待 | A 写入 cookie/local storage 后关闭共享 Chromium/BotBrowser profile | Donut 等待 profile 文件稳定后上传；超时会记录 warning，但仍尝试同步 |
-| 跨机器 | B 在另一台机器登录 | profile 和 `.enc` 下载到本地缓存并启动 |
-| 代理 | 测试 HTTP、SOCKS5、SOCKS5H 代理 | BotBrowser 收到正确的 `--proxy-server`，流量从代理出口出去 |
+| 跨机器 | B 在另一台机器登录 | 共享 Wayfern/Cloak profile 数据下载到本地缓存并启动 |
+| 代理 | 测试 HTTP、SOCKS5、SOCKS5H 代理 | 共享 Chromium runtime 收到正确的本地代理参数，流量从代理出口出去 |
 | 崩溃恢复 | 浏览器或 App 持有 lock 时被杀掉 | lock 过期或管理员能 unlock，之后可重新启动 |
 | Viewer UX | Viewer 打开共享 profile | Viewer 能查看 metadata，但不能启动或写入 |
 

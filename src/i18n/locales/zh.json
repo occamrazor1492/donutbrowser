@@ -333,7 +333,31 @@
     "engines": {
       "botbrowser": "BotBrowser",
       "wayfern": "Wayfern",
-      "camoufox": "Camoufox"
+      "camoufox": "Camoufox",
+      "cloak": "Cloak"
+    },
+    "cloak": {
+      "label": "Cloak Chromium",
+      "subtitle": "内部 CloakBrowser 引擎，提供更强的指纹伪装",
+      "teamSharing": "可以像 Wayfern 环境一样共享给团队。",
+      "runtimeHint": "内部安装包会自带 CloakBrowser。除非你要测试本地 binary，否则这里保持为空。",
+      "runtimeChecking": "正在检查内置 CloakBrowser 运行时...",
+      "runtimeAvailable": "{{platform}} 的 CloakBrowser 运行时可用。",
+      "runtimeMissing": "没有找到 {{platform}} 的 CloakBrowser 运行时。",
+      "runtimeUnknown": "暂时无法读取 CloakBrowser 运行时状态。",
+      "executablePath": "CloakBrowser 可执行文件路径",
+      "executablePathPlaceholder": "留空则使用内部打包自带运行时",
+      "executablePathHint": "私有打包会从 vendor-private/cloakbrowser 读取 binary 并打进安装包。",
+      "fingerprintSeed": "指纹种子",
+      "fingerprintSeedPlaceholder": "根据 profile ID 自动生成",
+      "locale": "Locale",
+      "localePlaceholder": "zh-CN",
+      "timezone": "时区",
+      "timezonePlaceholder": "Asia/Shanghai",
+      "languages": "Accept-Language",
+      "languagesPlaceholder": "zh-CN,zh,en-US,en",
+      "extraArgs": "额外启动参数",
+      "extraArgsPlaceholder": "--fingerprint-brand=Chrome"
     }
   },
   "deleteDialog": {
@@ -616,7 +640,7 @@
     "teamAdmin": {
       "open": "团队管理",
       "title": "团队管理",
-      "description": "管理自托管团队用户、共享 Chromium 环境、权限、锁和审计日志。",
+      "description": "管理自托管团队用户、共享 Wayfern/Cloak 环境、权限、锁和审计日志。",
       "actions": "操作",
       "tabs": {
         "users": "用户",
@@ -637,6 +661,9 @@
         "permissionDeleted": "权限已移除"
       },
       "users": {
+        "createTitle": "添加用户",
+        "createDescription": "填写邮箱、临时密码和角色后，点击创建用户即可给团队成员开账号。",
+        "listTitle": "团队用户",
         "emailPlaceholder": "member@example.com",
         "passwordPlaceholder": "临时密码",
         "create": "创建用户",
@@ -690,7 +717,8 @@
       "engines": {
         "botbrowser": "BotBrowser",
         "wayfern": "Wayfern",
-        "camoufox": "Camoufox"
+        "camoufox": "Camoufox",
+        "cloak": "Cloak Chromium"
       }
     }
   },
@@ -1703,7 +1731,7 @@
   },
   "teamProfiles": {
     "title": "共享 Profiles",
-    "description": "把团队共享的 Chromium 环境加入本机，并在预检通过后启动。",
+    "description": "把共享的 Wayfern 或 Cloak Chromium 团队环境加入本机，通过预检后启动。",
     "executablePath": "BotBrowser 可执行文件路径（高级）",
     "executablePathPlaceholder": "仅 BotBrowser 需要，例如 /Applications/BotBrowser.app",
     "count": "{{count}} 个共享 profile",
@@ -1712,7 +1740,7 @@
     "template": "模板",
     "noTemplate": "未选择模板",
     "syncMode": "同步模式",
-    "unsupportedEngine": "这个团队 profile engine 会保留兼容数据，但当前版本只支持一键启动 Chromium 共享环境。",
+    "unsupportedEngine": "这个团队环境的 engine 会保留兼容数据，但当前只支持 Wayfern 和 Cloak Chromium 一键共享启动。",
     "viewerCannotLaunch": "Viewer 可以查看这个 profile，但启动需要 owner、editor 或 admin 权限。",
     "actions": {
       "addToLocal": "加入本机",
@@ -1746,9 +1774,10 @@
     "engines": {
       "botbrowser": "BotBrowser",
       "wayfern": "Wayfern",
-      "camoufox": "Camoufox"
+      "camoufox": "Camoufox",
+      "cloak": "Cloak Chromium"
     },
-    "templateNotRequired": "Chromium 不需要模板"
+    "templateNotRequired": "Wayfern 或 Cloak 不需要模板"
   },
   "botbrowserPreflight": {
     "title": "共享 Profile 预检",
@@ -1771,28 +1800,29 @@
         "engine": "这个共享 profile 使用受支持的 engine。",
         "permission": "当前用户可以启动这个 profile。",
         "executable": "浏览器运行时已可用，或会在加入 profile 后检查。",
-        "botProfile": "指纹数据已可用；Chromium profile 不需要 .enc 模板。",
+        "botProfile": "指纹数据可用；Wayfern 和 Cloak profile 不需要 .enc 模板。",
         "lock": "当前没有其他用户持有这个 profile 的锁。"
       },
       "failed": {
         "selfHostedLogin": "请先登录自托管同步服务器。",
-        "engine": "当前版本只支持启动 Chromium 共享环境。",
+        "engine": "当前版本只支持启动 Wayfern 和 Cloak Chromium 共享环境。",
         "permission": "请让管理员授予 owner 或 editor 权限。",
-        "executable": "启动共享环境前，请先下载所需的 Chromium 运行时。",
-        "botProfile": "Chromium 环境会自动生成指纹数据，不需要 .enc 模板。",
+        "executable": "启动共享环境前，请先安装或打包所需的 Wayfern/Cloak Chromium runtime。",
+        "botProfile": "Wayfern 和 Cloak profile 会自动生成指纹数据，不需要 .enc 模板。",
         "lock": "另一个用户正在使用这个 profile，请等对方关闭后再试。"
       }
     }
   },
   "shareProfile": {
     "title": "共享环境",
-    "description": "把这个本地 Wayfern/Chromium 环境发布到自托管团队服务器，其他成员可以从 Shared Profiles 加入。",
-    "publishHint": "发布会开启 Regular 同步、上传当前本地状态，并创建团队 profile。发布后请在团队管理里给其他用户分配 editor 权限。",
+    "description": "把这个本地 Wayfern 或 Cloak Chromium 环境发布到自托管团队服务器，其他成员可以在 Shared Profiles 加入。",
+    "publishHint": "发布会开启 Regular 同步、上传当前本地状态并创建团队环境。发布后请在 Team Admin 给其他用户分配 editor 权限。",
     "alreadySharedHint": "这个环境已经配置为团队同步。再次发布会刷新服务端 metadata，并上传最新本地状态。",
     "openTeamAdmin": "团队管理",
     "engine": {
       "wayfern": "Chromium / Wayfern",
-      "unsupported": "暂不支持的内核"
+      "unsupported": "暂不支持的内核",
+      "cloak": "Cloak Chromium"
     },
     "actions": {
       "publish": "发布到团队",
@@ -1800,7 +1830,8 @@
     },
     "errors": {
       "wayfernOnly": "当前 MVP 只支持共享 Wayfern/Chromium 环境。",
-      "ephemeral": "临时环境不能共享给团队。"
+      "ephemeral": "临时环境不能共享给团队。",
+      "chromiumOnly": "这个 MVP 只支持共享 Wayfern 或 Cloak Chromium 环境。"
     },
     "toasts": {
       "published": "已共享到团队",

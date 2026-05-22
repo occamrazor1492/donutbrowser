@@ -29,6 +29,26 @@ pub struct BotBrowserConfig {
   pub network_info_override: bool,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct CloakConfig {
+  #[serde(default)]
+  pub executable_path: Option<String>,
+  #[serde(default)]
+  pub binary_version: Option<String>,
+  #[serde(default)]
+  pub binary_sha256: Option<String>,
+  #[serde(default)]
+  pub fingerprint_seed: Option<u64>,
+  #[serde(default)]
+  pub locale: Option<String>,
+  #[serde(default)]
+  pub timezone: Option<String>,
+  #[serde(default)]
+  pub languages: Option<String>,
+  #[serde(default)]
+  pub extra_args: Vec<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Default)]
 #[allow(dead_code)]
 pub enum SyncStatus {
@@ -99,6 +119,8 @@ pub struct BrowserProfile {
   pub dns_blocklist: Option<String>,
   #[serde(default)]
   pub botbrowser_config: Option<BotBrowserConfig>,
+  #[serde(default)]
+  pub cloak_config: Option<CloakConfig>,
 }
 
 pub fn default_release_type() -> String {

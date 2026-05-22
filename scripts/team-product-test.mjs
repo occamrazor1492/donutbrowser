@@ -17,6 +17,7 @@ const state = {
   profileIds: [],
   profileId: "",
   wayfernProfileId: "",
+  cloakProfileId: "",
   assetId: "",
 };
 
@@ -302,6 +303,39 @@ async function main() {
         token: state.bToken,
         expected: 201,
       });
+    });
+
+    await step("member can create a Cloak team profile without a BotBrowser asset", async () => {
+      const profile = await requestJson("POST", "/v1/team-profiles", {
+        token: state.aToken,
+        expected: 201,
+        body: {
+          name: `Cloak profile ${RUN_ID}`,
+          engine: "cloak",
+        },
+      });
+      state.cloakProfileId = profile.body.id;
+      state.profileIds.push(profile.body.id);
+      assert(profile.body.engine === "cloak", "Cloak profile engine was not cloak");
+      assert(
+        !profile.body.botProfileAssetId,
+        "Cloak profile unexpectedly required a BotBrowser asset",
+      );
+
+      await requestJson("POST", `/v1/team-profiles/${state.cloakProfileId}/permissions`, {
+        token: state.adminToken,
+        expected: 201,
+        body: { userId: userB.id, permission: "editor" },
+      });
+      const sharedList = await requestJson("GET", "/v1/team-profiles", {
+        token: state.bToken,
+      });
+      assert(
+        sharedList.body.some(
+          (item) => item.id === state.cloakProfileId && item.engine === "cloak",
+        ),
+        "shared Cloak profile did not appear in editor list",
+      );
     });
 
     await step("referenced BotBrowser assets cannot be deleted", async () => {

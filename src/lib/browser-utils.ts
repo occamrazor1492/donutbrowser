@@ -16,6 +16,7 @@ import {
 export function getBrowserDisplayName(browserType: string): string {
   const browserNames: Record<string, string> = {
     camoufox: "Camoufox",
+    cloak: "Cloak",
     wayfern: "Wayfern",
   };
 
@@ -32,6 +33,7 @@ export function getBrowserIcon(browserType: string) {
     case "camoufox":
       return FaFirefox; // Firefox-based anti-detect browser
     case "wayfern":
+    case "cloak":
       return FaChrome; // Chromium-based anti-detect browser
     default:
       // All other browsers get a warning icon

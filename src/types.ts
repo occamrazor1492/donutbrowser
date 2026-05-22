@@ -15,7 +15,7 @@ export interface BrowserProfile {
   id: string; // UUID of the profile
   name: string;
   browser: string;
-  engine?: "botbrowser" | "wayfern" | "camoufox";
+  engine?: "botbrowser" | "wayfern" | "cloak" | "camoufox";
   version: string;
   proxy_id?: string; // Reference to stored proxy
   vpn_id?: string; // Reference to stored VPN config
@@ -39,6 +39,7 @@ export interface BrowserProfile {
   created_by_email?: string;
   dns_blocklist?: string;
   botbrowser_config?: BotBrowserConfig;
+  cloak_config?: CloakConfig;
 }
 
 export interface BotBrowserConfig {
@@ -53,6 +54,17 @@ export interface BotBrowserConfig {
   local_dns?: boolean;
   port_protection?: boolean;
   network_info_override?: boolean;
+}
+
+export interface CloakConfig {
+  executable_path?: string;
+  binary_version?: string;
+  binary_sha256?: string;
+  fingerprint_seed?: number;
+  locale?: string;
+  timezone?: string;
+  languages?: string;
+  extra_args?: string[];
 }
 
 export interface SelfHostedTeamUser {
@@ -90,7 +102,7 @@ export interface TeamProfileRecord {
   teamId: string;
   ownerUserId: string;
   name: string;
-  engine: "botbrowser" | "wayfern" | "camoufox";
+  engine: "botbrowser" | "wayfern" | "cloak" | "camoufox";
   botProfileAssetId?: string | null;
   syncMode: string;
   deletedAt?: string | null;

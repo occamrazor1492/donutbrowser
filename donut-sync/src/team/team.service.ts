@@ -186,7 +186,7 @@ export class TeamService {
     input: {
       id?: string;
       name: string;
-      engine?: "botbrowser" | "wayfern" | "camoufox";
+      engine?: "botbrowser" | "wayfern" | "cloak" | "camoufox";
       botProfileAssetId?: string | null;
       syncMode?: string;
     },
@@ -225,7 +225,7 @@ export class TeamService {
     profileId: string,
     input: {
       name?: string;
-      engine?: "botbrowser" | "wayfern" | "camoufox";
+      engine?: "botbrowser" | "wayfern" | "cloak" | "camoufox";
       botProfileAssetId?: string | null;
       syncMode?: string;
     },
@@ -709,6 +709,7 @@ export class TeamService {
 
   private toEngine(engine?: string): BrowserEngine {
     if (engine === "wayfern") return BrowserEngine.wayfern;
+    if (engine === "cloak") return BrowserEngine.cloak;
     if (engine === "camoufox") return BrowserEngine.camoufox;
     return BrowserEngine.botbrowser;
   }

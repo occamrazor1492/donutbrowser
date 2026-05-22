@@ -14,6 +14,7 @@
 - 多个用户用团队账号登录。
 - 管理员管理用户、共享 Chromium profile、权限、锁和审计日志。
 - Wayfern/Chromium 作为默认团队共享浏览器环境。
+- CloakBrowser/Chromium 作为内部可选共享引擎，用于更强的 binary 级指纹伪装。
 - BotBrowser 仅作为兼容数据和当前团队 MVP 主流程之外的高级 engine 保留。
 - Mac/Windows 桌面客户端在每个用户自己的电脑上运行浏览器进程。
 
@@ -25,17 +26,18 @@
 - 已完整签名的公开发行桌面软件。
 - 同一个 profile 的实时多人协作编辑系统。
 
-## 三种浏览器环境和共享状态
+## 浏览器环境和共享状态
 
-当前版本支持三类浏览器环境，但共享能力不同：
+当前版本支持四类浏览器环境，但共享能力不同：
 
 | 环境 | engine/browser | 当前共享状态 | 备注 |
 | --- | --- | --- | --- |
 | Wayfern/Chromium | `wayfern` / `wayfern` | 默认支持，推荐团队日常使用 | 本地创建后点击 `共享到团队`，或沿用 self-hosted 同步流程注册并上传；不需要 `.enc` 模板。 |
+| CloakBrowser/Chromium | `cloak` / `cloak` | 支持内部共享流程 | 创建 `Cloak Chromium` 本地环境后点击 `共享到团队`。内部安装包打包时必须把 Cloak binary 放在 `vendor-private/cloakbrowser`。 |
 | BotBrowser | `botbrowser` / `botbrowser` | 当前客户端 MVP 只做兼容保留 | 已有服务端记录和 `.enc` asset 会保留，但正常客户端共享流程不再要求成员导入模板。 |
 | Camoufox/Firefox | `camoufox` / `camoufox` | 当前不开放成员一键共享启动 | 服务端 metadata 兼容保留，但不作为本轮团队共享验收路径。 |
 
-因此，用户创建和共享环境时应优先选择 `Chromium` / `Wayfern`。BotBrowser 和 Camoufox 数据会保留兼容，但都不是当前版本的团队共享主流程。
+因此，用户创建和共享环境时应优先选择 `Chromium` / `Wayfern`。需要更强 CloakBrowser 指纹伪装、并且内部安装包已经打入 Cloak binary 时，再选择 `Cloak Chromium`。BotBrowser 和 Camoufox 数据会保留兼容，但都不是当前版本的团队共享主流程。
 
 ## 服务端功能
 
@@ -253,7 +255,7 @@ team_preflight_botbrowser_profile
 1. 登录同一个自托管服务器。
 2. 打开 `共享 Profiles`。
 3. 查看被分享的团队 profile，以及权限、engine、lock 状态和本地状态。
-4. 对 Wayfern/Chromium profile，点击 `加入本机` 会下载服务端 profile metadata 和状态。
+4. 对 Wayfern 或 Cloak Chromium profile，点击 `加入本机` 会下载服务端 profile metadata 和状态。
 5. 运行 `预检`。
 6. 预检通过后点击 `启动`。
 
@@ -263,30 +265,33 @@ team_preflight_botbrowser_profile
 - 本地 profile 保持和团队 profile 相同的 id。
 - 重复加入同一个共享 profile 会更新本地 metadata，不会创建重复 profile。
 - Wayfern/Chromium profile 会下载服务端 metadata/profile state，并使用 `engine: "wayfern"`、`browser: "wayfern"` 和 `sync_mode: "Regular"`。
+- Cloak Chromium profile 会下载服务端 metadata/profile state，并使用 `engine: "cloak"`、`browser: "cloak"`、确定性的指纹 seed 和 `sync_mode: "Regular"`。
 当前限制：
 
-- 成员一键加入和启动支持 Wayfern/Chromium profile。
+- 成员一键加入和启动支持 Wayfern 和 Cloak Chromium profile。
 - BotBrowser 和 Camoufox 团队 profile 记录仍然兼容服务端数据，但这个版本刻意不开放成员一键启动。
 
 ## 共享 Chromium 执行功能
 
-Wayfern/Chromium 是当前 MVP 的默认团队执行引擎。用户可以先创建本地 Wayfern profile，然后在主列表或 profile 详情动作里点击 `共享到团队`。Donut 会注册 team profile、启用 `Regular` sync、把当前 metadata/manifest 上传到团队前缀，并在每次启动/写入时使用 lock。
+Wayfern/Chromium 是当前 MVP 的默认团队执行引擎。Cloak Chromium 在内部安装包包含 CloakBrowser binary 时走同样的团队共享流程。用户可以先创建本地 Wayfern 或 Cloak profile，然后在主列表或 profile 详情动作里点击 `共享到团队`。Donut 会注册 team profile、启用 `Regular` sync、把当前 metadata/manifest 上传到团队前缀，并在每次启动/写入时使用 lock。
 
 当前共享 Wayfern 流程：
 
 ```text
-本地 Wayfern profile
+本地 Wayfern 或 Cloak profile
 -> 共享到团队
--> 注册 TeamProfile(engine=wayfern)
+-> 注册 TeamProfile(engine=wayfern|cloak)
 -> 获取 lock
 -> 上传当前 profile 状态
 -> 释放 lock
 -> 成员从 Shared Profiles 加入
 ```
 
+Wayfern 和 Cloak profile 不能混用同一个本地浏览器 profile。Wayfern profile 必须用 Wayfern 启动，Cloak profile 必须用 Cloak 启动。混用 runtime 可能损坏 Chromium profile 数据，也会让指纹身份不稳定。
+
 ## 预检功能
 
-启动共享 profile 前，客户端会运行 `team_preflight_botbrowser_profile(profileId)`。命令名为了兼容暂时保留，但当前客户端 MVP 只把 Wayfern/Chromium 作为可启动共享 engine。
+启动共享 profile 前，客户端会运行 `team_preflight_botbrowser_profile(profileId)`。命令名为了兼容暂时保留，但当前客户端 MVP 把 Wayfern 和 Cloak Chromium 作为可启动共享 engine。
 
 当前检查项：
 
@@ -294,8 +299,8 @@ Wayfern/Chromium 是当前 MVP 的默认团队执行引擎。用户可以先创�
 | --- | --- |
 | 自托管登录 | 用户已经登录 self-hosted server。 |
 | 权限 | 用户是 `admin`、`owner` 或 `editor`。 |
-| 浏览器运行时 | Wayfern/Chromium runtime 可用。 |
-| 指纹数据 | Wayfern/Chromium 已同步指纹 metadata，不需要 `.enc` 模板。 |
+| 浏览器运行时 | Wayfern runtime 已下载，或内部安装包包含 CloakBrowser runtime。 |
+| 指纹数据 | Wayfern/Cloak profile 不需要 `.enc` 模板；Cloak 使用确定性的 profile seed。 |
 | Lock | Profile 没有被其他用户锁定。 |
 
 UI 会在启动前显示可读的通过或失败结果。

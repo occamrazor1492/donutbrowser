@@ -244,6 +244,9 @@ Mac can be packaged as a Tauri desktop build:
 Local Apple Silicon internal test build:
 
 ```bash
+mkdir -p vendor-private/cloakbrowser/macos-aarch64
+# Put the CloakBrowser .app or executable for Apple Silicon in that folder.
+# The folder is ignored by git and copied into the Tauri bundle only at build time.
 pnpm build
 PROFILE=release TARGET=aarch64-apple-darwin \
   pnpm tauri build --target aarch64-apple-darwin --bundles dmg
@@ -279,6 +282,8 @@ Intel Macs need a separate `x86_64-apple-darwin` build. Build it on a Mac that h
 
 ```bash
 rustup target add x86_64-apple-darwin
+mkdir -p vendor-private/cloakbrowser/macos-x64
+# Put the Intel CloakBrowser .app or executable in that folder before building.
 pnpm build
 PROFILE=release TARGET=x86_64-apple-darwin \
   pnpm tauri build --target x86_64-apple-darwin --bundles dmg
@@ -308,6 +313,8 @@ Local Windows build command on a Windows machine:
 
 ```powershell
 pnpm install
+mkdir vendor-private\cloakbrowser\windows-x64
+# Put the CloakBrowser Windows executable folder in that directory before building.
 pnpm build
 $env:PROFILE = "release"
 $env:TARGET = "x86_64-pc-windows-msvc"
@@ -319,12 +326,27 @@ Unsigned builds may trigger Microsoft Defender SmartScreen warnings. For smoothe
 Windows needs its own acceptance pass for:
 
 ```text
-BotBrowser or Chromium executable selection
+CloakBrowser bundled runtime detection
 Local cache paths
 Proxy argument conversion
 Browser close and sync behavior
 Process cleanup
 ```
+
+## Internal CloakBrowser Runtime Packaging
+
+CloakBrowser is included only in private internal desktop builds. Do not commit the binary to git and do not upload it to public releases.
+
+Build-time layout:
+
+```text
+vendor-private/cloakbrowser/macos-aarch64/...
+vendor-private/cloakbrowser/macos-x64/...
+vendor-private/cloakbrowser/windows-x64/...
+vendor-private/cloakbrowser/linux-x64/...
+```
+
+The `pnpm prepare-tauri-binaries` script copies that private folder into `src-tauri/resources/cloakbrowser/` before Tauri builds. The copied resource folder is also ignored by git. At runtime, Cloak profiles first use `cloak_config.executable_path` if set, then the bundled internal runtime. If neither exists, Shared Profiles preflight reports a missing CloakBrowser runtime.
 
 ## Practical Release Path
 

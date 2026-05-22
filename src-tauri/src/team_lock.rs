@@ -232,9 +232,18 @@ impl ProfileLockManager {
       let _ = engine.unlock_profile(profile_id).await;
     }
 
-    {
+    let should_stop_heartbeat = {
       let mut locks = self.locks.write().await;
       locks.remove(profile_id);
+      locks.is_empty()
+    };
+    if should_stop_heartbeat {
+      let mut connected = self.connected.lock().await;
+      *connected = false;
+      let mut handle = self.heartbeat_handle.lock().await;
+      if let Some(h) = handle.take() {
+        h.abort();
+      }
     }
 
     let _ = crate::events::emit(

@@ -281,6 +281,7 @@ mod tests {
       created_by_email: None,
       dns_blocklist: None,
       botbrowser_config: None,
+      cloak_config: None,
     }
   }
 

@@ -212,11 +212,15 @@ fn profile_engine(profile: &BrowserProfile) -> String {
 }
 
 fn is_supported_team_launch_engine(engine: &str) -> bool {
-  matches!(engine, "wayfern" | "botbrowser")
+  matches!(engine, "wayfern" | "cloak" | "botbrowser")
 }
 
 fn is_wayfern_profile(profile: &BrowserProfile) -> bool {
   profile.browser == "wayfern" || profile.engine.as_deref() == Some("wayfern")
+}
+
+fn is_cloak_profile(profile: &BrowserProfile) -> bool {
+  profile.browser == "cloak" || profile.engine.as_deref() == Some("cloak")
 }
 
 fn is_locked_by_another(
@@ -296,6 +300,7 @@ pub fn build_materialized_botbrowser_profile(
     created_by_email: None,
     dns_blocklist: None,
     botbrowser_config: None,
+    cloak_config: None,
   });
 
   profile.id = profile_id;
@@ -313,6 +318,7 @@ pub fn build_materialized_botbrowser_profile(
   profile.ephemeral = false;
   profile.camoufox_config = None;
   profile.wayfern_config = None;
+  profile.cloak_config = None;
 
   let mut config = profile.botbrowser_config.unwrap_or_default();
   if let Some(executable_path) = clean_optional(executable_path) {
@@ -323,6 +329,47 @@ pub fn build_materialized_botbrowser_profile(
   config.bot_profile_asset_id = Some(bot_profile_asset_id);
   config.bot_profile_path = None;
   profile.botbrowser_config = Some(config);
+
+  Ok(profile)
+}
+
+pub fn build_materialized_cloak_profile(
+  team_profile: &TeamProfileRecord,
+  existing_profile: Option<BrowserProfile>,
+) -> Result<BrowserProfile, String> {
+  if team_profile.engine != "cloak" {
+    return Err("Only Cloak team profiles can use this materializer".to_string());
+  }
+
+  let profile_id = Uuid::parse_str(&team_profile.id)
+    .map_err(|e| format!("Invalid team profile id {}: {e}", team_profile.id))?;
+  let mut profile = existing_profile
+    .ok_or_else(|| "Shared Cloak profile has not finished its first server sync yet".to_string())?;
+
+  profile.id = profile_id;
+  profile.name = team_profile.name.clone();
+  profile.browser = "cloak".to_string();
+  profile.engine = Some("cloak".to_string());
+  if profile.version.trim().is_empty() {
+    profile.version = "bundled".to_string();
+  }
+  if profile.release_type.trim().is_empty() {
+    profile.release_type = "stable".to_string();
+  }
+  profile.sync_mode = SyncMode::Regular;
+  if profile.host_os.is_none() {
+    profile.host_os = Some(get_host_os());
+  }
+  profile.ephemeral = false;
+  profile.camoufox_config = None;
+  profile.botbrowser_config = None;
+  profile.process_id = None;
+
+  let mut config = profile.cloak_config.unwrap_or_default();
+  if config.fingerprint_seed.is_none() {
+    config.fingerprint_seed = Some(crate::cloakbrowser::derived_fingerprint_seed(&profile.id));
+  }
+  profile.cloak_config = Some(config);
 
   Ok(profile)
 }
@@ -355,6 +402,7 @@ pub fn build_materialized_wayfern_profile(
   profile.ephemeral = false;
   profile.camoufox_config = None;
   profile.botbrowser_config = None;
+  profile.cloak_config = None;
   profile.process_id = None;
 
   Ok(profile)
@@ -370,6 +418,7 @@ pub fn build_materialized_team_profile(
       build_materialized_botbrowser_profile(team_profile, existing_profile, executable_path)
     }
     "wayfern" => build_materialized_wayfern_profile(team_profile, existing_profile),
+    "cloak" => build_materialized_cloak_profile(team_profile, existing_profile),
     "camoufox" => Err(
       "Firefox/Camoufox shared profiles are saved for compatibility, but one-click shared launch is not enabled yet"
         .to_string(),
@@ -395,6 +444,42 @@ pub fn prepare_wayfern_profile_for_team_publish(
   profile.process_id = None;
   profile.camoufox_config = None;
   profile.botbrowser_config = None;
+  profile.cloak_config = None;
+
+  Ok(profile)
+}
+
+pub fn prepare_chromium_profile_for_team_publish(
+  mut profile: BrowserProfile,
+) -> Result<BrowserProfile, String> {
+  if is_wayfern_profile(&profile) {
+    return prepare_wayfern_profile_for_team_publish(profile);
+  }
+  if !is_cloak_profile(&profile) {
+    return Err("Only Wayfern/Chromium or Cloak profiles can be shared with the team".to_string());
+  }
+  if profile.ephemeral {
+    return Err("Ephemeral profiles cannot be shared with the team".to_string());
+  }
+
+  profile.browser = "cloak".to_string();
+  profile.engine = Some("cloak".to_string());
+  profile.version = if profile.version.trim().is_empty() {
+    "bundled".to_string()
+  } else {
+    profile.version
+  };
+  profile.sync_mode = SyncMode::Regular;
+  profile.host_os.get_or_insert_with(get_host_os);
+  profile.process_id = None;
+  profile.camoufox_config = None;
+  profile.botbrowser_config = None;
+
+  let mut config = profile.cloak_config.unwrap_or_default();
+  if config.fingerprint_seed.is_none() {
+    config.fingerprint_seed = Some(crate::cloakbrowser::derived_fingerprint_seed(&profile.id));
+  }
+  profile.cloak_config = Some(config);
 
   Ok(profile)
 }
@@ -629,22 +714,23 @@ pub async fn team_materialize_profile(
     .into_iter()
     .find(|profile| profile.id == profile_uuid);
 
-  let existing_profile = if existing_profile.is_none() && team_profile.engine == "wayfern" {
-    let key_prefix = crate::self_hosted_auth::cached_team_prefix()
-      .ok_or_else(|| "Self-hosted team scope is not available".to_string())?;
-    let engine = crate::sync::SyncEngine::create_from_settings(&app_handle).await?;
-    engine
-      .download_profile_if_missing(&app_handle, &team_profile.id, &key_prefix)
-      .await
-      .map_err(|e| format!("Failed to download shared Chromium profile: {e}"))?;
-    manager
-      .list_profiles()
-      .map_err(|e| format!("Failed to reload local profiles: {e}"))?
-      .into_iter()
-      .find(|profile| profile.id == profile_uuid)
-  } else {
-    existing_profile
-  };
+  let existing_profile =
+    if existing_profile.is_none() && matches!(team_profile.engine.as_str(), "wayfern" | "cloak") {
+      let key_prefix = crate::self_hosted_auth::cached_team_prefix()
+        .ok_or_else(|| "Self-hosted team scope is not available".to_string())?;
+      let engine = crate::sync::SyncEngine::create_from_settings(&app_handle).await?;
+      engine
+        .download_profile_if_missing(&app_handle, &team_profile.id, &key_prefix)
+        .await
+        .map_err(|e| format!("Failed to download shared Chromium profile: {e}"))?;
+      manager
+        .list_profiles()
+        .map_err(|e| format!("Failed to reload local profiles: {e}"))?
+        .into_iter()
+        .find(|profile| profile.id == profile_uuid)
+    } else {
+      existing_profile
+    };
 
   let profile = build_materialized_team_profile(&team_profile, existing_profile, executable_path)?;
 
@@ -702,6 +788,50 @@ pub async fn team_publish_wayfern_profile(
   }
 
   let profile = prepare_wayfern_profile_for_team_publish(profile)?;
+
+  manager
+    .save_profile(&profile)
+    .map_err(|e| format!("Failed to save team sharing settings locally: {e}"))?;
+
+  initialize_shared_team_profile(&app_handle, &profile).await?;
+
+  if let Err(e) = crate::events::emit("profile-updated", &profile) {
+    log::warn!("Failed to emit published profile update: {e}");
+  }
+  if let Err(e) = crate::events::emit_empty("profiles-changed") {
+    log::warn!("Failed to emit profiles-changed after publishing team profile: {e}");
+  }
+
+  Ok(profile)
+}
+
+#[tauri::command]
+pub async fn team_publish_chromium_profile(
+  app_handle: tauri::AppHandle,
+  profile_id: String,
+) -> Result<BrowserProfile, String> {
+  crate::self_hosted_auth::cached_user()
+    .ok_or_else(|| "Self-hosted user is not logged in".to_string())?;
+
+  let profile_uuid =
+    Uuid::parse_str(&profile_id).map_err(|e| format!("Invalid profile id {profile_id}: {e}"))?;
+  let manager = crate::profile::manager::ProfileManager::instance();
+  let profile = manager
+    .list_profiles()
+    .map_err(|e| format!("Failed to list local profiles: {e}"))?
+    .into_iter()
+    .find(|profile| profile.id == profile_uuid)
+    .ok_or_else(|| "Local profile was not found".to_string())?;
+
+  let is_running = manager
+    .check_browser_status(app_handle.clone(), &profile)
+    .await
+    .map_err(|e| format!("Failed to check whether the profile is running: {e}"))?;
+  if is_running {
+    return Err("Close this profile before sharing it with the team".to_string());
+  }
+
+  let profile = prepare_chromium_profile_for_team_publish(profile)?;
 
   manager
     .save_profile(&profile)
@@ -875,6 +1005,32 @@ pub async fn team_preflight_botbrowser_profile(
       "botProfile",
       true,
       "Shared Chromium profiles generate fingerprint data automatically; no .enc template is required",
+    ));
+  } else if team_profile.engine == "cloak" {
+    let materialized_profile = build_materialized_cloak_profile(&team_profile, existing_profile);
+    match materialized_profile.as_ref() {
+      Ok(profile) => match crate::cloakbrowser::resolve_executable_path(&app_handle, Some(profile))
+      {
+        Ok(path) => checks.push(preflight_check(
+          "executable",
+          true,
+          format!("CloakBrowser runtime found at {}", path.display()),
+        )),
+        Err(error) => checks.push(preflight_check("executable", false, error)),
+      },
+      Err(_) => {
+        let status = crate::cloakbrowser::get_runtime_status(&app_handle, None);
+        checks.push(preflight_check(
+          "executable",
+          status.available,
+          status.message,
+        ));
+      }
+    }
+    checks.push(preflight_check(
+      "botProfile",
+      true,
+      "Cloak profiles use a deterministic fingerprint seed; no .enc template is required",
     ));
   } else {
     checks.push(preflight_check(
@@ -1096,6 +1252,21 @@ mod tests {
     }
   }
 
+  fn cloak_team_profile() -> TeamProfileRecord {
+    TeamProfileRecord {
+      id: "c0a8012a-9f21-4f66-9db8-dad9d0a59767".to_string(),
+      team_id: "team-1".to_string(),
+      owner_user_id: "user-1".to_string(),
+      name: "Shared Cloak".to_string(),
+      engine: "cloak".to_string(),
+      bot_profile_asset_id: None,
+      sync_mode: Some("Regular".to_string()),
+      permissions: vec![],
+      bot_profile_asset: None,
+      lock: None,
+    }
+  }
+
   #[test]
   fn materializes_botbrowser_team_profile() {
     let team_profile = botbrowser_team_profile();
@@ -1164,6 +1335,7 @@ mod tests {
         bot_profile_asset_id: Some("asset-1".to_string()),
         ..BotBrowserConfig::default()
       }),
+      cloak_config: None,
     };
 
     let profile =
@@ -1216,6 +1388,38 @@ mod tests {
   }
 
   #[test]
+  fn materializes_cloak_team_profile_from_existing_metadata() {
+    let team_profile = cloak_team_profile();
+    let existing = BrowserProfile {
+      id: Uuid::parse_str(&team_profile.id).expect("uuid"),
+      name: "Old Cloak name".to_string(),
+      browser: "cloak".to_string(),
+      engine: Some("cloak".to_string()),
+      version: "bundled".to_string(),
+      release_type: "stable".to_string(),
+      sync_mode: SyncMode::Regular,
+      host_os: Some(get_host_os()),
+      ..BrowserProfile::default()
+    };
+
+    let profile =
+      build_materialized_team_profile(&team_profile, Some(existing), None).expect("materialized");
+
+    assert_eq!(profile.id.to_string(), team_profile.id);
+    assert_eq!(profile.name, "Shared Cloak");
+    assert_eq!(profile.browser, "cloak");
+    assert_eq!(profile.engine.as_deref(), Some("cloak"));
+    assert_eq!(profile.sync_mode, SyncMode::Regular);
+    assert!(profile.botbrowser_config.is_none());
+    assert!(profile.cloak_config.is_some());
+    assert!(profile
+      .cloak_config
+      .as_ref()
+      .and_then(|config| config.fingerprint_seed)
+      .is_some());
+  }
+
+  #[test]
   fn prepares_wayfern_profile_for_team_publish() {
     let profile = BrowserProfile {
       id: Uuid::new_v4(),
@@ -1227,6 +1431,7 @@ mod tests {
       sync_mode: SyncMode::Disabled,
       process_id: Some(123),
       botbrowser_config: Some(BotBrowserConfig::default()),
+      cloak_config: None,
       ..BrowserProfile::default()
     };
 
@@ -1238,6 +1443,32 @@ mod tests {
     assert!(profile.host_os.is_some());
     assert!(profile.process_id.is_none());
     assert!(profile.botbrowser_config.is_none());
+  }
+
+  #[test]
+  fn prepares_cloak_profile_for_team_publish() {
+    let profile = BrowserProfile {
+      id: Uuid::new_v4(),
+      name: "Local Cloak".to_string(),
+      browser: "cloak".to_string(),
+      engine: Some("cloak".to_string()),
+      version: "bundled".to_string(),
+      release_type: "stable".to_string(),
+      sync_mode: SyncMode::Disabled,
+      process_id: Some(123),
+      botbrowser_config: Some(BotBrowserConfig::default()),
+      ..BrowserProfile::default()
+    };
+
+    let profile = prepare_chromium_profile_for_team_publish(profile).expect("prepared");
+
+    assert_eq!(profile.browser, "cloak");
+    assert_eq!(profile.engine.as_deref(), Some("cloak"));
+    assert_eq!(profile.sync_mode, SyncMode::Regular);
+    assert!(profile.host_os.is_some());
+    assert!(profile.process_id.is_none());
+    assert!(profile.botbrowser_config.is_none());
+    assert!(profile.cloak_config.is_some());
   }
 
   #[test]

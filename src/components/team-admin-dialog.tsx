@@ -1,7 +1,13 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   LuLockOpen,
@@ -22,7 +28,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -71,6 +76,9 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
   );
 
   const [profileName, setProfileName] = useState("");
+  const [profileEngine, setProfileEngine] = useState<"wayfern" | "cloak">(
+    "wayfern",
+  );
   const [profileEdits, setProfileEdits] = useState<
     Record<string, ProfileEditState>
   >({});
@@ -90,8 +98,11 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
     () => users.filter((user) => !user.disabledAt),
     [users],
   );
-  const wayfernProfiles = useMemo(
-    () => profiles.filter((profile) => profile.engine === "wayfern"),
+  const chromiumProfiles = useMemo(
+    () =>
+      profiles.filter(
+        (profile) => profile.engine === "wayfern" || profile.engine === "cloak",
+      ),
     [profiles],
   );
 
@@ -144,7 +155,8 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
     }
   }, [isOpen, loadAll]);
 
-  const createUser = async () => {
+  const createUser = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
     if (!newUserEmail.trim() || !newUserPassword.trim()) return;
     setIsSaving(true);
     try {
@@ -193,12 +205,13 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
       await invoke("team_create_profile", {
         input: {
           name: profileName.trim(),
-          engine: "wayfern",
+          engine: profileEngine,
           botProfileAssetId: null,
           syncMode: "Regular",
         },
       });
       setProfileName("");
+      setProfileEngine("wayfern");
       await loadProfiles();
       await loadAuditLogs();
       showSuccessToast(t("sync.teamAdmin.toasts.profileCreated"));
@@ -218,7 +231,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
         profileId: profile.id,
         input: {
           name: edit.name.trim(),
-          engine: "wayfern",
+          engine: profile.engine,
           botProfileAssetId: null,
           syncMode: profile.syncMode,
         },
@@ -341,169 +354,199 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
             </TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="mt-4 min-h-0 flex-1 pr-3">
+          <div className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-3">
             <TabsContent value="users" className="mt-0 space-y-4">
-              <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_140px_auto]">
-                <div className="space-y-2">
-                  <Label>{t("sync.email")}</Label>
-                  <Input
-                    value={newUserEmail}
-                    onChange={(event) => setNewUserEmail(event.target.value)}
-                    placeholder={t("sync.teamAdmin.users.emailPlaceholder")}
-                  />
+              <form
+                className="space-y-4 rounded-md border bg-muted/30 p-4"
+                onSubmit={(event) => void createUser(event)}
+              >
+                <div>
+                  <h3 className="text-sm font-medium">
+                    {t("sync.teamAdmin.users.createTitle")}
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t("sync.teamAdmin.users.createDescription")}
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("sync.password")}</Label>
-                  <Input
-                    type="password"
-                    value={newUserPassword}
-                    onChange={(event) => setNewUserPassword(event.target.value)}
-                    placeholder={t("sync.teamAdmin.users.passwordPlaceholder")}
-                  />
+                <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_140px_auto]">
+                  <div className="space-y-2">
+                    <Label htmlFor="team-admin-new-user-email">
+                      {t("sync.email")}
+                    </Label>
+                    <Input
+                      id="team-admin-new-user-email"
+                      value={newUserEmail}
+                      onChange={(event) => setNewUserEmail(event.target.value)}
+                      placeholder={t("sync.teamAdmin.users.emailPlaceholder")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="team-admin-new-user-password">
+                      {t("sync.password")}
+                    </Label>
+                    <Input
+                      id="team-admin-new-user-password"
+                      type="password"
+                      value={newUserPassword}
+                      onChange={(event) =>
+                        setNewUserPassword(event.target.value)
+                      }
+                      placeholder={t(
+                        "sync.teamAdmin.users.passwordPlaceholder",
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("sync.team.role")}</Label>
+                    <Select
+                      value={newUserRole}
+                      onValueChange={(value) =>
+                        setNewUserRole(value as "member" | "admin")
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="member">
+                          {t("sync.team.roleMember")}
+                        </SelectItem>
+                        <SelectItem value="admin">
+                          {t("sync.team.roleAdmin")}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <LoadingButton
+                      type="submit"
+                      className="w-full lg:w-auto"
+                      isLoading={isSaving}
+                      disabled={!newUserEmail.trim() || !newUserPassword.trim()}
+                    >
+                      <LuPlus className="mr-2 h-4 w-4" />
+                      {t("sync.teamAdmin.users.create")}
+                    </LoadingButton>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("sync.team.role")}</Label>
-                  <Select
-                    value={newUserRole}
-                    onValueChange={(value) =>
-                      setNewUserRole(value as "member" | "admin")
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="member">
-                        {t("sync.team.roleMember")}
-                      </SelectItem>
-                      <SelectItem value="admin">
-                        {t("sync.team.roleAdmin")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <LoadingButton
-                    className="w-full lg:w-auto"
-                    onClick={() => void createUser()}
-                    isLoading={isSaving}
-                    disabled={!newUserEmail.trim() || !newUserPassword.trim()}
-                  >
-                    <LuPlus className="mr-2 h-4 w-4" />
-                    {t("sync.teamAdmin.users.create")}
-                  </LoadingButton>
-                </div>
-              </div>
+              </form>
 
-              <div className="overflow-x-auto rounded-md border">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("sync.email")}
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("sync.team.role")}
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("common.labels.status")}
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium">
-                        {t("sync.teamAdmin.users.resetPassword")}
-                      </th>
-                      <th className="px-3 py-2 text-right font-medium">
-                        {t("sync.teamAdmin.actions")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id} className="border-t">
-                        <td className="px-3 py-2">{user.email}</td>
-                        <td className="px-3 py-2">
-                          <Select
-                            value={user.role}
-                            onValueChange={(role) =>
-                              void updateUser(user, {
-                                role: role as "member" | "admin",
-                              })
-                            }
-                          >
-                            <SelectTrigger className="w-[130px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="member">
-                                {t("sync.team.roleMember")}
-                              </SelectItem>
-                              <SelectItem value="admin">
-                                {t("sync.team.roleAdmin")}
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="px-3 py-2">
-                          <Badge
-                            variant={user.disabledAt ? "secondary" : "default"}
-                          >
-                            {user.disabledAt
-                              ? t("sync.teamAdmin.users.disabled")
-                              : t("sync.teamAdmin.users.active")}
-                          </Badge>
-                        </td>
-                        <td className="px-3 py-2">
-                          <div className="flex gap-2">
-                            <Input
-                              type="password"
-                              value={resetPasswords[user.id] ?? ""}
-                              onChange={(event) =>
-                                setResetPasswords((prev) => ({
-                                  ...prev,
-                                  [user.id]: event.target.value,
-                                }))
-                              }
-                              placeholder={t(
-                                "sync.teamAdmin.users.newPassword",
-                              )}
-                            />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={!resetPasswords[user.id]}
-                              onClick={() =>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">
+                  {t("sync.teamAdmin.users.listTitle")}
+                </h3>
+                <div className="overflow-x-auto rounded-md border">
+                  <table className="w-full min-w-[920px] text-sm">
+                    <thead className="bg-muted text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium">
+                          {t("sync.email")}
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          {t("sync.team.role")}
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          {t("common.labels.status")}
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          {t("sync.teamAdmin.users.resetPassword")}
+                        </th>
+                        <th className="px-3 py-2 text-right font-medium">
+                          {t("sync.teamAdmin.actions")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => (
+                        <tr key={user.id} className="border-t">
+                          <td className="px-3 py-2">{user.email}</td>
+                          <td className="px-3 py-2">
+                            <Select
+                              value={user.role}
+                              onValueChange={(role) =>
                                 void updateUser(user, {
-                                  password: resetPasswords[user.id],
+                                  role: role as "member" | "admin",
                                 })
                               }
                             >
-                              <LuSave className="h-4 w-4" />
+                              <SelectTrigger className="w-[130px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="member">
+                                  {t("sync.team.roleMember")}
+                                </SelectItem>
+                                <SelectItem value="admin">
+                                  {t("sync.team.roleAdmin")}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-3 py-2">
+                            <Badge
+                              variant={
+                                user.disabledAt ? "secondary" : "default"
+                              }
+                            >
+                              {user.disabledAt
+                                ? t("sync.teamAdmin.users.disabled")
+                                : t("sync.teamAdmin.users.active")}
+                            </Badge>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex gap-2">
+                              <Input
+                                type="password"
+                                value={resetPasswords[user.id] ?? ""}
+                                onChange={(event) =>
+                                  setResetPasswords((prev) => ({
+                                    ...prev,
+                                    [user.id]: event.target.value,
+                                  }))
+                                }
+                                placeholder={t(
+                                  "sync.teamAdmin.users.newPassword",
+                                )}
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={!resetPasswords[user.id]}
+                                onClick={() =>
+                                  void updateUser(user, {
+                                    password: resetPasswords[user.id],
+                                  })
+                                }
+                              >
+                                <LuSave className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                void updateUser(user, {
+                                  disabled: !user.disabledAt,
+                                })
+                              }
+                            >
+                              {user.disabledAt
+                                ? t("sync.teamAdmin.users.enable")
+                                : t("sync.teamAdmin.users.disable")}
                             </Button>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              void updateUser(user, {
-                                disabled: !user.disabledAt,
-                              })
-                            }
-                          >
-                            {user.disabledAt
-                              ? t("sync.teamAdmin.users.enable")
-                              : t("sync.teamAdmin.users.disable")}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </TabsContent>
 
             <TabsContent value="profiles" className="mt-0 space-y-4">
-              <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_auto]">
+              <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_180px_auto]">
                 <div className="space-y-2">
                   <Label>{t("sync.teamAdmin.profiles.name")}</Label>
                   <Input
@@ -511,6 +554,27 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                     onChange={(event) => setProfileName(event.target.value)}
                     placeholder={t("sync.teamAdmin.profiles.namePlaceholder")}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("sync.teamAdmin.profiles.engine")}</Label>
+                  <Select
+                    value={profileEngine}
+                    onValueChange={(value) =>
+                      setProfileEngine(value as "wayfern" | "cloak")
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="wayfern">
+                        {t("sync.teamAdmin.engines.wayfern")}
+                      </SelectItem>
+                      <SelectItem value="cloak">
+                        {t("sync.teamAdmin.engines.cloak")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-end">
                   <LoadingButton
@@ -526,7 +590,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
               </div>
 
               <div className="space-y-3">
-                {wayfernProfiles.map((profile) => {
+                {chromiumProfiles.map((profile) => {
                   const edit = profileEdits[profile.id] ?? {
                     name: profile.name,
                   };
@@ -549,7 +613,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                           }
                         />
                         <Badge variant="secondary" className="self-center">
-                          {t("sync.teamAdmin.engines.wayfern")}
+                          {t(`sync.teamAdmin.engines.${profile.engine}`)}
                         </Badge>
                         <Button
                           variant="outline"
@@ -744,7 +808,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                 </table>
               </div>
             </TabsContent>
-          </ScrollArea>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>

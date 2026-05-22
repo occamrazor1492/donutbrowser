@@ -105,7 +105,7 @@ export class TeamController {
     body: {
       id?: string;
       name: string;
-      engine?: "botbrowser" | "wayfern" | "camoufox";
+      engine?: "botbrowser" | "wayfern" | "cloak" | "camoufox";
       botProfileAssetId?: string | null;
       syncMode?: string;
     },
@@ -125,7 +125,7 @@ export class TeamController {
     @Body()
     body: {
       name?: string;
-      engine?: "botbrowser" | "wayfern" | "camoufox";
+      engine?: "botbrowser" | "wayfern" | "cloak" | "camoufox";
       botProfileAssetId?: string | null;
       syncMode?: string;
     },

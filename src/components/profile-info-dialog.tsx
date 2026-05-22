@@ -180,6 +180,8 @@ export function ProfileInfoDialog({
   const ProfileIcon = getProfileIcon(profile);
   const isCamoufoxOrWayfern =
     profile.browser === "camoufox" || profile.browser === "wayfern";
+  const isCookieCapableBrowser =
+    isCamoufoxOrWayfern || profile.browser === "cloak";
   const isDeleteDisabled = isRunning;
 
   const proxyName = profile.proxy_id
@@ -271,7 +273,12 @@ export function ProfileInfoDialog({
       hidden:
         !onPublishTeamProfile ||
         profile.ephemeral === true ||
-        !(profile.browser === "wayfern" || profile.engine === "wayfern"),
+        !(
+          profile.browser === "wayfern" ||
+          profile.engine === "wayfern" ||
+          profile.browser === "cloak" ||
+          profile.engine === "cloak"
+        ),
     },
     {
       icon: <LuGroup className="w-4 h-4" />,
@@ -311,7 +318,7 @@ export function ProfileInfoDialog({
       disabled: isDisabled,
       runningBadge: isRunning,
       hidden:
-        !isCamoufoxOrWayfern ||
+        !isCookieCapableBrowser ||
         profile.ephemeral === true ||
         !onCopyCookiesToProfile,
     },
@@ -324,7 +331,7 @@ export function ProfileInfoDialog({
       disabled: isDisabled,
       runningBadge: isRunning,
       hidden:
-        !isCamoufoxOrWayfern ||
+        !isCookieCapableBrowser ||
         profile.ephemeral === true ||
         !onOpenCookieManagement,
     },
@@ -390,12 +397,12 @@ export function ProfileInfoDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-2xl">
+        <DialogHeader className="shrink-0">
           <DialogTitle>{t("profileInfo.title")}</DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="info">
-          <TabsList className="w-full">
+        <Tabs defaultValue="info" className="flex min-h-0 flex-1 flex-col">
+          <TabsList className="w-full shrink-0">
             <TabsTrigger value="info" className="flex-1">
               {t("profileInfo.tabs.info")}
             </TabsTrigger>
@@ -403,8 +410,8 @@ export function ProfileInfoDialog({
               {t("profileInfo.tabs.settings")}
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="info">
-            <div className="overflow-y-auto max-h-[calc(80vh-12rem)] pr-1">
+          <TabsContent value="info" className="mt-4 min-h-0 flex-1">
+            <div className="h-full overflow-y-auto overscroll-contain pr-1">
               <div className="flex flex-col gap-4 py-3">
                 {/* Hero */}
                 <div className="flex items-center gap-3">
@@ -582,8 +589,8 @@ export function ProfileInfoDialog({
               </div>
             </div>
           </TabsContent>
-          <TabsContent value="settings">
-            <div className="overflow-y-auto max-h-[calc(80vh-12rem)]">
+          <TabsContent value="settings" className="mt-4 min-h-0 flex-1">
+            <div className="h-full overflow-y-auto overscroll-contain pr-1">
               <div className="flex flex-col gap-3 py-1">
                 <div className="flex flex-col">
                   {visibleActions.map((action) => (

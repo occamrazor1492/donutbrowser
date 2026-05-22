@@ -46,12 +46,14 @@ pnpm test
 | Admin security | Member calls admin user list | Request is rejected with 403 |
 | BotBrowser assets | Admin uploads `.enc` bytes and lists assets through compatibility APIs | Asset is stored under `teams/{teamId}/bot_profiles/{id}.enc` for legacy or advanced BotBrowser records |
 | Chromium profile creation | Member A creates a Wayfern/Chromium profile while logged into self-hosted | Profile engine is `wayfern`; sync mode is `Regular`; A receives owner permission; initial metadata/manifest is uploaded |
+| Cloak profile creation | Member A creates a Cloak Chromium team profile while logged into self-hosted | Profile engine is `cloak`; sync mode is `Regular`; A receives owner permission; no `.enc` asset is required |
 | Chromium share action | Member A clicks `Share to Team` for an existing local Wayfern profile | Profile is registered as a team profile, sync mode becomes `Regular`, and current local state is uploaded |
 | Asset references | Admin deletes a template used by a live profile | Request is rejected with 409 |
 | Isolation | Unshared B lists/gets/downloads/uploads/locks A profile | Profile is hidden or rejected with 403 |
 | Viewer | Admin grants B viewer | B can read profile metadata; B cannot upload, lock, materialize for launch, or launch |
 | Shared list | Admin grants B editor | B's `team_list_profiles` result includes the shared profile |
 | Materialize Chromium | B adds shared Wayfern/Chromium profile locally | Local `BrowserProfile` uses the team profile id, `engine: "wayfern"`, browser `wayfern`, and sync mode `Regular` |
+| Materialize Cloak | B adds shared Cloak Chromium profile locally | Local `BrowserProfile` uses the team profile id, `engine: "cloak"`, browser `cloak`, a deterministic fingerprint seed, and sync mode `Regular` |
 | Materialize idempotency | B adds the same shared profile again | Existing local profile metadata is updated; no duplicate profile is created |
 | Preflight permission | Viewer runs shared profile preflight | Permission check fails with a readable result |
 | Preflight runtime | Editor runs preflight with missing Chromium runtime | The failing check identifies the missing runtime |
@@ -70,24 +72,26 @@ pnpm test
 
 ## Manual Desktop Acceptance
 
-These cases require the real Donut Desktop app. The default Chromium flow does not require a `.enc` file; BotBrowser-specific cases are compatibility-only for this MVP.
+These cases require the real Donut Desktop app. The default Wayfern/Cloak Chromium flow does not require a `.enc` file; BotBrowser-specific cases are compatibility-only for this MVP.
 
 | Area | Case | Expected result |
 | --- | --- | --- |
 | Desktop login | Open Donut, configure self-hosted URL, email, password | Login survives app restart |
-| Team Admin UI | Admin opens the main Team menu and clicks Team Admin | Users, Wayfern profiles, permissions, locks, and audit logs are manageable in desktop UI |
-| Share action | A clicks Share to Team on a local Wayfern profile | Publish dialog explains server authority, sync is enabled, and the profile appears in Team Admin |
+| Team Admin UI | Admin opens the main Team menu and clicks Team Admin | Users, Wayfern/Cloak profiles, permissions, locks, and audit logs are manageable in desktop UI |
+| Share action | A clicks Share to Team on a local Wayfern or Cloak profile | Publish dialog explains server authority, sync is enabled, and the profile appears in Team Admin |
 | Shared Profiles UI | B opens Team → Shared Profiles | B sees every profile shared with their account, with permission, engine, lock, and local status |
 | Shared Chromium add | B clicks Add to local for a Wayfern/Chromium profile | The local profile appears in the main list, keeps the same profile id, and uses sync mode `Regular` |
+| Shared Cloak add | B clicks Add to local for a Cloak Chromium profile | The local profile appears in the main list, keeps the same profile id, and uses the bundled Cloak runtime at launch |
 | Shared unsupported engine | B sees a BotBrowser or Camoufox team profile | UI shows it as not supported for one-click launch |
 | Preflight UI | Run preflight from Shared Profiles | Login, permission, browser runtime/fingerprint data, and lock checks are displayed with readable pass/fail text |
 | Chromium profile create | Create Wayfern/Chromium profile while logged into self-hosted | Profile appears locally and in team list without selecting a template |
 | Launch args | Start shared Wayfern profile | Process uses the shared local profile data dir and normal Wayfern Chromium launch arguments |
+| Cloak launch args | Start shared Cloak profile | Process uses the shared local profile data dir, `--fingerprint=<seed>`, and the bundled CloakBrowser executable |
 | Lock UI | A starts profile; B starts same profile | B sees conflict and cannot start |
 | State sync | A logs into a test site, closes browser; B starts after unlock | B sees A's persisted login state |
 | Close-time stability | A closes a shared Chromium/BotBrowser profile after writing cookies/local storage | Donut waits for stable profile files before uploading; timeout logs a warning but still attempts sync |
-| Cross machine | B signs in on another machine | Profile and `.enc` download into local cache and launch |
-| Proxy | Test HTTP, SOCKS5, SOCKS5H proxies | BotBrowser receives valid `--proxy-server` URL and traffic exits through proxy |
+| Cross machine | B signs in on another machine | Shared Wayfern/Cloak profile data downloads into local cache and launches |
+| Proxy | Test HTTP, SOCKS5, SOCKS5H proxies | Shared Chromium runtime receives a valid local proxy argument and traffic exits through proxy |
 | Crash recovery | Kill browser process or app while lock is active | Lock expires or admin can unlock; later launch succeeds |
 | Viewer UX | Viewer opens shared profile | Viewer can inspect metadata but cannot launch/write |
 

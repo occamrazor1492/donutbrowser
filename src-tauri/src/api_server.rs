@@ -672,6 +672,7 @@ async fn create_profile(
       camoufox_config,
       wayfern_config,
       None,
+      None,
       request.group_id.clone(),
       false,
       None,

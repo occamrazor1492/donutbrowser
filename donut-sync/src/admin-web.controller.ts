@@ -448,6 +448,7 @@ const ADMIN_HTML = `<!doctype html>
                 <select id="profileEngine">
                   <option value="botbrowser">botbrowser</option>
                   <option value="wayfern">wayfern</option>
+                  <option value="cloak">cloak</option>
                   <option value="camoufox">camoufox</option>
                 </select>
               </label>

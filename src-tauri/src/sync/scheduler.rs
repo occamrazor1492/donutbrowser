@@ -429,7 +429,16 @@ impl SyncScheduler {
         };
 
         let result = match SyncEngine::create_from_settings(&app).await {
-          Ok(engine) => engine.sync_profile(&app, &profile).await,
+          Ok(engine) => match crate::team_lock::acquire_team_lock_if_needed(&app, &profile).await {
+            Ok(()) => {
+              let sync_result = engine.sync_profile(&app, &profile).await;
+              crate::team_lock::release_team_lock_if_needed(&app, &profile).await;
+              sync_result
+            }
+            Err(e) => Err(super::types::SyncError::ConflictError(format!(
+              "Failed to acquire team profile lock: {e}"
+            ))),
+          },
           Err(e) => {
             log::error!("Failed to create sync engine: {}", e);
             Err(super::types::SyncError::NotConfigured)

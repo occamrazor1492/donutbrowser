@@ -4,7 +4,7 @@ use crate::camoufox_manager::CamoufoxConfig;
 use crate::cloud_auth::CLOUD_AUTH;
 use crate::downloaded_browsers_registry::DownloadedBrowsersRegistry;
 use crate::events;
-use crate::profile::types::{get_host_os, BotBrowserConfig, BrowserProfile, SyncMode};
+use crate::profile::types::{get_host_os, BotBrowserConfig, BrowserProfile, CloakConfig, SyncMode};
 use crate::proxy_manager::PROXY_MANAGER;
 use crate::wayfern_manager::WayfernConfig;
 use std::fs::{self, create_dir_all};
@@ -69,6 +69,7 @@ impl ProfileManager {
     camoufox_config: Option<CamoufoxConfig>,
     wayfern_config: Option<WayfernConfig>,
     botbrowser_config: Option<BotBrowserConfig>,
+    cloak_config: Option<CloakConfig>,
     group_id: Option<String>,
     ephemeral: bool,
     dns_blocklist: Option<String>,
@@ -187,6 +188,7 @@ impl ProfileManager {
           created_by_email: None,
           dns_blocklist: None,
           botbrowser_config: None,
+          cloak_config: None,
         };
 
         match self
@@ -290,6 +292,7 @@ impl ProfileManager {
           created_by_email: None,
           dns_blocklist: None,
           botbrowser_config: None,
+          cloak_config: None,
         };
 
         match self
@@ -321,6 +324,7 @@ impl ProfileManager {
 
     let normalized_botbrowser_config =
       crate::self_hosted_team::normalize_botbrowser_config(botbrowser_config);
+    let mut normalized_cloak_config = crate::cloakbrowser::normalize_cloak_config(cloak_config);
     if browser == "botbrowser" {
       let has_asset = normalized_botbrowser_config
         .as_ref()
@@ -334,10 +338,17 @@ impl ProfileManager {
         return Err("BotBrowser profiles require a .enc template or local .enc path".into());
       }
     }
+    if browser == "cloak" {
+      let mut config = normalized_cloak_config.unwrap_or_default();
+      if config.fingerprint_seed.is_none() {
+        config.fingerprint_seed = Some(crate::cloakbrowser::derived_fingerprint_seed(&profile_id));
+      }
+      normalized_cloak_config = Some(config);
+    }
 
     let should_create_self_hosted_team_profile = crate::self_hosted_auth::cached_user().is_some()
       && !ephemeral
-      && matches!(browser, "wayfern" | "botbrowser");
+      && matches!(browser, "wayfern" | "cloak" | "botbrowser");
 
     let profile = BrowserProfile {
       id: profile_id,
@@ -371,6 +382,7 @@ impl ProfileManager {
       created_by_email: None,
       dns_blocklist,
       botbrowser_config: normalized_botbrowser_config,
+      cloak_config: normalized_cloak_config,
     };
 
     // Save profile info
@@ -1030,6 +1042,7 @@ impl ProfileManager {
       created_by_email: None,
       dns_blocklist: source.dns_blocklist,
       botbrowser_config: source.botbrowser_config,
+      cloak_config: source.cloak_config,
     };
 
     self.save_profile(&new_profile)?;
@@ -1401,6 +1414,7 @@ impl ProfileManager {
                 || exe_name.contains("chromium")
                 || exe_name.contains("chrome")
             }
+            "cloak" => crate::cloakbrowser::is_cloak_process_name(&exe_name),
             _ => false,
           };
 
@@ -2119,6 +2133,7 @@ pub async fn create_browser_profile_with_group(
   camoufox_config: Option<CamoufoxConfig>,
   wayfern_config: Option<WayfernConfig>,
   botbrowser_config: Option<BotBrowserConfig>,
+  cloak_config: Option<CloakConfig>,
   group_id: Option<String>,
   ephemeral: bool,
   dns_blocklist: Option<String>,
@@ -2137,6 +2152,7 @@ pub async fn create_browser_profile_with_group(
       camoufox_config,
       wayfern_config,
       botbrowser_config,
+      cloak_config,
       group_id,
       ephemeral,
       dns_blocklist,
@@ -2349,6 +2365,7 @@ pub async fn create_browser_profile_new(
   camoufox_config: Option<CamoufoxConfig>,
   wayfern_config: Option<WayfernConfig>,
   botbrowser_config: Option<BotBrowserConfig>,
+  cloak_config: Option<CloakConfig>,
   group_id: Option<String>,
   ephemeral: Option<bool>,
   dns_blocklist: Option<String>,
@@ -2368,6 +2385,8 @@ pub async fn create_browser_profile_new(
 
   let browser = if browser_str == "botbrowser" {
     "botbrowser".to_string()
+  } else if browser_str == "cloak" {
+    "cloak".to_string()
   } else {
     BrowserType::from_str(&browser_str)
       .map_err(|e| format!("Invalid browser type: {e}"))?
@@ -2385,6 +2404,7 @@ pub async fn create_browser_profile_new(
     camoufox_config,
     wayfern_config,
     botbrowser_config,
+    cloak_config,
     group_id,
     ephemeral.unwrap_or(false),
     dns_blocklist,

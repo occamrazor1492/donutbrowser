@@ -333,7 +333,31 @@
     "engines": {
       "botbrowser": "BotBrowser",
       "wayfern": "Wayfern",
-      "camoufox": "Camoufox"
+      "camoufox": "Camoufox",
+      "cloak": "Cloak"
+    },
+    "cloak": {
+      "label": "Cloak Chromium",
+      "subtitle": "Internal CloakBrowser engine with stronger fingerprint spoofing",
+      "teamSharing": "Can be shared with the team like Wayfern profiles.",
+      "runtimeHint": "CloakBrowser is bundled in internal builds. Leave the executable path empty unless you need to test a local binary.",
+      "runtimeChecking": "Checking bundled CloakBrowser runtime...",
+      "runtimeAvailable": "CloakBrowser runtime is available for {{platform}}.",
+      "runtimeMissing": "CloakBrowser runtime was not found for {{platform}}.",
+      "runtimeUnknown": "CloakBrowser runtime status is unavailable.",
+      "executablePath": "CloakBrowser executable path",
+      "executablePathPlaceholder": "Leave empty to use the bundled internal runtime",
+      "executablePathHint": "Private builds read bundled binaries from vendor-private/cloakbrowser during packaging.",
+      "fingerprintSeed": "Fingerprint seed",
+      "fingerprintSeedPlaceholder": "Auto from profile ID",
+      "locale": "Locale",
+      "localePlaceholder": "en-US",
+      "timezone": "Timezone",
+      "timezonePlaceholder": "America/New_York",
+      "languages": "Accept languages",
+      "languagesPlaceholder": "en-US,en",
+      "extraArgs": "Extra launch args",
+      "extraArgsPlaceholder": "--fingerprint-brand=Chrome"
     }
   },
   "deleteDialog": {
@@ -616,7 +640,7 @@
     "teamAdmin": {
       "open": "Team Admin",
       "title": "Team Admin",
-      "description": "Manage self-hosted team users, shared Chromium profiles, permissions, locks, and audit logs.",
+      "description": "Manage self-hosted team users, shared Wayfern/Cloak profiles, permissions, locks, and audit logs.",
       "actions": "Actions",
       "tabs": {
         "users": "Users",
@@ -637,6 +661,9 @@
         "permissionDeleted": "Permission removed"
       },
       "users": {
+        "createTitle": "Add user",
+        "createDescription": "Create a team login with an email, temporary password, and role.",
+        "listTitle": "Team users",
         "emailPlaceholder": "member@example.com",
         "passwordPlaceholder": "Temporary password",
         "create": "Create user",
@@ -690,7 +717,8 @@
       "engines": {
         "botbrowser": "BotBrowser",
         "wayfern": "Wayfern",
-        "camoufox": "Camoufox"
+        "camoufox": "Camoufox",
+        "cloak": "Cloak Chromium"
       }
     }
   },
@@ -1703,7 +1731,7 @@
   },
   "teamProfiles": {
     "title": "Shared Profiles",
-    "description": "Add shared Chromium team profiles to this device and launch them after preflight checks pass.",
+    "description": "Add shared Wayfern or Cloak Chromium team profiles to this device and launch them after preflight checks pass.",
     "executablePath": "BotBrowser executable path (advanced)",
     "executablePathPlaceholder": "Only needed for BotBrowser, for example /Applications/BotBrowser.app",
     "count": "{{count}} shared profiles",
@@ -1712,7 +1740,7 @@
     "template": "Template",
     "noTemplate": "No template selected",
     "syncMode": "Sync mode",
-    "unsupportedEngine": "This team profile engine is saved for compatibility, but one-click shared launch is only enabled for Chromium profiles right now.",
+    "unsupportedEngine": "This team profile engine is saved for compatibility, but one-click shared launch is only enabled for Wayfern and Cloak Chromium profiles right now.",
     "viewerCannotLaunch": "Viewer access can inspect this profile, but launching requires owner, editor, or admin permission.",
     "actions": {
       "addToLocal": "Add to local",
@@ -1746,9 +1774,10 @@
     "engines": {
       "botbrowser": "BotBrowser",
       "wayfern": "Wayfern",
-      "camoufox": "Camoufox"
+      "camoufox": "Camoufox",
+      "cloak": "Cloak Chromium"
     },
-    "templateNotRequired": "Not required for Chromium"
+    "templateNotRequired": "Not required for Wayfern or Cloak"
   },
   "botbrowserPreflight": {
     "title": "Shared Profile Preflight",
@@ -1771,28 +1800,29 @@
         "engine": "This shared profile uses a supported engine.",
         "permission": "Current user can launch this profile.",
         "executable": "The browser runtime is available or will be checked after adding the profile.",
-        "botProfile": "Fingerprint data is available; Chromium profiles do not require a .enc template.",
+        "botProfile": "Fingerprint data is available; Wayfern and Cloak profiles do not require a .enc template.",
         "lock": "No other user currently holds the profile lock."
       },
       "failed": {
         "selfHostedLogin": "Log in to the self-hosted sync server first.",
-        "engine": "Only Chromium shared profiles can be launched in this version.",
+        "engine": "Only Wayfern and Cloak Chromium shared profiles can be launched in this version.",
         "permission": "Ask an admin for owner or editor permission.",
-        "executable": "Download the required Chromium runtime before launching this shared profile.",
-        "botProfile": "Chromium profiles generate fingerprint data automatically and do not need a .enc template.",
+        "executable": "Install or bundle the required Wayfern/Cloak Chromium runtime before launching this shared profile.",
+        "botProfile": "Wayfern and Cloak profiles generate fingerprint data automatically and do not need a .enc template.",
         "lock": "Another user is currently using this profile. Try again after they close it."
       }
     }
   },
   "shareProfile": {
     "title": "Share Profile",
-    "description": "Publish this local Wayfern/Chromium profile to the self-hosted team server so other members can join it from Shared Profiles.",
+    "description": "Publish this local Wayfern or Cloak Chromium profile to the self-hosted team server so other members can join it from Shared Profiles.",
     "publishHint": "Publishing enables Regular sync, uploads the current local state, and creates a team profile. Give other users editor access from Team Admin after publishing.",
     "alreadySharedHint": "This profile is already configured for team sync. Publishing again refreshes its server metadata and uploads the latest local state.",
     "openTeamAdmin": "Team Admin",
     "engine": {
       "wayfern": "Chromium / Wayfern",
-      "unsupported": "Unsupported engine"
+      "unsupported": "Unsupported engine",
+      "cloak": "Cloak Chromium"
     },
     "actions": {
       "publish": "Publish to Team",
@@ -1800,7 +1830,8 @@
     },
     "errors": {
       "wayfernOnly": "Only Wayfern/Chromium profiles can be shared in this MVP.",
-      "ephemeral": "Temporary profiles cannot be shared with the team."
+      "ephemeral": "Temporary profiles cannot be shared with the team.",
+      "chromiumOnly": "Only Wayfern or Cloak Chromium profiles can be shared in this MVP."
     },
     "toasts": {
       "published": "Profile shared with the team",

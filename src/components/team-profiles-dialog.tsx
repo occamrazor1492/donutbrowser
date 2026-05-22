@@ -91,7 +91,7 @@ export function TeamProfilesDialog({
     [localProfiles],
   );
   const isLaunchSupportedEngine = (engine: TeamProfileRecord["engine"]) =>
-    engine === "wayfern";
+    engine === "wayfern" || engine === "cloak";
 
   const loadProfiles = useCallback(async () => {
     setIsLoading(true);
@@ -286,7 +286,8 @@ export function TeamProfilesDialog({
                             {t("teamProfiles.template")}
                           </span>
                           <span className="ml-2">
-                            {teamProfile.engine === "wayfern"
+                            {teamProfile.engine === "wayfern" ||
+                            teamProfile.engine === "cloak"
                               ? t("teamProfiles.templateNotRequired")
                               : (teamProfile.botProfileAsset?.name ??
                                 t("teamProfiles.noTemplate"))}

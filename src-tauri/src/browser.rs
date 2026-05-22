@@ -1220,6 +1220,7 @@ mod tests {
       created_by_email: None,
       dns_blocklist: None,
       botbrowser_config: None,
+      cloak_config: None,
     };
 
     let path = profile.get_profile_data_path(&profiles_dir);

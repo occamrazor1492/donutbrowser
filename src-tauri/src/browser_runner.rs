@@ -259,6 +259,84 @@ impl BrowserRunner {
       return Ok(updated_profile);
     }
 
+    if crate::cloakbrowser::is_cloak_profile(profile) {
+      let mut updated_profile = profile.clone();
+
+      let profiles_dir = self.profile_manager.get_profiles_dir();
+      let profile_data_path =
+        crate::cloakbrowser::profile_data_path(&updated_profile, &profiles_dir);
+
+      std::fs::create_dir_all(&profile_data_path)
+        .map_err(|e| format!("Failed to create CloakBrowser profile directory: {e}"))?;
+
+      if updated_profile.extension_group_id.is_some() {
+        let mgr = crate::extension_manager::EXTENSION_MANAGER.lock().unwrap();
+        match mgr.install_extensions_for_profile(&updated_profile, &profile_data_path) {
+          Ok(paths) => {
+            if !paths.is_empty() {
+              log::info!(
+                "Prepared {} Chromium extensions for CloakBrowser profile: {}",
+                paths.len(),
+                updated_profile.name
+              );
+            }
+          }
+          Err(e) => {
+            log::warn!("Failed to install extensions for CloakBrowser profile: {e}");
+          }
+        }
+      }
+
+      let executable_path =
+        crate::cloakbrowser::resolve_executable_path(&app_handle, Some(&updated_profile))
+          .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
+
+      let args = crate::cloakbrowser::build_launch_args(
+        &updated_profile,
+        &profile_data_path,
+        local_proxy_settings,
+        url.as_deref(),
+        remote_debugging_port,
+        headless,
+      );
+
+      let (_child, launch_result) = crate::cloakbrowser::launch_process(&executable_path, &args)?;
+      let process_id = launch_result.process_id;
+      log::info!("CloakBrowser launched successfully with PID: {process_id}");
+
+      updated_profile.browser = "cloak".to_string();
+      updated_profile.engine = Some("cloak".to_string());
+      updated_profile.process_id = Some(process_id);
+      updated_profile.last_launch = Some(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs());
+
+      self.save_process_info(&updated_profile)?;
+      let _ = crate::tag_manager::TAG_MANAGER.lock().map(|tm| {
+        let _ = tm.rebuild_from_profiles(&self.profile_manager.list_profiles().unwrap_or_default());
+      });
+
+      if let Err(e) = events::emit_empty("profiles-changed") {
+        log::warn!("Warning: Failed to emit profiles-changed event: {e}");
+      }
+      if let Err(e) = events::emit("profile-updated", &updated_profile) {
+        log::warn!("Warning: Failed to emit profile update event: {e}");
+      }
+
+      #[derive(Serialize)]
+      struct RunningChangedPayload {
+        id: String,
+        is_running: bool,
+      }
+      let payload = RunningChangedPayload {
+        id: updated_profile.id.to_string(),
+        is_running: true,
+      };
+      if let Err(e) = events::emit("profile-running-changed", &payload) {
+        log::warn!("Warning: Failed to emit profile running changed event: {e}");
+      }
+
+      return Ok(updated_profile);
+    }
+
     // Handle Camoufox profiles using CamoufoxManager
     if profile.browser == "camoufox" {
       // Get or create camoufox config
@@ -781,7 +859,7 @@ impl BrowserRunner {
 
   pub async fn open_url_in_existing_browser(
     &self,
-    _app_handle: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
     profile: &BrowserProfile,
     url: &str,
     _internal_proxy_settings: Option<&ProxySettings>,
@@ -898,7 +976,12 @@ impl BrowserRunner {
       return Err(format!("Failed to open URL in existing BotBrowser instance: {stderr}").into());
     }
 
-    Err(format!("Unsupported browser type: {}", profile.browser).into())
+    if crate::cloakbrowser::is_cloak_profile(profile) {
+      crate::cloakbrowser::open_url_in_existing_process(&app_handle, profile, url)
+        .map_err(|e| e.into())
+    } else {
+      Err(format!("Unsupported browser type: {}", profile.browser).into())
+    }
   }
 
   pub async fn launch_browser_with_debugging(
@@ -1956,6 +2039,7 @@ impl BrowserRunner {
               || exe_name.contains("chromium")
               || exe_name.contains("chrome")
           }
+          "cloak" => crate::cloakbrowser::is_cloak_process_name(&exe_name),
           "brave" => exe_name.contains("brave") || exe_name.contains("Brave"),
           _ => false,
         };
@@ -2252,6 +2336,7 @@ impl BrowserRunner {
             || exe_name.contains("chromium")
             || exe_name.contains("chrome")
         }
+        "cloak" => crate::cloakbrowser::is_cloak_process_name(&exe_name),
         "brave" => exe_name.contains("brave") || exe_name.contains("Brave"),
         _ => false,
       };
@@ -2655,11 +2740,15 @@ pub async fn kill_browser_profile(
 
         if let Some(stopped_profile) = stopped_profile {
           if crate::botbrowser::is_botbrowser_profile(&stopped_profile)
+            || (crate::cloakbrowser::is_cloak_profile(&stopped_profile)
+              && stopped_profile.is_sync_enabled())
             || (stopped_profile.browser == "wayfern" && stopped_profile.is_sync_enabled())
           {
             let profiles_dir = browser_runner.profile_manager.get_profiles_dir();
             let profile_data_path = if crate::botbrowser::is_botbrowser_profile(&stopped_profile) {
               crate::botbrowser::profile_data_path(&stopped_profile, &profiles_dir)
+            } else if crate::cloakbrowser::is_cloak_profile(&stopped_profile) {
+              crate::cloakbrowser::profile_data_path(&stopped_profile, &profiles_dir)
             } else {
               stopped_profile.get_profile_data_path(&profiles_dir)
             };

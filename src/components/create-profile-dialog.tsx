@@ -34,7 +34,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -54,6 +53,7 @@ import type {
   BrowserReleaseTypes,
   CamoufoxConfig,
   CamoufoxOS,
+  CloakConfig,
   TeamBotProfileAsset,
   WayfernConfig,
   WayfernOS,
@@ -69,7 +69,7 @@ const getCurrentOS = (): CamoufoxOS => {
 
 import { RippleButton } from "./ui/ripple";
 
-type BrowserTypeString = "botbrowser" | "camoufox" | "wayfern";
+type BrowserTypeString = "botbrowser" | "camoufox" | "cloak" | "wayfern";
 
 interface SelfHostedAuthState {
   user: {
@@ -78,6 +78,14 @@ interface SelfHostedAuthState {
     role: string;
     teamId: string;
   };
+}
+
+interface CloakRuntimeStatus {
+  available: boolean;
+  executablePath?: string | null;
+  platform: string;
+  version?: string | null;
+  message: string;
 }
 
 interface CreateProfileDialogProps {
@@ -93,6 +101,7 @@ interface CreateProfileDialogProps {
     camoufoxConfig?: CamoufoxConfig;
     wayfernConfig?: WayfernConfig;
     botbrowserConfig?: BotBrowserConfig;
+    cloakConfig?: CloakConfig;
     groupId?: string;
     extensionGroupId?: string;
     ephemeral?: boolean;
@@ -134,6 +143,8 @@ export function CreateProfileDialog({
           return t("createProfile.engines.botbrowser");
         case "wayfern":
           return t("createProfile.engines.wayfern");
+        case "cloak":
+          return t("createProfile.engines.cloak");
         case "camoufox":
           return t("createProfile.engines.camoufox");
         default:
@@ -165,6 +176,15 @@ export function CreateProfileDialog({
     useState<string>("__none__");
   const [botProfilePath, setBotProfilePath] = useState("");
   const [botExecutablePath, setBotExecutablePath] = useState("");
+  const [cloakExecutablePath, setCloakExecutablePath] = useState("");
+  const [cloakFingerprintSeed, setCloakFingerprintSeed] = useState("");
+  const [cloakLocale, setCloakLocale] = useState("");
+  const [cloakTimezone, setCloakTimezone] = useState("");
+  const [cloakLanguages, setCloakLanguages] = useState("");
+  const [cloakExtraArgs, setCloakExtraArgs] = useState("");
+  const [cloakRuntimeStatus, setCloakRuntimeStatus] =
+    useState<CloakRuntimeStatus | null>(null);
+  const [isLoadingCloakRuntime, setIsLoadingCloakRuntime] = useState(false);
 
   // Camoufox anti-detect states
   const [camoufoxConfig, setCamoufoxConfig] = useState<CamoufoxConfig>(() => ({
@@ -245,6 +265,53 @@ export function CreateProfileDialog({
         setBotProfileAssets([]);
       });
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || selectedBrowser !== "cloak") {
+      setCloakRuntimeStatus(null);
+      setIsLoadingCloakRuntime(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingCloakRuntime(true);
+    void invoke<CloakRuntimeStatus>("cloak_get_runtime_status")
+      .then(async (status) => {
+        if (!cancelled) {
+          setCloakRuntimeStatus(status);
+        }
+        try {
+          const validated = await invoke<CloakRuntimeStatus>(
+            "cloak_validate_runtime",
+            {
+              profile: null,
+            },
+          );
+          if (!cancelled) {
+            setCloakRuntimeStatus(validated);
+          }
+        } catch {
+          if (!cancelled) {
+            setCloakRuntimeStatus(status);
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCloakRuntimeStatus(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingCloakRuntime(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, selectedBrowser]);
+
   const [releaseTypes, setReleaseTypes] = useState<BrowserReleaseTypes>();
   const [isLoadingReleaseTypes, setIsLoadingReleaseTypes] = useState(false);
   const [releaseTypesError, setReleaseTypesError] = useState<string | null>(
@@ -347,7 +414,11 @@ export function CreateProfileDialog({
     if (isOpen) {
       void loadSupportedBrowsers();
       // Load release types when a browser is selected
-      if (selectedBrowser && selectedBrowser !== "botbrowser") {
+      if (
+        selectedBrowser &&
+        selectedBrowser !== "botbrowser" &&
+        selectedBrowser !== "cloak"
+      ) {
         void loadReleaseTypes(selectedBrowser);
       }
       // Check and download GeoIP database if needed for Camoufox or Wayfern
@@ -365,7 +436,11 @@ export function CreateProfileDialog({
 
   // Load release types when browser selection changes
   useEffect(() => {
-    if (selectedBrowser && selectedBrowser !== "botbrowser") {
+    if (
+      selectedBrowser &&
+      selectedBrowser !== "botbrowser" &&
+      selectedBrowser !== "cloak"
+    ) {
       // Cancel any previous loading
       loadingBrowserRef.current = null;
       // Clear previous release types immediately to prevent showing stale data
@@ -451,6 +526,38 @@ export function CreateProfileDialog({
             proxyId: resolvedProxyId,
             vpnId: resolvedVpnId,
             botbrowserConfig,
+            groupId:
+              selectedGroupId !== "default" ? selectedGroupId : undefined,
+            extensionGroupId: selectedExtensionGroupId,
+            ephemeral,
+            dnsBlocklist: dnsBlocklist || undefined,
+            launchHook: launchHook.trim() || undefined,
+          });
+        } else if (selectedBrowser === "cloak") {
+          const fingerprintSeed = Number(cloakFingerprintSeed);
+          const cloakConfig: CloakConfig = {
+            executable_path: cloakExecutablePath.trim() || undefined,
+            fingerprint_seed:
+              Number.isFinite(fingerprintSeed) && fingerprintSeed > 0
+                ? fingerprintSeed
+                : undefined,
+            locale: cloakLocale.trim() || undefined,
+            timezone: cloakTimezone.trim() || undefined,
+            languages: cloakLanguages.trim() || undefined,
+            extra_args: cloakExtraArgs
+              .split(/\s+/)
+              .map((arg) => arg.trim())
+              .filter(Boolean),
+          };
+
+          await onCreateProfile({
+            name: profileName.trim(),
+            browserStr: "cloak",
+            version: "bundled",
+            releaseType: "stable",
+            proxyId: resolvedProxyId,
+            vpnId: resolvedVpnId,
+            cloakConfig,
             groupId:
               selectedGroupId !== "default" ? selectedGroupId : undefined,
             extensionGroupId: selectedExtensionGroupId,
@@ -559,6 +666,12 @@ export function CreateProfileDialog({
     setSelectedBotProfileAssetId("__none__");
     setBotProfilePath("");
     setBotExecutablePath("");
+    setCloakExecutablePath("");
+    setCloakFingerprintSeed("");
+    setCloakLocale("");
+    setCloakTimezone("");
+    setCloakLanguages("");
+    setCloakExtraArgs("");
     setReleaseTypes({});
     setIsLoadingReleaseTypes(false);
     setReleaseTypesError(null);
@@ -608,6 +721,7 @@ export function CreateProfileDialog({
       }
       return false;
     }
+    if (selectedBrowser === "cloak") return false;
     if (isBrowserCurrentlyDownloading(selectedBrowser)) return true;
     if (!getCreatableVersion(selectedBrowser)) return true;
 
@@ -652,9 +766,9 @@ export function CreateProfileDialog({
         >
           {/* Tab list hidden - only anti-detect browsers are supported */}
 
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="flex flex-col justify-center items-center w-full">
-              <div className="w-full max-w-2xl space-y-6 py-4">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2">
+            <div className="w-full">
+              <div className="mx-auto w-full max-w-2xl space-y-6 py-4">
                 {currentStep === "browser-selection" ? (
                   <>
                     <TabsContent value="anti-detect" className="mt-0 space-y-6">
@@ -685,6 +799,35 @@ export function CreateProfileDialog({
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {t("createProfile.chromiumTeamSharing")}
+                            </div>
+                          </div>
+                        </Button>
+
+                        {/* CloakBrowser (Chromium) - Second */}
+                        <Button
+                          onClick={() => {
+                            handleBrowserSelect("cloak");
+                          }}
+                          className="flex min-h-20 w-full items-start justify-start gap-3 border-2 p-4 text-left transition-colors hover:border-primary/50"
+                          variant="outline"
+                        >
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+                            {(() => {
+                              const IconComponent = getBrowserIcon("wayfern");
+                              return IconComponent ? (
+                                <IconComponent className="w-6 h-6" />
+                              ) : null;
+                            })()}
+                          </div>
+                          <div className="space-y-1">
+                            <div className="font-medium">
+                              {t("createProfile.cloak.label")}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {t("createProfile.cloak.subtitle")}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {t("createProfile.cloak.teamSharing")}
                             </div>
                           </div>
                         </Button>
@@ -888,6 +1031,132 @@ export function CreateProfileDialog({
                                 }}
                                 placeholder={t(
                                   "createProfile.botbrowser.executablePathPlaceholder",
+                                )}
+                              />
+                            </div>
+                          </div>
+                        ) : selectedBrowser === "cloak" ? (
+                          <div className="space-y-6">
+                            <Alert>
+                              <AlertDescription className="text-sm">
+                                {t("createProfile.cloak.runtimeHint")}
+                              </AlertDescription>
+                            </Alert>
+
+                            <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
+                              {isLoadingCloakRuntime
+                                ? t("createProfile.cloak.runtimeChecking")
+                                : cloakRuntimeStatus?.available
+                                  ? t("createProfile.cloak.runtimeAvailable", {
+                                      platform: cloakRuntimeStatus.platform,
+                                    })
+                                  : cloakRuntimeStatus
+                                    ? t("createProfile.cloak.runtimeMissing", {
+                                        platform: cloakRuntimeStatus.platform,
+                                      })
+                                    : t("createProfile.cloak.runtimeUnknown")}
+                              {cloakRuntimeStatus?.executablePath && (
+                                <div className="mt-1 break-all font-mono text-xs">
+                                  {cloakRuntimeStatus.executablePath}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="cloak-executable-path">
+                                {t("createProfile.cloak.executablePath")}
+                              </Label>
+                              <Input
+                                id="cloak-executable-path"
+                                value={cloakExecutablePath}
+                                onChange={(event) => {
+                                  setCloakExecutablePath(event.target.value);
+                                }}
+                                placeholder={t(
+                                  "createProfile.cloak.executablePathPlaceholder",
+                                )}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                {t("createProfile.cloak.executablePathHint")}
+                              </p>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="cloak-fingerprint-seed">
+                                  {t("createProfile.cloak.fingerprintSeed")}
+                                </Label>
+                                <Input
+                                  id="cloak-fingerprint-seed"
+                                  inputMode="numeric"
+                                  value={cloakFingerprintSeed}
+                                  onChange={(event) => {
+                                    setCloakFingerprintSeed(event.target.value);
+                                  }}
+                                  placeholder={t(
+                                    "createProfile.cloak.fingerprintSeedPlaceholder",
+                                  )}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="cloak-locale">
+                                  {t("createProfile.cloak.locale")}
+                                </Label>
+                                <Input
+                                  id="cloak-locale"
+                                  value={cloakLocale}
+                                  onChange={(event) => {
+                                    setCloakLocale(event.target.value);
+                                  }}
+                                  placeholder={t(
+                                    "createProfile.cloak.localePlaceholder",
+                                  )}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="cloak-timezone">
+                                  {t("createProfile.cloak.timezone")}
+                                </Label>
+                                <Input
+                                  id="cloak-timezone"
+                                  value={cloakTimezone}
+                                  onChange={(event) => {
+                                    setCloakTimezone(event.target.value);
+                                  }}
+                                  placeholder={t(
+                                    "createProfile.cloak.timezonePlaceholder",
+                                  )}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="cloak-languages">
+                                  {t("createProfile.cloak.languages")}
+                                </Label>
+                                <Input
+                                  id="cloak-languages"
+                                  value={cloakLanguages}
+                                  onChange={(event) => {
+                                    setCloakLanguages(event.target.value);
+                                  }}
+                                  placeholder={t(
+                                    "createProfile.cloak.languagesPlaceholder",
+                                  )}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="cloak-extra-args">
+                                {t("createProfile.cloak.extraArgs")}
+                              </Label>
+                              <Input
+                                id="cloak-extra-args"
+                                value={cloakExtraArgs}
+                                onChange={(event) => {
+                                  setCloakExtraArgs(event.target.value);
+                                }}
+                                placeholder={t(
+                                  "createProfile.cloak.extraArgsPlaceholder",
                                 )}
                               />
                             </div>
@@ -1762,7 +2031,7 @@ export function CreateProfileDialog({
                 )}
               </div>
             </div>
-          </ScrollArea>
+          </div>
         </Tabs>
 
         <DialogFooter className="flex-shrink-0 pt-4 border-t">

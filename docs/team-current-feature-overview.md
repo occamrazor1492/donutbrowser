@@ -14,6 +14,7 @@ It is designed for:
 - Multiple users logging in with team accounts.
 - Admin-managed users, shared Chromium profiles, permissions, locks, and audit logs.
 - Wayfern/Chromium as the default shared team browser environment.
+- CloakBrowser/Chromium as an internal optional shared engine for stronger binary-level fingerprint spoofing.
 - BotBrowser retained only as compatibility data and an advanced engine outside the current team MVP path.
 - Local Mac/Windows desktop clients running the browser process on each user's own machine.
 
@@ -25,17 +26,18 @@ It is not designed as:
 - A fully signed public desktop release.
 - A real-time multi-user editing system for one profile.
 
-## Three Browser Environments And Sharing Status
+## Browser Environments And Sharing Status
 
-The current version supports three browser environments, but their sharing support is different:
+The current version supports four browser environments, but their sharing support is different:
 
 | Environment | engine/browser | Current sharing status | Notes |
 | --- | --- | --- | --- |
 | Wayfern/Chromium | `wayfern` / `wayfern` | Default supported path, recommended for normal team use | Create locally, then use `Share to Team` or the existing self-hosted sync flow to register and upload it. No `.enc` template is required. |
+| CloakBrowser/Chromium | `cloak` / `cloak` | Supported internal shared path | Create locally as `Cloak Chromium`, then use `Share to Team`. The internal desktop package must include the Cloak binary under `vendor-private/cloakbrowser` at build time. |
 | BotBrowser | `botbrowser` / `botbrowser` | Compatibility only in the current client MVP | Existing server records and `.enc` assets are retained, but the normal client sharing flow does not ask members to import templates. |
 | Camoufox/Firefox | `camoufox` / `camoufox` | No member one-click shared launch yet | Server metadata compatibility is retained, but it is not the current shared-team acceptance path. |
 
-In practice, users should create and share `Chromium` / `Wayfern` environments first. BotBrowser and Camoufox data is kept for compatibility, but neither is the primary shared team workflow in this version.
+In practice, users should create and share `Chromium` / `Wayfern` environments first. Use `Cloak Chromium` when the team needs stronger CloakBrowser fingerprint spoofing and the internal build includes the Cloak binary. BotBrowser and Camoufox data is kept for compatibility, but neither is the primary shared team workflow in this version.
 
 ## Server Features
 
@@ -253,7 +255,7 @@ Current member flow:
 1. Login to the same self-hosted server.
 2. Open `Shared Profiles`.
 3. See shared team profiles and their permission, engine, lock state, and local status.
-4. For Wayfern/Chromium profiles, click `Add to local` to download the server profile metadata and state.
+4. For Wayfern or Cloak Chromium profiles, click `Add to local` to download the server profile metadata and state.
 5. Run `Preflight`.
 6. Click `Launch` after checks pass.
 
@@ -263,30 +265,33 @@ Current materialization behavior:
 - The local profile keeps the same id as the team profile.
 - Re-adding the same shared profile updates local metadata instead of creating a duplicate.
 - Wayfern/Chromium profiles download their server metadata/profile state and use `engine: "wayfern"`, `browser: "wayfern"`, and `sync_mode: "Regular"`.
+- Cloak Chromium profiles download their server metadata/profile state and use `engine: "cloak"`, `browser: "cloak"`, a deterministic fingerprint seed, and `sync_mode: "Regular"`.
 Current limitation:
 
-- The member one-click shared profile launcher supports Wayfern/Chromium profiles.
+- The member one-click shared profile launcher supports Wayfern and Cloak Chromium profiles.
 - BotBrowser and Camoufox team profile records remain compatible server data, but one-click member launch is intentionally disabled in this version.
 
 ## Shared Chromium Execution Features
 
-Wayfern/Chromium is the default team execution engine for this MVP. A user can create a local Wayfern profile and click `Share to Team` from the main profile list or profile info actions. Donut then registers it as a team profile, enables `Regular` sync, uploads the current metadata/manifest under the team prefix, and uses locks for every launch/write cycle.
+Wayfern/Chromium is the default team execution engine for this MVP. Cloak Chromium follows the same team-sharing flow when the internal desktop build includes a CloakBrowser binary. A user can create a local Wayfern or Cloak profile and click `Share to Team` from the main profile list or profile info actions. Donut then registers it as a team profile, enables `Regular` sync, uploads the current metadata/manifest under the team prefix, and uses locks for every launch/write cycle.
 
 Current shared Wayfern behavior:
 
 ```text
-local Wayfern profile
+local Wayfern or Cloak profile
 -> Share to Team
--> register TeamProfile(engine=wayfern)
+-> register TeamProfile(engine=wayfern|cloak)
 -> acquire lock
 -> upload current profile state
 -> release lock
 -> members join from Shared Profiles
 ```
 
+Wayfern and Cloak profiles do not share the same local browser profile. A Wayfern profile must launch with Wayfern, and a Cloak profile must launch with Cloak. Mixing the runtime for one profile can corrupt Chromium profile data and makes the fingerprint identity unstable.
+
 ## Preflight Features
 
-Before launching a shared profile, the client runs `team_preflight_botbrowser_profile(profileId)`. The command name is kept for compatibility, but the current client MVP treats Wayfern/Chromium as the only launchable shared engine.
+Before launching a shared profile, the client runs `team_preflight_botbrowser_profile(profileId)`. The command name is kept for compatibility, but the current client MVP treats Wayfern and Cloak Chromium as launchable shared engines.
 
 Current checks:
 
@@ -294,8 +299,8 @@ Current checks:
 | --- | --- |
 | Self-hosted login | The user is logged into the self-hosted server. |
 | Permission | The user is `admin`, `owner`, or `editor`. |
-| Browser runtime | The Wayfern/Chromium runtime is available. |
-| Fingerprint data | Wayfern/Chromium has synced fingerprint metadata and does not need a `.enc` template. |
+| Browser runtime | The Wayfern runtime is downloaded, or the internal build contains the CloakBrowser runtime. |
+| Fingerprint data | Wayfern/Cloak profiles do not need a `.enc` template; Cloak uses a deterministic profile seed. |
 | Lock | The profile is not locked by another user. |
 
 The UI shows readable pass or fail results before launch.

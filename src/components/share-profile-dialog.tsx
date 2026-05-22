@@ -35,6 +35,14 @@ function isWayfernProfile(profile: BrowserProfile | null) {
   return profile?.browser === "wayfern" || profile?.engine === "wayfern";
 }
 
+function isCloakProfile(profile: BrowserProfile | null) {
+  return profile?.browser === "cloak" || profile?.engine === "cloak";
+}
+
+function isShareableProfile(profile: BrowserProfile | null) {
+  return isWayfernProfile(profile) || isCloakProfile(profile);
+}
+
 export function ShareProfileDialog({
   isOpen,
   profile,
@@ -44,7 +52,7 @@ export function ShareProfileDialog({
 }: ShareProfileDialogProps) {
   const { t } = useTranslation();
   const [isPublishing, setIsPublishing] = useState(false);
-  const canPublish = isWayfernProfile(profile) && profile?.ephemeral !== true;
+  const canPublish = isShareableProfile(profile) && profile?.ephemeral !== true;
   const alreadyShared = useMemo(
     () => profile?.sync_mode != null && profile.sync_mode !== "Disabled",
     [profile],
@@ -54,10 +62,13 @@ export function ShareProfileDialog({
     if (!profile || !canPublish) return;
     setIsPublishing(true);
     try {
-      const published = await invoke<BrowserProfile>(
-        "team_publish_wayfern_profile",
-        { profileId: profile.id },
-      );
+      const published = isWayfernProfile(profile)
+        ? await invoke<BrowserProfile>("team_publish_wayfern_profile", {
+            profileId: profile.id,
+          })
+        : await invoke<BrowserProfile>("team_publish_chromium_profile", {
+            profileId: profile.id,
+          });
       onPublished(published);
       showSuccessToast(t("shareProfile.toasts.published"));
       onClose();
@@ -98,7 +109,9 @@ export function ShareProfileDialog({
                 <Badge variant={canPublish ? "secondary" : "outline"}>
                   {isWayfernProfile(profile)
                     ? t("shareProfile.engine.wayfern")
-                    : t("shareProfile.engine.unsupported")}
+                    : isCloakProfile(profile)
+                      ? t("shareProfile.engine.cloak")
+                      : t("shareProfile.engine.unsupported")}
                 </Badge>
               </div>
             </div>
@@ -108,7 +121,7 @@ export function ShareProfileDialog({
                 <AlertDescription>
                   {profile.ephemeral
                     ? t("shareProfile.errors.ephemeral")
-                    : t("shareProfile.errors.wayfernOnly")}
+                    : t("shareProfile.errors.chromiumOnly")}
                 </AlertDescription>
               </Alert>
             )}

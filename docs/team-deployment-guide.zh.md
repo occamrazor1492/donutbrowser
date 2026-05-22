@@ -244,6 +244,9 @@ Mac 可以用 Tauri 打包：
 本机 Apple Silicon 内部测试构建：
 
 ```bash
+mkdir -p vendor-private/cloakbrowser/macos-aarch64
+# 把 Apple Silicon 版 CloakBrowser .app 或可执行文件放到这个目录。
+# 这个目录会被 git ignore，只在 Tauri 打包时复制进安装包。
 pnpm build
 PROFILE=release TARGET=aarch64-apple-darwin \
   pnpm tauri build --target aarch64-apple-darwin --bundles dmg
@@ -279,6 +282,8 @@ Intel Mac 需要单独构建 `x86_64-apple-darwin` 版本。可以在装了 Inte
 
 ```bash
 rustup target add x86_64-apple-darwin
+mkdir -p vendor-private/cloakbrowser/macos-x64
+# 构建前把 Intel 版 CloakBrowser .app 或可执行文件放到这个目录。
 pnpm build
 PROFILE=release TARGET=x86_64-apple-darwin \
   pnpm tauri build --target x86_64-apple-darwin --bundles dmg
@@ -308,6 +313,8 @@ Windows 最好在 Windows 机器或 Windows CI runner 上构建。
 
 ```powershell
 pnpm install
+mkdir vendor-private\cloakbrowser\windows-x64
+# 构建前把 CloakBrowser Windows 可执行文件目录放到这里。
 pnpm build
 $env:PROFILE = "release"
 $env:TARGET = "x86_64-pc-windows-msvc"
@@ -319,12 +326,27 @@ pnpm tauri build --target x86_64-pc-windows-msvc --bundles nsis
 Windows 需要单独验收：
 
 ```text
-BotBrowser 或 Chromium 可执行文件选择
+CloakBrowser 内置 runtime 探测
 本地缓存路径
 代理参数转换
 浏览器关闭和同步行为
 进程清理
 ```
+
+## 内部 CloakBrowser Runtime 打包
+
+CloakBrowser 只进入内部私有桌面安装包。不要把 binary 提交到 git，也不要上传到公开 release。
+
+打包前目录：
+
+```text
+vendor-private/cloakbrowser/macos-aarch64/...
+vendor-private/cloakbrowser/macos-x64/...
+vendor-private/cloakbrowser/windows-x64/...
+vendor-private/cloakbrowser/linux-x64/...
+```
+
+`pnpm prepare-tauri-binaries` 会在 Tauri build 之前把这个私有目录复制到 `src-tauri/resources/cloakbrowser/`。复制后的 resource 目录也会被 git ignore。运行时，Cloak profile 会优先使用 `cloak_config.executable_path`，没有设置时使用安装包内置 runtime。如果两者都不存在，Shared Profiles 预检会明确提示缺少 CloakBrowser runtime。
 
 ## 实际发布路线
 

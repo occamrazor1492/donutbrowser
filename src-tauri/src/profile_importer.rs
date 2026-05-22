@@ -586,6 +586,7 @@ impl ProfileImporter {
           created_by_email: None,
           dns_blocklist: None,
           botbrowser_config: None,
+          cloak_config: None,
         };
 
         match self
@@ -668,6 +669,7 @@ impl ProfileImporter {
           created_by_email: None,
           dns_blocklist: None,
           botbrowser_config: None,
+          cloak_config: None,
         };
 
         match self
@@ -721,6 +723,7 @@ impl ProfileImporter {
       created_by_email: None,
       dns_blocklist: None,
       botbrowser_config: None,
+      cloak_config: None,
     };
 
     self.profile_manager.save_profile(&profile)?;

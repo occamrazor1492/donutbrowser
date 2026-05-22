@@ -59,6 +59,11 @@ nodecar/nodecar-bin
 # env
 .env
 
+# private browser runtimes for internal-only builds
+/vendor-private/
+/src-tauri/resources/cloakbrowser/*
+!/src-tauri/resources/cloakbrowser/.gitkeep
+
 # next
 **/next-env.d.ts
 

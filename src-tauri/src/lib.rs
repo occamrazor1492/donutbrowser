@@ -46,6 +46,7 @@ pub mod traffic_stats;
 mod wayfern_manager;
 mod wayfern_terms;
 // mod theme_detector; // removed: theme detection handled in webview via CSS prefers-color-scheme
+mod cloakbrowser;
 pub mod cloud_auth;
 mod commercial_license;
 mod cookie_manager;
@@ -1138,6 +1139,7 @@ async fn generate_sample_fingerprint(
     created_by_email: None,
     dns_blocklist: None,
     botbrowser_config: None,
+    cloak_config: None,
   };
 
   if browser == "camoufox" {
@@ -2087,6 +2089,8 @@ pub fn run() {
       cloud_auth::restart_sync_service,
       cloud_auth::cloud_get_wayfern_token,
       cloud_auth::cloud_refresh_wayfern_token,
+      cloakbrowser::cloak_get_runtime_status,
+      cloakbrowser::cloak_validate_runtime,
       self_hosted_auth::save_self_hosted_auth_state,
       self_hosted_auth::logout_self_hosted,
       self_hosted_auth::get_self_hosted_user,
@@ -2097,6 +2101,7 @@ pub fn run() {
       self_hosted_team::team_list_profiles,
       self_hosted_team::team_materialize_profile,
       self_hosted_team::team_publish_wayfern_profile,
+      self_hosted_team::team_publish_chromium_profile,
       self_hosted_team::team_preflight_botbrowser_profile,
       self_hosted_team::team_create_profile,
       self_hosted_team::team_update_profile,

@@ -2549,7 +2549,10 @@ export function ProfilesDataTable({
           const profile = row.original;
           const canShareToTeam =
             !!meta.onPublishTeamProfile &&
-            (profile.browser === "wayfern" || profile.engine === "wayfern") &&
+            (profile.browser === "wayfern" ||
+              profile.engine === "wayfern" ||
+              profile.browser === "cloak" ||
+              profile.engine === "cloak") &&
             profile.ephemeral !== true;
 
           return (

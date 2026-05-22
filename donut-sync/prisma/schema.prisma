@@ -21,6 +21,7 @@ enum ProfilePermissionLevel {
 enum BrowserEngine {
   botbrowser
   wayfern
+  cloak
   camoufox
 }
 

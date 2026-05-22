@@ -487,6 +487,9 @@ impl SyncEngine {
       diff.files_to_delete_remote.len()
     );
 
+    let should_write_remote =
+      !diff.files_to_upload.is_empty() || !diff.files_to_delete_remote.is_empty();
+
     let _ = events::emit(
       "profile-sync-progress",
       serde_json::json!({
@@ -544,35 +547,30 @@ impl SyncEngine {
       log::debug!("Deleted remote file: {}", path);
     }
 
-    // Upload metadata.json (sanitized profile)
-    self
-      .upload_profile_metadata(&profile_id, profile, &key_prefix)
-      .await?;
+    if should_write_remote {
+      // Upload metadata.json (sanitized profile)
+      self
+        .upload_profile_metadata(&profile_id, profile, &key_prefix)
+        .await?;
 
-    // If we recovered from an empty local state (downloaded everything from remote),
-    // regenerate the manifest from the actual files now on disk so we don't
-    // overwrite the remote manifest with an empty one.
-    let final_manifest = if local_manifest.files.is_empty() && !diff.files_to_download.is_empty() {
-      let mut new_cache = HashCache::load(&cache_path);
-      let mut regenerated = generate_manifest(&profile_id, &profile_dir, &mut new_cache)?;
-      new_cache.save(&cache_path)?;
-      regenerated.encrypted = encryption_key.is_some();
-      regenerated
+      let mut final_manifest = local_manifest;
+      final_manifest.encrypted = encryption_key.is_some();
+
+      // Upload manifest.json last for atomicity
+      self
+        .upload_manifest(
+          &profile_id,
+          &final_manifest,
+          encryption_key.as_ref(),
+          &key_prefix,
+        )
+        .await?;
     } else {
-      let mut m = local_manifest;
-      m.encrypted = encryption_key.is_some();
-      m
-    };
-
-    // Upload manifest.json last for atomicity
-    self
-      .upload_manifest(
-        &profile_id,
-        &final_manifest,
-        encryption_key.as_ref(),
-        &key_prefix,
-      )
-      .await?;
+      log::debug!(
+        "Profile {} applied remote changes locally; skipping remote metadata/manifest upload",
+        profile_id
+      );
+    }
 
     // Sync completed successfully — clean up resume state
     SyncResumeState::delete(&profile_dir);

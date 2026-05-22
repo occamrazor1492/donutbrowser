@@ -62,11 +62,12 @@ import type {
   BotBrowserPreflightResult,
   BrowserProfile,
   CamoufoxConfig,
+  CloakConfig,
   SyncSettings,
   WayfernConfig,
 } from "@/types";
 
-type BrowserTypeString = "botbrowser" | "camoufox" | "wayfern";
+type BrowserTypeString = "botbrowser" | "camoufox" | "cloak" | "wayfern";
 
 interface PendingUrl {
   id: string;
@@ -557,6 +558,7 @@ export default function Home() {
       camoufoxConfig?: CamoufoxConfig;
       wayfernConfig?: WayfernConfig;
       botbrowserConfig?: BotBrowserConfig;
+      cloakConfig?: CloakConfig;
       groupId?: string;
       extensionGroupId?: string;
       ephemeral?: boolean;
@@ -576,6 +578,7 @@ export default function Home() {
             camoufoxConfig: profileData.camoufoxConfig,
             wayfernConfig: profileData.wayfernConfig,
             botbrowserConfig: profileData.botbrowserConfig,
+            cloakConfig: profileData.cloakConfig,
             groupId:
               profileData.groupId ??
               (selectedGroupId !== "default" ? selectedGroupId : undefined),
@@ -614,7 +617,11 @@ export default function Home() {
       console.log("Starting launch for profile:", profile.name);
 
       // Show one-time warning about window resizing for fingerprinted browsers
-      if (profile.browser === "camoufox" || profile.browser === "wayfern") {
+      if (
+        profile.browser === "camoufox" ||
+        profile.browser === "wayfern" ||
+        profile.browser === "cloak"
+      ) {
         try {
           const dismissed = await invoke<boolean>(
             "get_window_resize_warning_dismissed",
@@ -642,7 +649,9 @@ export default function Home() {
           (profile.browser === "botbrowser" ||
             profile.engine === "botbrowser" ||
             profile.browser === "wayfern" ||
-            profile.engine === "wayfern")
+            profile.engine === "wayfern" ||
+            profile.browser === "cloak" ||
+            profile.engine === "cloak")
         ) {
           const preflight = await invoke<BotBrowserPreflightResult>(
             "team_preflight_botbrowser_profile",
@@ -837,7 +846,9 @@ export default function Home() {
     const eligibleProfiles = profiles.filter(
       (p) =>
         selectedProfiles.includes(p.id) &&
-        (p.browser === "wayfern" || p.browser === "camoufox"),
+        (p.browser === "wayfern" ||
+          p.browser === "cloak" ||
+          p.browser === "camoufox"),
     );
     if (eligibleProfiles.length === 0) {
       showErrorToast(t("errors.cookieCopyUnsupportedBrowser"));
@@ -1040,12 +1051,15 @@ export default function Home() {
     profiles.length,
   ]);
 
-  // Show warning for non-wayfern/camoufox profiles (support ending March 15, 2026)
+  // Show warning for browser engines outside the supported anti-detect set.
   useEffect(() => {
     if (profiles.length === 0) return;
 
     const unsupportedProfiles = profiles.filter(
-      (p) => p.browser !== "wayfern" && p.browser !== "camoufox",
+      (p) =>
+        p.browser !== "wayfern" &&
+        p.browser !== "cloak" &&
+        p.browser !== "camoufox",
     );
 
     if (unsupportedProfiles.length > 0) {
