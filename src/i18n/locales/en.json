@@ -1168,7 +1168,8 @@
   "crossOs": {
     "viewOnly": "This profile was created on {{os}} and is not supported on this system",
     "cannotLaunch": "This profile was created on {{os}} and is not supported on this system",
-    "cannotModify": "Cannot modify sync settings for a cross-OS profile"
+    "cannotModify": "Cannot modify sync settings for a cross-OS profile",
+    "unknownOs": "another OS"
   },
   "profileInfo": {
     "title": "Profile Details",
@@ -1669,7 +1670,11 @@
     "tagsHeader": "Tags",
     "noteHeader": "Note",
     "vpnsHeading": "VPNs",
-    "createByCountryHeading": "Create by country"
+    "createByCountryHeading": "Create by country",
+    "cannotModifyRunning": "Can't modify running profile",
+    "cannotModifyLaunching": "Can't modify profile while launching",
+    "cannotModifyStopping": "Can't modify profile while stopping",
+    "cannotModifyUpdating": "Can't modify profile while browser is updating"
   },
   "releaseTypeSelector": {
     "noReleaseTypes": "No release types available.",

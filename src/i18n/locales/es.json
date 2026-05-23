@@ -1168,7 +1168,8 @@
   "crossOs": {
     "viewOnly": "Este perfil fue creado en {{os}} y no es compatible con este sistema",
     "cannotLaunch": "Este perfil fue creado en {{os}} y no es compatible con este sistema",
-    "cannotModify": "No se pueden modificar los ajustes de sincronización de un perfil de otro sistema operativo"
+    "cannotModify": "No se pueden modificar los ajustes de sincronización de un perfil de otro sistema operativo",
+    "unknownOs": "otro sistema operativo"
   },
   "profileInfo": {
     "title": "Detalles del Perfil",
@@ -1669,7 +1670,11 @@
     "tagsHeader": "Etiquetas",
     "noteHeader": "Nota",
     "vpnsHeading": "VPN",
-    "createByCountryHeading": "Crear por país"
+    "createByCountryHeading": "Crear por país",
+    "cannotModifyRunning": "No se puede modificar un perfil en ejecución",
+    "cannotModifyLaunching": "No se puede modificar el perfil mientras se inicia",
+    "cannotModifyStopping": "No se puede modificar el perfil mientras se detiene",
+    "cannotModifyUpdating": "No se puede modificar el perfil mientras se actualiza el navegador"
   },
   "releaseTypeSelector": {
     "noReleaseTypes": "No hay tipos de versión disponibles.",

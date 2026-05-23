@@ -51,9 +51,11 @@ import { cn } from "@/lib/utils";
 import type {
   BotBrowserConfig,
   BrowserReleaseTypes,
+  BrowserTypeString,
   CamoufoxConfig,
   CamoufoxOS,
   CloakConfig,
+  SelfHostedAuthState,
   TeamBotProfileAsset,
   WayfernConfig,
   WayfernOS,
@@ -68,17 +70,6 @@ const getCurrentOS = (): CamoufoxOS => {
 };
 
 import { RippleButton } from "./ui/ripple";
-
-type BrowserTypeString = "botbrowser" | "camoufox" | "cloak" | "wayfern";
-
-interface SelfHostedAuthState {
-  user: {
-    id: string;
-    email: string;
-    role: string;
-    teamId: string;
-  };
-}
 
 interface CloakRuntimeStatus {
   available: boolean;

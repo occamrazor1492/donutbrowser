@@ -1168,7 +1168,8 @@
   "crossOs": {
     "viewOnly": "此配置文件在 {{os}} 上创建，不受此系统支持",
     "cannotLaunch": "此配置文件在 {{os}} 上创建，不受此系统支持",
-    "cannotModify": "无法修改跨操作系统配置文件的同步设置"
+    "cannotModify": "无法修改跨操作系统配置文件的同步设置",
+    "unknownOs": "其他操作系统"
   },
   "profileInfo": {
     "title": "配置文件详情",
@@ -1669,7 +1670,11 @@
     "tagsHeader": "标签",
     "noteHeader": "备注",
     "vpnsHeading": "VPN",
-    "createByCountryHeading": "按国家创建"
+    "createByCountryHeading": "按国家创建",
+    "cannotModifyRunning": "无法修改运行中的配置文件",
+    "cannotModifyLaunching": "启动期间无法修改配置文件",
+    "cannotModifyStopping": "停止期间无法修改配置文件",
+    "cannotModifyUpdating": "浏览器更新期间无法修改配置文件"
   },
   "releaseTypeSelector": {
     "noReleaseTypes": "没有可用的发布类型。",

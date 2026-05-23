@@ -20,6 +20,7 @@ import {
 } from "@prisma/client";
 import { hashPassword } from "../auth/password.js";
 import type { UserContext } from "../auth/user-context.interface.js";
+import { resolveProductionEnv } from "../config/env-validator.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 const WRITE_PERMISSIONS = new Set<ProfilePermissionLevel>([
@@ -37,15 +38,22 @@ export class TeamService {
     private readonly config: ConfigService,
   ) {
     this.bucket = this.config.get<string>("S3_BUCKET") || "donut-sync";
+    const env = process.env;
     this.s3Client = new S3Client({
       endpoint:
         this.config.get<string>("S3_ENDPOINT") || "http://localhost:8987",
       region: this.config.get<string>("S3_REGION") || "us-east-1",
       credentials: {
-        accessKeyId:
-          this.config.get<string>("S3_ACCESS_KEY_ID") || "minioadmin",
-        secretAccessKey:
-          this.config.get<string>("S3_SECRET_ACCESS_KEY") || "minioadmin",
+        accessKeyId: resolveProductionEnv(
+          env,
+          "S3_ACCESS_KEY_ID",
+          "minioadmin",
+        ),
+        secretAccessKey: resolveProductionEnv(
+          env,
+          "S3_SECRET_ACCESS_KEY",
+          "minioadmin",
+        ),
       },
       forcePathStyle:
         this.config.get<string>("S3_FORCE_PATH_STYLE") !== "false",

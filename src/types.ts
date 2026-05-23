@@ -806,3 +806,27 @@ export interface VpnStatus {
   bytes_received?: number;
   last_handshake?: number;
 }
+
+// Browser engine discriminator string. Mirrors `BrowserProfile.engine` but as a
+// non-optional union for code paths that have already resolved which engine to
+// use (e.g. the create-profile wizard, deep-link routing).
+export type BrowserTypeString = "botbrowser" | "camoufox" | "cloak" | "wayfern";
+
+// Mirrors `src-tauri/src/self_hosted_auth.rs::SelfHostedUser` with serde
+// renames applied. `role` is `string` (not a literal union) because the server
+// may add new roles over time.
+export interface SelfHostedUser {
+  id: string;
+  email: string;
+  role: string;
+  teamId: string;
+  teamName?: string | null;
+  prefix?: string | null;
+  teamPrefix?: string | null;
+}
+
+// Mirrors `src-tauri/src/self_hosted_auth.rs::SelfHostedAuthState`.
+export interface SelfHostedAuthState {
+  server_url: string;
+  user: SelfHostedUser;
+}

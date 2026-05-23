@@ -21,6 +21,10 @@ import { ConfigService } from "@nestjs/config";
 import { interval, merge, type Observable, of, Subject } from "rxjs";
 import { catchError, filter, map, startWith, switchMap } from "rxjs/operators";
 import type { UserContext } from "../auth/user-context.interface.js";
+import {
+  assertProductionEnv,
+  resolveProductionEnv,
+} from "../config/env-validator.js";
 import { TeamService } from "../team/team.service.js";
 import type {
   DeletePrefixRequestDto,
@@ -57,13 +61,20 @@ export class SyncService implements OnModuleInit {
     private configService: ConfigService,
     private teamService: TeamService,
   ) {
+    const env = process.env;
     const endpoint =
       this.configService.get<string>("S3_ENDPOINT") || "http://localhost:8987";
     const region = this.configService.get<string>("S3_REGION") || "us-east-1";
-    const accessKeyId =
-      this.configService.get<string>("S3_ACCESS_KEY_ID") || "minioadmin";
-    const secretAccessKey =
-      this.configService.get<string>("S3_SECRET_ACCESS_KEY") || "minioadmin";
+    const accessKeyId = resolveProductionEnv(
+      env,
+      "S3_ACCESS_KEY_ID",
+      "minioadmin",
+    );
+    const secretAccessKey = resolveProductionEnv(
+      env,
+      "S3_SECRET_ACCESS_KEY",
+      "minioadmin",
+    );
     const forcePathStyle =
       this.configService.get<string>("S3_FORCE_PATH_STYLE") !== "false";
 
@@ -91,6 +102,12 @@ export class SyncService implements OnModuleInit {
     this.backendInternalKey = this.configService.get<string>(
       "BACKEND_INTERNAL_KEY",
     );
+    // If usage reporting is wired up (BACKEND_INTERNAL_URL set), the matching
+    // key must be a real value in production — silently sending "undefined" as
+    // the auth header would let any caller skip authentication on the backend.
+    if (this.backendInternalUrl) {
+      assertProductionEnv(env, ["BACKEND_INTERNAL_KEY"]);
+    }
   }
 
   async onModuleInit() {
@@ -896,12 +913,20 @@ export class SyncService implements OnModuleInit {
     userId: string,
     count: number,
   ): Promise<void> {
+    if (!this.backendInternalKey) {
+      // Should be unreachable: reportProfileUsageAsync guards on both URL and
+      // key before calling us. Surface as a real error instead of silently
+      // sending "undefined" as the auth header (which the backend may accept).
+      throw new Error(
+        "BACKEND_INTERNAL_KEY is missing — refusing to call internal API without auth",
+      );
+    }
     const url = `${this.backendInternalUrl}/api/auth/internal/profile-usage`;
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-internal-key": this.backendInternalKey ?? "undefined",
+        "x-internal-key": this.backendInternalKey,
       },
       body: JSON.stringify({ userId, count }),
     });

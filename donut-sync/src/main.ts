@@ -1,6 +1,10 @@
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module.js";
+import {
+  assertProductionEnv,
+  MissingEnvError,
+} from "./config/env-validator.js";
 
 function validateEnv() {
   if (process.env.MULTI_USER_ENABLED === "true") {
@@ -10,12 +14,24 @@ function validateEnv() {
       );
       process.exit(1);
     }
-    return;
-  }
-
-  if (!process.env.SYNC_TOKEN && !process.env.SYNC_JWT_PUBLIC_KEY) {
+  } else if (!process.env.SYNC_TOKEN && !process.env.SYNC_JWT_PUBLIC_KEY) {
     console.error("Either SYNC_TOKEN or SYNC_JWT_PUBLIC_KEY must be set");
     process.exit(1);
+  }
+
+  // In production additionally reject silent "minioadmin" / blank credentials.
+  // Dev/test keep the convenient defaults so local stacks still bootstrap.
+  try {
+    assertProductionEnv(process.env, [
+      "S3_ACCESS_KEY_ID",
+      "S3_SECRET_ACCESS_KEY",
+    ]);
+  } catch (err) {
+    if (err instanceof MissingEnvError) {
+      console.error(`[env-validator] ${err.message}`);
+      process.exit(1);
+    }
+    throw err;
   }
 }
 

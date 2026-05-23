@@ -61,28 +61,17 @@ import type {
   BotBrowserConfig,
   BotBrowserPreflightResult,
   BrowserProfile,
+  BrowserTypeString,
   CamoufoxConfig,
   CloakConfig,
+  SelfHostedAuthState,
   SyncSettings,
   WayfernConfig,
 } from "@/types";
 
-type BrowserTypeString = "botbrowser" | "camoufox" | "cloak" | "wayfern";
-
 interface PendingUrl {
   id: string;
   url: string;
-}
-
-interface SelfHostedAuthState {
-  server_url: string;
-  user: {
-    id: string;
-    email: string;
-    role: "admin" | "member";
-    teamId: string;
-    teamName?: string | null;
-  };
 }
 
 export default function Home() {

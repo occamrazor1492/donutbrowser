@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs::{self, create_dir_all};
 use std::path::PathBuf;
+use std::sync::RwLock;
 
 use aes_gcm::{
   aead::{Aead, AeadCore, KeyInit, OsRng},
@@ -96,11 +97,36 @@ impl Default for AppSettings {
   }
 }
 
-pub struct SettingsManager;
+pub struct SettingsManager {
+  // In-memory cache. The previous implementation hit disk on every read which
+  // — given how often the UI polls for theme/api/launch settings — caused
+  // noticeable IO load. RwLock lets many threads read concurrently and
+  // serialises only on miss / save / invalidate.
+  app_cache: RwLock<Option<AppSettings>>,
+  sorting_cache: RwLock<Option<TableSortingSettings>>,
+}
 
 impl SettingsManager {
   pub(crate) fn new() -> Self {
-    Self
+    Self {
+      app_cache: RwLock::new(None),
+      sorting_cache: RwLock::new(None),
+    }
+  }
+
+  /// Drop any cached settings. The next `load_*` call will re-read from disk.
+  /// Call this after an external process is known to have rewritten the
+  /// settings file, or in tests to simulate process restart.
+  // Reserved as a public escape hatch (sync engine, future file-watcher); the
+  // in-process callers all rely on the auto-refresh from `save_settings`.
+  #[allow(dead_code)]
+  pub fn invalidate_cache(&self) {
+    if let Ok(mut guard) = self.app_cache.write() {
+      *guard = None;
+    }
+    if let Ok(mut guard) = self.sorting_cache.write() {
+      *guard = None;
+    }
   }
 
   pub fn instance() -> &'static SettingsManager {
@@ -120,16 +146,29 @@ impl SettingsManager {
   }
 
   pub fn load_settings(&self) -> Result<AppSettings, Box<dyn std::error::Error>> {
-    let settings_file = self.get_settings_file();
+    // Fast path: cache hit under a read lock.
+    if let Ok(guard) = self.app_cache.read() {
+      if let Some(cached) = guard.as_ref() {
+        return Ok(cached.clone());
+      }
+    }
 
+    // Slow path: read disk, then upgrade to write lock to publish.
+    let loaded = Self::read_settings_from_disk(&self.get_settings_file())?;
+    if let Ok(mut guard) = self.app_cache.write() {
+      *guard = Some(loaded.clone());
+    }
+    Ok(loaded)
+  }
+
+  fn read_settings_from_disk(
+    settings_file: &PathBuf,
+  ) -> Result<AppSettings, Box<dyn std::error::Error>> {
     if !settings_file.exists() {
-      // Return default settings if file doesn't exist
       return Ok(AppSettings::default());
     }
 
-    let content = fs::read_to_string(&settings_file)?;
-
-    // Parse the settings file - serde will use default values for missing fields
+    let content = fs::read_to_string(settings_file)?;
     match serde_json::from_str::<AppSettings>(&content) {
       Ok(settings) => Ok(settings),
       Err(e) => {
@@ -147,17 +186,34 @@ impl SettingsManager {
     let json = serde_json::to_string_pretty(settings)?;
     fs::write(settings_file, json)?;
 
+    // Refresh cache so subsequent reads see the just-saved value without
+    // requiring an explicit invalidate from the caller.
+    if let Ok(mut guard) = self.app_cache.write() {
+      *guard = Some(settings.clone());
+    }
     Ok(())
   }
 
   pub fn load_table_sorting(&self) -> Result<TableSortingSettings, Box<dyn std::error::Error>> {
-    let sorting_file = self.get_table_sorting_file();
-
-    if !sorting_file.exists() {
-      // Return default sorting if file doesn't exist
-      return Ok(TableSortingSettings::default());
+    if let Ok(guard) = self.sorting_cache.read() {
+      if let Some(cached) = guard.as_ref() {
+        return Ok(cached.clone());
+      }
     }
 
+    let loaded = Self::read_sorting_from_disk(&self.get_table_sorting_file())?;
+    if let Ok(mut guard) = self.sorting_cache.write() {
+      *guard = Some(loaded.clone());
+    }
+    Ok(loaded)
+  }
+
+  fn read_sorting_from_disk(
+    sorting_file: &PathBuf,
+  ) -> Result<TableSortingSettings, Box<dyn std::error::Error>> {
+    if !sorting_file.exists() {
+      return Ok(TableSortingSettings::default());
+    }
     let content = fs::read_to_string(sorting_file)?;
     let sorting: TableSortingSettings = serde_json::from_str(&content)?;
     Ok(sorting)
@@ -174,6 +230,9 @@ impl SettingsManager {
     let json = serde_json::to_string_pretty(sorting)?;
     fs::write(sorting_file, json)?;
 
+    if let Ok(mut guard) = self.sorting_cache.write() {
+      *guard = Some(sorting.clone());
+    }
     Ok(())
   }
 
@@ -1204,5 +1263,186 @@ mod tests {
         .ends_with("table_sorting.json"),
       "Sorting file should end with table_sorting.json"
     );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Cache behaviour (added 2026-05 — see Optimization Pass: settings caching).
+  //
+  // The contract:
+  //   1. The first load reads from disk; subsequent loads return the cached
+  //      copy without touching disk.
+  //   2. `save_settings` writes to disk AND refreshes the cache so the next
+  //      load returns the just-saved value.
+  //   3. External file modifications do NOT invalidate the cache — this is
+  //      intentional (we don't watch the file), so callers must opt in via
+  //      `invalidate_cache()`.
+  //   4. `invalidate_cache()` forces the next load to re-read from disk.
+  //   5. Table-sorting settings have their own independent cache with the
+  //      same contract.
+  //   6. Concurrent loads from many threads do not produce a torn read; all
+  //      observers see a consistent value.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  fn overwrite_settings_file_raw(manager: &SettingsManager, theme: &str) {
+    let settings_dir = manager.get_settings_dir();
+    fs::create_dir_all(&settings_dir).unwrap();
+    let payload = serde_json::json!({ "theme": theme }).to_string();
+    fs::write(manager.get_settings_file(), payload).unwrap();
+  }
+
+  fn overwrite_sorting_file_raw(manager: &SettingsManager, column: &str, dir: &str) {
+    let settings_dir = manager.get_settings_dir();
+    fs::create_dir_all(&settings_dir).unwrap();
+    let payload = serde_json::json!({ "column": column, "direction": dir }).to_string();
+    fs::write(manager.get_table_sorting_file(), payload).unwrap();
+  }
+
+  #[test]
+  fn cache_returns_same_value_on_repeated_loads() {
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    overwrite_settings_file_raw(&manager, "dark");
+
+    let first = manager.load_settings().unwrap();
+    assert_eq!(first.theme, "dark");
+
+    // External rewrite — cache must keep returning the original value.
+    overwrite_settings_file_raw(&manager, "light");
+    for _ in 0..50 {
+      let next = manager.load_settings().unwrap();
+      assert_eq!(
+        next.theme, "dark",
+        "load_settings must return cached value even after external file mutation"
+      );
+    }
+  }
+
+  #[test]
+  fn save_settings_refreshes_cache() {
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    overwrite_settings_file_raw(&manager, "dark");
+    assert_eq!(manager.load_settings().unwrap().theme, "dark");
+
+    let updated = AppSettings {
+      theme: "light".to_string(),
+      ..AppSettings::default()
+    };
+    manager.save_settings(&updated).unwrap();
+
+    // The next load must see the value we just saved without needing an
+    // explicit invalidate.
+    assert_eq!(manager.load_settings().unwrap().theme, "light");
+  }
+
+  #[test]
+  fn invalidate_cache_forces_reload_from_disk() {
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    overwrite_settings_file_raw(&manager, "dark");
+    assert_eq!(manager.load_settings().unwrap().theme, "dark");
+
+    overwrite_settings_file_raw(&manager, "light");
+    // Cached value still served.
+    assert_eq!(manager.load_settings().unwrap().theme, "dark");
+
+    manager.invalidate_cache();
+    assert_eq!(
+      manager.load_settings().unwrap().theme,
+      "light",
+      "after invalidate_cache(), the next load must re-read disk"
+    );
+  }
+
+  #[test]
+  fn cache_handles_missing_file_then_save() {
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    // No file yet — first load returns defaults and caches them.
+    let first = manager.load_settings().unwrap();
+    assert_eq!(first.theme, "system");
+
+    // Caching the default must not block subsequent saves.
+    let updated = AppSettings {
+      theme: "dark".to_string(),
+      ..AppSettings::default()
+    };
+    manager.save_settings(&updated).unwrap();
+    assert_eq!(manager.load_settings().unwrap().theme, "dark");
+  }
+
+  #[test]
+  fn cache_handles_corrupted_file_without_caching_garbage() {
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    let settings_dir = manager.get_settings_dir();
+    fs::create_dir_all(&settings_dir).unwrap();
+    fs::write(manager.get_settings_file(), "{ not valid json }").unwrap();
+
+    let first = manager.load_settings().unwrap();
+    assert_eq!(first.theme, "system");
+
+    // After a corrupt-file fallback, writing valid settings must take effect
+    // on the next load (the corrupted defaults must not be sticky in cache).
+    let updated = AppSettings {
+      theme: "dark".to_string(),
+      ..AppSettings::default()
+    };
+    manager.save_settings(&updated).unwrap();
+    assert_eq!(manager.load_settings().unwrap().theme, "dark");
+  }
+
+  #[test]
+  fn sorting_cache_has_independent_lifecycle() {
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    overwrite_sorting_file_raw(&manager, "browser", "desc");
+
+    let first = manager.load_table_sorting().unwrap();
+    assert_eq!(first.column, "browser");
+    assert_eq!(first.direction, "desc");
+
+    // External mutation: still cached.
+    overwrite_sorting_file_raw(&manager, "status", "asc");
+    let cached = manager.load_table_sorting().unwrap();
+    assert_eq!(cached.column, "browser");
+
+    // Save refreshes cache.
+    let to_save = TableSortingSettings {
+      column: "name".to_string(),
+      direction: "asc".to_string(),
+    };
+    manager.save_table_sorting(&to_save).unwrap();
+    let after_save = manager.load_table_sorting().unwrap();
+    assert_eq!(after_save.column, "name");
+
+    // Invalidate brings disk value back.
+    overwrite_sorting_file_raw(&manager, "status", "desc");
+    manager.invalidate_cache();
+    let after_invalidate = manager.load_table_sorting().unwrap();
+    assert_eq!(after_invalidate.column, "status");
+    assert_eq!(after_invalidate.direction, "desc");
+  }
+
+  #[test]
+  fn concurrent_loads_observe_consistent_values() {
+    use std::sync::Arc;
+    use std::thread;
+
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    overwrite_settings_file_raw(&manager, "dark");
+
+    // Prime the cache on the main thread. `TEST_DATA_DIR` is thread-local
+    // (see app_dirs.rs), so child threads can't resolve our temp settings
+    // file path themselves; once cached, no further disk IO is needed.
+    assert_eq!(manager.load_settings().unwrap().theme, "dark");
+
+    let shared = Arc::new(manager);
+    let mut handles = Vec::new();
+    for _ in 0..16 {
+      let m = Arc::clone(&shared);
+      handles.push(thread::spawn(move || {
+        for _ in 0..50 {
+          assert_eq!(m.load_settings().unwrap().theme, "dark");
+        }
+      }));
+    }
+    for h in handles {
+      h.join().unwrap();
+    }
   }
 }

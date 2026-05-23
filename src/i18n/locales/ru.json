@@ -1168,7 +1168,8 @@
   "crossOs": {
     "viewOnly": "Этот профиль был создан на {{os}} и не поддерживается в этой системе",
     "cannotLaunch": "Этот профиль был создан на {{os}} и не поддерживается в этой системе",
-    "cannotModify": "Невозможно изменить настройки синхронизации профиля другой ОС"
+    "cannotModify": "Невозможно изменить настройки синхронизации профиля другой ОС",
+    "unknownOs": "другая ОС"
   },
   "profileInfo": {
     "title": "Детали профиля",
@@ -1669,7 +1670,11 @@
     "tagsHeader": "Теги",
     "noteHeader": "Заметка",
     "vpnsHeading": "VPN",
-    "createByCountryHeading": "Создать по стране"
+    "createByCountryHeading": "Создать по стране",
+    "cannotModifyRunning": "Нельзя изменить запущенный профиль",
+    "cannotModifyLaunching": "Нельзя изменить профиль во время запуска",
+    "cannotModifyStopping": "Нельзя изменить профиль во время остановки",
+    "cannotModifyUpdating": "Нельзя изменить профиль во время обновления браузера"
   },
   "releaseTypeSelector": {
     "noReleaseTypes": "Нет доступных типов выпусков.",

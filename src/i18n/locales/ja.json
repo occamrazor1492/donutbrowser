@@ -1168,7 +1168,8 @@
   "crossOs": {
     "viewOnly": "このプロファイルは{{os}}で作成されたもので、このシステムではサポートされていません",
     "cannotLaunch": "このプロファイルは{{os}}で作成されたもので、このシステムではサポートされていません",
-    "cannotModify": "他のOSのプロファイルの同期設定は変更できません"
+    "cannotModify": "他のOSのプロファイルの同期設定は変更できません",
+    "unknownOs": "別のOS"
   },
   "profileInfo": {
     "title": "プロフィール詳細",
@@ -1669,7 +1670,11 @@
     "tagsHeader": "タグ",
     "noteHeader": "メモ",
     "vpnsHeading": "VPN",
-    "createByCountryHeading": "国別に作成"
+    "createByCountryHeading": "国別に作成",
+    "cannotModifyRunning": "実行中のプロファイルは変更できません",
+    "cannotModifyLaunching": "起動中のプロファイルは変更できません",
+    "cannotModifyStopping": "停止中のプロファイルは変更できません",
+    "cannotModifyUpdating": "ブラウザの更新中はプロファイルを変更できません"
   },
   "releaseTypeSelector": {
     "noReleaseTypes": "利用可能なリリースタイプがありません。",
