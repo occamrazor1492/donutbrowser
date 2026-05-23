@@ -40,6 +40,10 @@ import { WindowResizeWarningDialog } from "@/components/window-resize-warning-di
 import { useAppUpdateNotifications } from "@/hooks/use-app-update-notifications";
 import { useCloudAuth } from "@/hooks/use-cloud-auth";
 import { useCommercialTrial } from "@/hooks/use-commercial-trial";
+import {
+  focusGlobalSearch,
+  useGlobalShortcuts,
+} from "@/hooks/use-global-shortcuts";
 import { useGroupEvents } from "@/hooks/use-group-events";
 import type { PermissionType } from "@/hooks/use-permissions";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -103,6 +107,16 @@ export default function Home() {
 
   // Synchronizer sessions
   const { getProfileSyncInfo } = useSyncSessions();
+
+  // App-wide keyboard shortcuts. Defined here (rather than inside the table
+  // or header) so a single source of truth controls what Cmd+K / Cmd+N do
+  // regardless of which subtree currently has focus.
+  useGlobalShortcuts({
+    onFocusSearch: focusGlobalSearch,
+    onCreateProfile: () => {
+      setCreateProfileDialogOpen(true);
+    },
+  });
   const [syncLeaderProfile, setSyncLeaderProfile] =
     useState<BrowserProfile | null>(null);
 
@@ -728,6 +742,26 @@ export default function Home() {
     [t],
   );
 
+  const handleLaunchHeadless = useCallback(
+    async (profile: BrowserProfile) => {
+      try {
+        await invoke<BrowserProfile>("launch_browser_profile_headless", {
+          profile,
+          url: null,
+        });
+        showSuccessToast(
+          t("profiles.headless.launched", { name: profile.name }),
+        );
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        showErrorToast(
+          t("errors.launchHeadlessFailed", { error: errorMessage }),
+        );
+      }
+    },
+    [t],
+  );
+
   const handleKillProfile = useCallback(
     async (profile: BrowserProfile) => {
       console.log("Starting kill for profile:", profile.name);
@@ -802,6 +836,67 @@ export default function Home() {
     handleAssignProfilesToGroup(selectedProfiles);
     setSelectedProfiles([]);
   }, [selectedProfiles, handleAssignProfilesToGroup]);
+
+  // Bulk launch: fire-and-forget for every selected profile. We don't await
+  // sequentially because each launch shows its own running indicator in the
+  // table; serialising them would lock the UI for many seconds with no gain.
+  // Already-running profiles are skipped silently (launchProfile is a no-op
+  // for running ones on the backend side).
+  const handleBulkLaunch = useCallback(() => {
+    if (selectedProfiles.length === 0) return;
+    const targets = profiles.filter((p) => selectedProfiles.includes(p.id));
+    let failures = 0;
+    void Promise.all(
+      targets.map(async (profile) => {
+        try {
+          await launchProfile(profile);
+        } catch (err) {
+          failures += 1;
+          console.error(`Bulk launch failed for ${profile.name}:`, err);
+        }
+      }),
+    ).then(() => {
+      if (failures > 0) {
+        showErrorToast(
+          t("errors.bulkLaunchPartialFailure", {
+            failed: failures,
+            total: targets.length,
+          }),
+        );
+      }
+    });
+    setSelectedProfiles([]);
+  }, [selectedProfiles, profiles, launchProfile, t]);
+
+  // Bulk stop: walk every selected profile that's actually running and call
+  // kill_browser_profile on it. Profiles not currently running are skipped.
+  const handleBulkStop = useCallback(() => {
+    if (selectedProfiles.length === 0) return;
+    const targets = profiles.filter(
+      (p) => selectedProfiles.includes(p.id) && runningProfiles.has(p.id),
+    );
+    let failures = 0;
+    void Promise.all(
+      targets.map(async (profile) => {
+        try {
+          await handleKillProfile(profile);
+        } catch (err) {
+          failures += 1;
+          console.error(`Bulk stop failed for ${profile.name}:`, err);
+        }
+      }),
+    ).then(() => {
+      if (failures > 0) {
+        showErrorToast(
+          t("errors.bulkStopPartialFailure", {
+            failed: failures,
+            total: targets.length,
+          }),
+        );
+      }
+    });
+    setSelectedProfiles([]);
+  }, [selectedProfiles, profiles, runningProfiles, handleKillProfile, t]);
 
   const handleAssignExtensionGroup = useCallback((profileIds: string[]) => {
     setSelectedProfilesForExtensionGroup(profileIds);
@@ -1195,6 +1290,20 @@ export default function Home() {
             onBulkProxyAssignment={handleBulkProxyAssignment}
             onBulkCopyCookies={handleBulkCopyCookies}
             onBulkExtensionGroupAssignment={handleBulkExtensionGroupAssignment}
+            onBulkLaunch={handleBulkLaunch}
+            onBulkStop={handleBulkStop}
+            onLaunchHeadless={handleLaunchHeadless}
+            totalProfileCount={profiles.length}
+            hasActiveFilter={
+              searchQuery.length > 0 || selectedGroupId !== "default"
+            }
+            onOpenCreateProfile={() => {
+              setCreateProfileDialogOpen(true);
+            }}
+            onClearFilters={() => {
+              setSearchQuery("");
+              setSelectedGroupId("default");
+            }}
             onAssignExtensionGroup={handleAssignExtensionGroup}
             onOpenProfileSyncDialog={handleOpenProfileSyncDialog}
             onToggleProfileSync={handleToggleProfileSync}

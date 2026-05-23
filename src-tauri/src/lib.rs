@@ -59,6 +59,7 @@ pub mod events;
 mod mcp_server;
 mod tag_manager;
 mod team_lock;
+mod tray_icon;
 mod version_updater;
 pub mod vpn;
 pub mod vpn_worker_runner;
@@ -1233,11 +1234,27 @@ pub fn run() {
         mgr.ensure_icons_extracted();
       }
 
-      // Daemon (tray icon) is currently disabled — clean up any existing autostart
+      // The standalone donut-daemon process is currently disabled (the API
+      // server still requires an AppHandle — see daemon::services TODO).
+      // Tray icon support has been moved in-process to tray_icon.rs: it
+      // installs only when the user enables "minimize to tray" in settings.
       if daemon::autostart::is_autostart_enabled() {
-        log::info!("Removing daemon autostart (daemon is disabled)");
+        log::info!("Removing daemon autostart (standalone daemon is disabled)");
         if let Err(e) = daemon::autostart::disable_autostart() {
           log::warn!("Failed to remove daemon autostart: {e}");
+        }
+      }
+
+      // Honour the persisted minimize_to_tray preference on startup.
+      let want_tray = settings_manager::SettingsManager::instance()
+        .load_settings()
+        .map(|s| s.minimize_to_tray)
+        .unwrap_or(false);
+      if want_tray {
+        match tray_icon::install_tray(&app.handle().clone()) {
+          Ok(true) => log::info!("[tray] Installed system tray icon (minimize_to_tray=true)"),
+          Ok(false) => {}
+          Err(e) => log::warn!("[tray] Tray install failed: {e}"),
         }
       }
 
@@ -1258,6 +1275,31 @@ pub fn run() {
 
       #[allow(unused_variables)]
       let window = win_builder.build().unwrap();
+
+      // Intercept window close so that when minimize_to_tray is on, we hide
+      // the window instead of quitting the process. The setting is read
+      // each time (not captured) so toggling it in settings takes effect
+      // immediately without restart.
+      {
+        let close_app_handle = app.handle().clone();
+        window.on_window_event(move |event| {
+          if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+            let minimize_to_tray = settings_manager::SettingsManager::instance()
+              .load_settings()
+              .map(|s| s.minimize_to_tray)
+              .unwrap_or(false);
+            if minimize_to_tray {
+              if let Some(window) = close_app_handle.get_webview_window("main") {
+                if let Err(e) = window.hide() {
+                  log::warn!("[tray] Failed to hide window on close: {e}");
+                  return;
+                }
+                api.prevent_close();
+              }
+            }
+          }
+        });
+      }
 
       // Set transparent titlebar for macOS
       #[cfg(target_os = "macos")]
@@ -1938,6 +1980,7 @@ pub fn run() {
       create_browser_profile_new,
       list_browser_profiles,
       launch_browser_profile,
+      browser_runner::launch_browser_profile_headless,
       fetch_browser_versions_with_count,
       fetch_browser_versions_cached_first,
       fetch_browser_versions_with_count_cached_first,

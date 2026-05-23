@@ -63,6 +63,7 @@ interface AppSettings {
   api_port: number;
   api_token?: string;
   disable_auto_updates?: boolean;
+  minimize_to_tray?: boolean;
 }
 
 interface CustomThemeState {
@@ -1128,6 +1129,27 @@ export function SettingsDialog({
                   </div>
                 </div>
               )}
+
+              <div className="flex items-start space-x-3 p-3 rounded-lg border">
+                <Checkbox
+                  id="minimize-to-tray"
+                  checked={settings.minimize_to_tray ?? false}
+                  onCheckedChange={(checked) => {
+                    updateSetting("minimize_to_tray", checked as boolean);
+                  }}
+                />
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="minimize-to-tray"
+                    className="text-sm font-medium"
+                  >
+                    {t("settings.minimizeToTray")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.minimizeToTrayDescription")}
+                  </p>
+                </div>
+              </div>
 
               <LoadingButton
                 isLoading={isClearingCache}

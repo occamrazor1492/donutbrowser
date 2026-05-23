@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useFormatDateTime } from "@/lib/datetime";
 
 interface BlocklistCacheStatus {
   level: string;
@@ -33,6 +34,7 @@ export function DnsBlocklistDialog({
   onClose,
 }: DnsBlocklistDialogProps) {
   const { t } = useTranslation();
+  const formatDateTime = useFormatDateTime();
   const [statuses, setStatuses] = useState<BlocklistCacheStatus[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -73,7 +75,7 @@ export function DnsBlocklistDialog({
 
   const formatDate = (timestamp: number | null) => {
     if (!timestamp) return t("dnsBlocklist.notCached");
-    return new Date(timestamp * 1000).toLocaleString();
+    return formatDateTime(timestamp * 1000);
   };
 
   return (

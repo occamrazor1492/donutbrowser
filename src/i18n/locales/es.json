@@ -172,7 +172,9 @@
       "clearCacheFailed": "Error al limpiar la caché"
     },
     "disableAutoUpdates": "Desactivar Actualizaciones Automáticas de la App",
-    "disableAutoUpdatesDescription": "Evita que la aplicación busque e instale actualizaciones de Donut Browser automáticamente. Las actualizaciones de navegadores no se ven afectadas."
+    "disableAutoUpdatesDescription": "Evita que la aplicación busque e instale actualizaciones de Donut Browser automáticamente. Las actualizaciones de navegadores no se ven afectadas.",
+    "minimizeToTray": "Minimizar a la bandeja del sistema",
+    "minimizeToTrayDescription": "Al cerrar la ventana principal, Donut Browser se oculta en la bandeja del sistema en lugar de cerrarse. Usa el icono de la bandeja para reabrir o salir."
   },
   "header": {
     "searchPlaceholder": "Buscar perfiles...",
@@ -196,6 +198,19 @@
     "title": "Perfiles",
     "empty": "Sin perfiles aún",
     "emptyDescription": "Crea tu primer perfil de navegador para comenzar.",
+    "emptyOnboarding": {
+      "title": "Te damos la bienvenida a Donut Browser",
+      "description": "Los perfiles aíslan cookies, huellas digitales y proxies en sesiones de navegador independientes. Crea el primero para empezar.",
+      "cta": "Crear tu primer perfil",
+      "shortcutHint": "Consejo: pulsa ⌘N / Ctrl+N para abrir este diálogo en cualquier momento."
+    },
+    "emptyNoMatch": {
+      "title": "Ningún perfil coincide con los filtros actuales.",
+      "clearFilters": "Borrar filtros"
+    },
+    "headless": {
+      "launched": "Se inició «{{name}}» en modo sin interfaz"
+    },
     "createFirst": "Crear Perfil",
     "noResults": "No se encontraron perfiles",
     "noResultsDescription": "Ningún perfil coincide con tus criterios de búsqueda.",
@@ -213,6 +228,7 @@
     },
     "actions": {
       "launch": "Iniciar",
+      "launchHeadless": "Iniciar sin interfaz",
       "stop": "Detener",
       "edit": "Editar",
       "delete": "Eliminar",
@@ -268,7 +284,9 @@
       "assignToGroup": "Asignar a grupo",
       "assignProxy": "Asignar proxy",
       "assignExtensionGroup": "Asignar grupo de extensiones",
-      "copyCookies": "Copiar cookies"
+      "copyCookies": "Copiar cookies",
+      "launchSelected": "Iniciar perfiles seleccionados",
+      "stopSelected": "Detener perfiles seleccionados"
     }
   },
   "createProfile": {
@@ -1018,6 +1036,9 @@
     "renameProfileFailed": "Error al renombrar el perfil: {{error}}",
     "killBrowserFailed": "Error al detener el navegador: {{error}}",
     "deleteSelectedProfilesFailed": "Error al eliminar los perfiles seleccionados: {{error}}",
+    "bulkLaunchPartialFailure": "No se pudieron iniciar {{failed}} de {{total}} perfiles. Revisa la consola.",
+    "bulkStopPartialFailure": "No se pudieron detener {{failed}} de {{total}} perfiles. Revisa la consola.",
+    "launchHeadlessFailed": "No se pudo iniciar el perfil sin interfaz: {{error}}",
     "cookieCopyUnsupportedBrowser": "La copia de cookies sólo funciona con perfiles Wayfern y Camoufox",
     "updateSyncSettingsFailed": "Error al actualizar los ajustes de sincronización",
     "cloneProfileFailed": "Error al clonar el perfil: {{error}}",

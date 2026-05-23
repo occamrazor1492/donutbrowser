@@ -17,6 +17,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCloudAuth } from "@/hooks/use-cloud-auth";
+import { useFormatDateTime } from "@/lib/datetime";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import type { BrowserProfile, SyncMode, SyncSettings } from "@/types";
 import { isSyncEnabled } from "@/types";
@@ -35,6 +36,7 @@ export function ProfileSyncDialog({
   onSyncConfigOpen,
 }: ProfileSyncDialogProps) {
   const { t } = useTranslation();
+  const formatDateTime = useFormatDateTime();
   const { user: cloudUser } = useCloudAuth();
   const isCloudSyncEligible =
     cloudUser != null &&
@@ -167,8 +169,7 @@ export function ProfileSyncDialog({
 
   const formatLastSync = (timestamp?: number) => {
     if (!timestamp) return t("common.labels.never");
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleString();
+    return formatDateTime(timestamp * 1000);
   };
 
   if (!profile) return null;

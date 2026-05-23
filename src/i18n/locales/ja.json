@@ -172,7 +172,9 @@
       "clearCacheFailed": "キャッシュのクリアに失敗しました"
     },
     "disableAutoUpdates": "アプリの自動更新を無効にする",
-    "disableAutoUpdatesDescription": "Donut Browserの自動更新確認・インストールを無効にします。ブラウザの更新には影響しません。"
+    "disableAutoUpdatesDescription": "Donut Browserの自動更新確認・インストールを無効にします。ブラウザの更新には影響しません。",
+    "minimizeToTray": "システムトレイに最小化",
+    "minimizeToTrayDescription": "メインウィンドウを閉じるとアプリを終了せず、システムトレイに格納します。トレイアイコンから再表示・終了できます。"
   },
   "header": {
     "searchPlaceholder": "プロファイルを検索...",
@@ -196,6 +198,19 @@
     "title": "プロファイル",
     "empty": "プロファイルがありません",
     "emptyDescription": "最初のブラウザプロファイルを作成して始めましょう。",
+    "emptyOnboarding": {
+      "title": "Donut Browser へようこそ",
+      "description": "プロファイルは Cookie・指紋・プロキシを独立したブラウザセッションに隔離します。最初のプロファイルを作成して始めましょう。",
+      "cta": "最初のプロファイルを作成",
+      "shortcutHint": "ヒント: ⌘N / Ctrl+N でいつでもこのダイアログを開けます。"
+    },
+    "emptyNoMatch": {
+      "title": "現在のフィルター条件に一致するプロファイルがありません。",
+      "clearFilters": "フィルターをクリア"
+    },
+    "headless": {
+      "launched": "「{{name}}」をヘッドレスモードで起動しました"
+    },
     "createFirst": "プロファイルを作成",
     "noResults": "プロファイルが見つかりません",
     "noResultsDescription": "検索条件に一致するプロファイルがありません。",
@@ -213,6 +228,7 @@
     },
     "actions": {
       "launch": "起動",
+      "launchHeadless": "ヘッドレスで起動",
       "stop": "停止",
       "edit": "編集",
       "delete": "削除",
@@ -268,7 +284,9 @@
       "assignToGroup": "グループに割り当て",
       "assignProxy": "プロキシを割り当て",
       "assignExtensionGroup": "拡張機能グループを割り当て",
-      "copyCookies": "Cookieをコピー"
+      "copyCookies": "Cookieをコピー",
+      "launchSelected": "選択したプロファイルを起動",
+      "stopSelected": "選択したプロファイルを停止"
     }
   },
   "createProfile": {
@@ -1018,6 +1036,9 @@
     "renameProfileFailed": "プロファイルの名前変更に失敗しました: {{error}}",
     "killBrowserFailed": "ブラウザの停止に失敗しました: {{error}}",
     "deleteSelectedProfilesFailed": "選択したプロファイルの削除に失敗しました: {{error}}",
+    "bulkLaunchPartialFailure": "{{total}}件中 {{failed}}件のプロファイル起動に失敗しました。コンソールで詳細を確認してください。",
+    "bulkStopPartialFailure": "{{total}}件中 {{failed}}件のプロファイル停止に失敗しました。コンソールで詳細を確認してください。",
+    "launchHeadlessFailed": "ヘッドレスモードでの起動に失敗しました: {{error}}",
     "cookieCopyUnsupportedBrowser": "Cookieのコピーは Wayfern および Camoufox プロファイルでのみ機能します",
     "updateSyncSettingsFailed": "同期設定の更新に失敗しました",
     "cloneProfileFailed": "プロファイルの複製に失敗しました: {{error}}",

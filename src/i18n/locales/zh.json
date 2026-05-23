@@ -172,7 +172,9 @@
       "clearCacheFailed": "清除缓存失败"
     },
     "disableAutoUpdates": "禁用应用自动更新",
-    "disableAutoUpdatesDescription": "阻止应用程序自动检查和安装 Donut Browser 更新。浏览器更新不受影响。"
+    "disableAutoUpdatesDescription": "阻止应用程序自动检查和安装 Donut Browser 更新。浏览器更新不受影响。",
+    "minimizeToTray": "最小化到系统托盘",
+    "minimizeToTrayDescription": "关闭主窗口时将 Donut Browser 隐藏到系统托盘而不是退出。通过托盘图标可以重新打开或退出应用。"
   },
   "header": {
     "searchPlaceholder": "搜索配置文件...",
@@ -196,6 +198,19 @@
     "title": "配置文件",
     "empty": "暂无配置文件",
     "emptyDescription": "创建您的第一个浏览器配置文件以开始使用。",
+    "emptyOnboarding": {
+      "title": "欢迎使用 Donut Browser",
+      "description": "配置文件可将 Cookie、指纹和代理隔离到独立的浏览器会话中。创建您的第一个配置文件即可开始使用。",
+      "cta": "创建您的第一个配置文件",
+      "shortcutHint": "提示：随时按 ⌘N / Ctrl+N 打开此对话框。"
+    },
+    "emptyNoMatch": {
+      "title": "没有配置文件匹配当前筛选条件。",
+      "clearFilters": "清除筛选"
+    },
+    "headless": {
+      "launched": "已以无界面模式启动「{{name}}」"
+    },
     "createFirst": "创建配置文件",
     "noResults": "未找到配置文件",
     "noResultsDescription": "没有配置文件匹配您的搜索条件。",
@@ -213,6 +228,7 @@
     },
     "actions": {
       "launch": "启动",
+      "launchHeadless": "无界面启动",
       "stop": "停止",
       "edit": "编辑",
       "delete": "删除",
@@ -268,7 +284,9 @@
       "assignToGroup": "分配到分组",
       "assignProxy": "分配代理",
       "assignExtensionGroup": "分配扩展分组",
-      "copyCookies": "复制 Cookie"
+      "copyCookies": "复制 Cookie",
+      "launchSelected": "启动选中的配置文件",
+      "stopSelected": "停止选中的配置文件"
     }
   },
   "createProfile": {
@@ -1018,6 +1036,9 @@
     "renameProfileFailed": "重命名配置文件失败: {{error}}",
     "killBrowserFailed": "终止浏览器失败: {{error}}",
     "deleteSelectedProfilesFailed": "删除所选配置文件失败: {{error}}",
+    "bulkLaunchPartialFailure": "{{total}} 个配置文件中有 {{failed}} 个启动失败，请查看控制台了解详情。",
+    "bulkStopPartialFailure": "{{total}} 个配置文件中有 {{failed}} 个停止失败，请查看控制台了解详情。",
+    "launchHeadlessFailed": "以无界面模式启动配置文件失败: {{error}}",
     "cookieCopyUnsupportedBrowser": "Cookie 复制仅适用于 Wayfern 和 Camoufox 配置文件",
     "updateSyncSettingsFailed": "更新同步设置失败",
     "cloneProfileFailed": "克隆配置文件失败: {{error}}",

@@ -23,8 +23,10 @@ import {
   LuCookie,
   LuInfo,
   LuLock,
+  LuPlay,
   LuPuzzle,
   LuShare2,
+  LuSquare,
   LuTrash2,
   LuTriangleAlert,
   LuUsers,
@@ -78,6 +80,7 @@ import {
   getProfileIcon,
   isCrossOsProfile,
 } from "@/lib/browser-utils";
+import { useFormatDateTime } from "@/lib/datetime";
 import { formatRelativeTime } from "@/lib/flag-utils";
 import { trimName } from "@/lib/name-utils";
 import { cn } from "@/lib/utils";
@@ -96,6 +99,7 @@ import {
   DataTableActionBarAction,
   DataTableActionBarSelection,
 } from "./data-table-action-bar";
+import { EmptyProfilesState } from "./profile-table/empty-state";
 import { NonHoverableTooltip } from "./profile-table/non-hoverable-tooltip";
 import { NoteCell } from "./profile-table/note-cell";
 import { TagsCell } from "./profile-table/tags-cell";
@@ -108,6 +112,12 @@ import { RippleButton } from "./ui/ripple";
 // causing column definitions to be recreated on every render.
 interface TableMeta {
   t: (key: string, options?: Record<string, unknown>) => string;
+  /**
+   * Locale-aware datetime formatter bound to the current i18next language.
+   * Use this instead of `toLocaleString()` so dates respect the in-app
+   * language picker (Settings → Language) rather than only the OS locale.
+   */
+  formatDateTime: (date: Date | number | string) => string;
   selectedProfiles: string[];
   selectableCount: number;
   showCheckboxes: boolean;
@@ -241,6 +251,7 @@ function getProfileSyncStatusDot(
     | undefined,
   t: (key: string, options?: Record<string, unknown>) => string,
   errorMessage?: string,
+  formatDateTime?: (date: Date | number | string) => string,
 ): SyncStatusDot | null {
   const encrypted = profile.sync_mode === "Encrypted";
   const status =
@@ -269,7 +280,9 @@ function getProfileSyncStatusDot(
         color: "bg-success",
         tooltip: profile.last_sync
           ? t("profileTable.syncTooltipSyncedAt", {
-              time: new Date(profile.last_sync * 1000).toLocaleString(),
+              time: formatDateTime
+                ? formatDateTime(profile.last_sync * 1000)
+                : new Date(profile.last_sync * 1000).toLocaleString(),
             })
           : t("profileTable.syncTooltipSynced"),
         animate: false,
@@ -325,6 +338,22 @@ interface ProfilesDataTableProps {
   onBulkProxyAssignment?: () => void;
   onBulkCopyCookies?: () => void;
   onBulkExtensionGroupAssignment?: () => void;
+  onBulkLaunch?: () => void;
+  onBulkStop?: () => void;
+  /**
+   * Total number of profiles in the underlying dataset (before group / search
+   * filtering). Used to distinguish "no profiles exist at all" (onboarding
+   * empty state) from "filter reduced the list to 0" (no-match empty state).
+   * If omitted, the table falls back to assuming the visible list is the
+   * whole dataset.
+   */
+  totalProfileCount?: number;
+  /** Whether the current view has any active filter / search. */
+  hasActiveFilter?: boolean;
+  /** Open the Create Profile dialog from the empty-state CTA. */
+  onOpenCreateProfile?: () => void;
+  /** Reset all filters from the no-match empty-state CTA. */
+  onClearFilters?: () => void;
   onAssignExtensionGroup?: (profileIds: string[]) => void;
   onOpenProfileSyncDialog?: (profile: BrowserProfile) => void;
   onToggleProfileSync?: (profile: BrowserProfile) => void;
@@ -338,6 +367,8 @@ interface ProfilesDataTableProps {
       }
     | undefined;
   onLaunchWithSync?: (profile: BrowserProfile) => void;
+  /** Launch in headless mode — wired through to profile-info-dialog. */
+  onLaunchHeadless?: (profile: BrowserProfile) => void;
 }
 
 export function ProfilesDataTable({
@@ -362,6 +393,12 @@ export function ProfilesDataTable({
   onBulkProxyAssignment,
   onBulkCopyCookies,
   onBulkExtensionGroupAssignment,
+  onBulkLaunch,
+  onBulkStop,
+  totalProfileCount,
+  hasActiveFilter = false,
+  onOpenCreateProfile,
+  onClearFilters,
   onAssignExtensionGroup,
   onOpenProfileSyncDialog,
   onToggleProfileSync,
@@ -369,8 +406,10 @@ export function ProfilesDataTable({
   syncUnlocked = false,
   getProfileSyncInfo,
   onLaunchWithSync,
+  onLaunchHeadless,
 }: ProfilesDataTableProps) {
   const { t } = useTranslation();
+  const formatDateTime = useFormatDateTime();
   const { getTableSorting, updateSorting, isLoaded } = useTableSorting();
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -994,6 +1033,7 @@ export function ProfilesDataTable({
   const tableMeta = React.useMemo<TableMeta>(
     () => ({
       t,
+      formatDateTime,
       selectedProfiles,
       selectableCount: selectableProfiles.length,
       showCheckboxes,
@@ -1154,6 +1194,7 @@ export function ProfilesDataTable({
       getLockInfo,
       getProfileSyncInfo,
       onLaunchWithSync,
+      formatDateTime,
     ],
   );
 
@@ -1999,6 +2040,7 @@ export function ProfilesDataTable({
             liveStatus,
             meta.t,
             syncEntry?.error,
+            meta.formatDateTime,
           );
           if (!dot) return null;
 
@@ -2180,9 +2222,17 @@ export function ProfilesDataTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="p-0 align-middle"
                 >
-                  {t("profiles.table.empty")}
+                  <EmptyProfilesState
+                    isFreshInstall={
+                      (totalProfileCount ?? profiles.length) === 0 &&
+                      !hasActiveFilter
+                    }
+                    hasActiveFilter={hasActiveFilter}
+                    onCreateProfile={onOpenCreateProfile}
+                    onClearFilters={onClearFilters}
+                  />
                 </TableCell>
               </TableRow>
             )}
@@ -2243,6 +2293,7 @@ export function ProfilesDataTable({
               }}
               onCloneProfile={onCloneProfile}
               onLaunchWithSync={onLaunchWithSync}
+              onLaunchHeadless={onLaunchHeadless}
               onDeleteProfile={(profile) => {
                 setProfileForInfoDialog(null);
                 setProfileToDelete(profile);
@@ -2257,6 +2308,24 @@ export function ProfilesDataTable({
         })()}
       <DataTableActionBar table={table}>
         <DataTableActionBarSelection table={table} />
+        {onBulkLaunch && (
+          <DataTableActionBarAction
+            tooltip={t("profiles.actionBar.launchSelected")}
+            onClick={onBulkLaunch}
+            size="icon"
+          >
+            <LuPlay />
+          </DataTableActionBarAction>
+        )}
+        {onBulkStop && (
+          <DataTableActionBarAction
+            tooltip={t("profiles.actionBar.stopSelected")}
+            onClick={onBulkStop}
+            size="icon"
+          >
+            <LuSquare />
+          </DataTableActionBarAction>
+        )}
         {onBulkGroupAssignment && (
           <DataTableActionBarAction
             tooltip={t("profiles.actionBar.assignToGroup")}

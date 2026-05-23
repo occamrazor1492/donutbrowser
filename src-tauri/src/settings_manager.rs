@@ -58,6 +58,12 @@ pub struct AppSettings {
   pub window_resize_warning_dismissed: bool,
   #[serde(default)]
   pub disable_auto_updates: bool,
+  /// When true, closing the main window hides it to the system tray instead
+  /// of quitting the app. The tray icon stays visible with a "Show Donut
+  /// Browser" / "Quit" menu. Default false so existing users keep current
+  /// behaviour after upgrade; settings UI exposes a toggle.
+  #[serde(default)]
+  pub minimize_to_tray: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -93,6 +99,7 @@ impl Default for AppSettings {
       language: None,
       window_resize_warning_dismissed: false,
       disable_auto_updates: false,
+      minimize_to_tray: false,
     }
   }
 }
@@ -870,6 +877,18 @@ pub async fn save_app_settings(
     .save_settings(&persist_settings)
     .map_err(|e| format!("Failed to save settings: {e}"))?;
 
+  // Apply the tray preference immediately so the user doesn't need to
+  // restart the app to see the toggle take effect. Failures here are
+  // logged but don't fail the save — the setting is still persisted and
+  // the next launch will pick it up.
+  if persist_settings.minimize_to_tray {
+    if let Err(e) = crate::tray_icon::install_tray(&app_handle) {
+      log::warn!("[tray] Failed to install tray after settings save: {e}");
+    }
+  } else {
+    crate::tray_icon::uninstall_tray(&app_handle);
+  }
+
   Ok(settings)
 }
 
@@ -1077,6 +1096,60 @@ mod tests {
   }
 
   #[test]
+  fn minimize_to_tray_defaults_to_false() {
+    // The tray-on-close behaviour is opt-in: existing users keep the
+    // close-window-quits-app behaviour they're used to after upgrade.
+    let s = AppSettings::default();
+    assert!(!s.minimize_to_tray);
+  }
+
+  #[test]
+  fn minimize_to_tray_round_trips_through_settings_file() {
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+
+    let settings = AppSettings {
+      minimize_to_tray: true,
+      ..AppSettings::default()
+    };
+    manager.save_settings(&settings).unwrap();
+
+    // Force a disk re-read (proves it's actually persisted, not just cached).
+    manager.invalidate_cache();
+    let loaded = manager.load_settings().unwrap();
+    assert!(
+      loaded.minimize_to_tray,
+      "minimize_to_tray must survive a save/load round-trip"
+    );
+  }
+
+  #[test]
+  fn minimize_to_tray_omitted_in_old_settings_files_defaults_to_false() {
+    // Settings files written by older builds won't have the field. Serde must
+    // fill in the default so reading never errors and existing users opt in
+    // explicitly instead of being switched to tray behaviour silently.
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    let settings_dir = manager.get_settings_dir();
+    fs::create_dir_all(&settings_dir).unwrap();
+
+    // Pre-feature settings: no minimize_to_tray field.
+    let legacy_json = serde_json::json!({
+      "theme": "dark",
+      "api_enabled": true,
+    })
+    .to_string();
+    fs::write(manager.get_settings_file(), legacy_json).unwrap();
+    manager.invalidate_cache();
+
+    let loaded = manager.load_settings().unwrap();
+    assert_eq!(loaded.theme, "dark");
+    assert!(loaded.api_enabled);
+    assert!(
+      !loaded.minimize_to_tray,
+      "missing field must default to false, not be considered an error"
+    );
+  }
+
+  #[test]
   fn test_default_table_sorting_settings() {
     let default_sorting = TableSortingSettings::default();
 
@@ -1126,6 +1199,7 @@ mod tests {
       mcp_port: None,
       mcp_token: None,
       launch_on_login_declined: false,
+      minimize_to_tray: false,
       language: None,
       window_resize_warning_dismissed: false,
       disable_auto_updates: false,

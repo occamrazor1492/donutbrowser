@@ -2885,6 +2885,22 @@ pub async fn launch_browser_profile_with_debugging(
     .map_err(|e| format!("Failed to launch browser with debugging: {e}"))
 }
 
+/// Launch a profile headlessly from the GUI (no remote debugging port).
+///
+/// Mirrors `launch_browser_profile` but with `headless=true` and no debug
+/// port. The REST API and MCP server already expose headless launches via
+/// `launch_browser_profile_with_debugging`; this command makes the same
+/// capability reachable from the desktop UI without forcing GUI users to
+/// configure a port they don't need.
+#[tauri::command]
+pub async fn launch_browser_profile_headless(
+  app_handle: tauri::AppHandle,
+  profile: BrowserProfile,
+  url: Option<String>,
+) -> Result<BrowserProfile, String> {
+  launch_browser_profile_with_debugging(app_handle, profile, url, None, true).await
+}
+
 #[tauri::command]
 pub async fn open_url_with_profile(
   app_handle: tauri::AppHandle,

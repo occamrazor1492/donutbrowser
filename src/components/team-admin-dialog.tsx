@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useFormatDateTime } from "@/lib/datetime";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import type {
   SelfHostedTeamUser,
@@ -61,6 +62,7 @@ function errorMessage(error: unknown) {
 
 export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
   const { t } = useTranslation();
+  const formatDateTime = useFormatDateTime();
   const [activeTab, setActiveTab] = useState("users");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -792,7 +794,7 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                     {auditLogs.map((log) => (
                       <tr key={log.id} className="border-t">
                         <td className="px-3 py-2 whitespace-nowrap">
-                          {new Date(log.createdAt).toLocaleString()}
+                          {formatDateTime(log.createdAt)}
                         </td>
                         <td className="px-3 py-2">
                           {log.user?.email ?? t("common.labels.none")}

@@ -252,6 +252,7 @@ const HomeHeader = ({
       <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="relative min-w-[220px] flex-1 sm:flex-none">
           <Input
+            id="donut-search-input"
             type="text"
             placeholder={t("header.searchPlaceholder")}
             value={searchQuery}

@@ -172,7 +172,9 @@
       "clearCacheFailed": "Failed to clear cache"
     },
     "disableAutoUpdates": "Disable App Auto Updates",
-    "disableAutoUpdatesDescription": "Prevent the app from automatically checking and installing Donut Browser updates. Browser updates are not affected."
+    "disableAutoUpdatesDescription": "Prevent the app from automatically checking and installing Donut Browser updates. Browser updates are not affected.",
+    "minimizeToTray": "Minimize to System Tray",
+    "minimizeToTrayDescription": "Closing the main window hides Donut Browser to the system tray instead of quitting. Use the tray icon to reopen or quit the app."
   },
   "header": {
     "searchPlaceholder": "Search profiles...",
@@ -199,6 +201,19 @@
     "createFirst": "Create Profile",
     "noResults": "No profiles found",
     "noResultsDescription": "No profiles match your search criteria.",
+    "emptyOnboarding": {
+      "title": "Welcome to Donut Browser",
+      "description": "Profiles isolate cookies, fingerprints, and proxies into independent browser sessions. Create your first one to get started.",
+      "cta": "Create your first profile",
+      "shortcutHint": "Tip: press ⌘N / Ctrl+N anytime to open this dialog."
+    },
+    "emptyNoMatch": {
+      "title": "No profiles match the current filters.",
+      "clearFilters": "Clear filters"
+    },
+    "headless": {
+      "launched": "Launched \"{{name}}\" in headless mode"
+    },
     "table": {
       "name": "Name",
       "browser": "Browser",
@@ -213,6 +228,7 @@
     },
     "actions": {
       "launch": "Launch",
+      "launchHeadless": "Launch headless",
       "stop": "Stop",
       "edit": "Edit",
       "delete": "Delete",
@@ -268,7 +284,9 @@
       "assignToGroup": "Assign to Group",
       "assignProxy": "Assign Proxy",
       "assignExtensionGroup": "Assign Extension Group",
-      "copyCookies": "Copy Cookies"
+      "copyCookies": "Copy Cookies",
+      "launchSelected": "Launch selected profiles",
+      "stopSelected": "Stop selected profiles"
     }
   },
   "createProfile": {
@@ -1018,6 +1036,9 @@
     "renameProfileFailed": "Failed to rename profile: {{error}}",
     "killBrowserFailed": "Failed to kill browser: {{error}}",
     "deleteSelectedProfilesFailed": "Failed to delete selected profiles: {{error}}",
+    "bulkLaunchPartialFailure": "Failed to launch {{failed}} of {{total}} profiles. Check the console for details.",
+    "bulkStopPartialFailure": "Failed to stop {{failed}} of {{total}} profiles. Check the console for details.",
+    "launchHeadlessFailed": "Failed to launch profile in headless mode: {{error}}",
     "cookieCopyUnsupportedBrowser": "Cookie copy only works with Wayfern and Camoufox profiles",
     "updateSyncSettingsFailed": "Failed to update sync settings",
     "cloneProfileFailed": "Failed to clone profile: {{error}}",

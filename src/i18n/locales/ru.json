@@ -172,7 +172,9 @@
       "clearCacheFailed": "Не удалось очистить кэш"
     },
     "disableAutoUpdates": "Отключить автообновление приложения",
-    "disableAutoUpdatesDescription": "Запретить автоматическую проверку и установку обновлений Donut Browser. Обновления браузеров не затрагиваются."
+    "disableAutoUpdatesDescription": "Запретить автоматическую проверку и установку обновлений Donut Browser. Обновления браузеров не затрагиваются.",
+    "minimizeToTray": "Сворачивать в системный трей",
+    "minimizeToTrayDescription": "Закрытие главного окна скрывает Donut Browser в системный трей вместо выхода. Используйте значок в трее, чтобы открыть приложение или выйти."
   },
   "header": {
     "searchPlaceholder": "Поиск профилей...",
@@ -196,6 +198,19 @@
     "title": "Профили",
     "empty": "Профилей пока нет",
     "emptyDescription": "Создайте свой первый профиль браузера для начала работы.",
+    "emptyOnboarding": {
+      "title": "Добро пожаловать в Donut Browser",
+      "description": "Профили изолируют cookies, отпечатки и прокси в независимые сеансы браузера. Создайте первый, чтобы начать.",
+      "cta": "Создать первый профиль",
+      "shortcutHint": "Подсказка: нажмите ⌘N / Ctrl+N в любой момент, чтобы открыть это окно."
+    },
+    "emptyNoMatch": {
+      "title": "Ни один профиль не соответствует текущим фильтрам.",
+      "clearFilters": "Сбросить фильтры"
+    },
+    "headless": {
+      "launched": "Профиль «{{name}}» запущен в headless-режиме"
+    },
     "createFirst": "Создать профиль",
     "noResults": "Профили не найдены",
     "noResultsDescription": "Нет профилей, соответствующих критериям поиска.",
@@ -213,6 +228,7 @@
     },
     "actions": {
       "launch": "Запустить",
+      "launchHeadless": "Запустить в headless-режиме",
       "stop": "Остановить",
       "edit": "Редактировать",
       "delete": "Удалить",
@@ -268,7 +284,9 @@
       "assignToGroup": "Назначить группе",
       "assignProxy": "Назначить прокси",
       "assignExtensionGroup": "Назначить группу расширений",
-      "copyCookies": "Копировать cookies"
+      "copyCookies": "Копировать cookies",
+      "launchSelected": "Запустить выбранные профили",
+      "stopSelected": "Остановить выбранные профили"
     }
   },
   "createProfile": {
@@ -1018,6 +1036,9 @@
     "renameProfileFailed": "Не удалось переименовать профиль: {{error}}",
     "killBrowserFailed": "Не удалось остановить браузер: {{error}}",
     "deleteSelectedProfilesFailed": "Не удалось удалить выбранные профили: {{error}}",
+    "bulkLaunchPartialFailure": "Не удалось запустить {{failed}} из {{total}} профилей. Подробности в консоли.",
+    "bulkStopPartialFailure": "Не удалось остановить {{failed}} из {{total}} профилей. Подробности в консоли.",
+    "launchHeadlessFailed": "Не удалось запустить профиль в headless-режиме: {{error}}",
     "cookieCopyUnsupportedBrowser": "Копирование cookies работает только с профилями Wayfern и Camoufox",
     "updateSyncSettingsFailed": "Не удалось обновить параметры синхронизации",
     "cloneProfileFailed": "Не удалось клонировать профиль: {{error}}",

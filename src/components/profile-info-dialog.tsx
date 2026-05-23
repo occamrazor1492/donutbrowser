@@ -14,6 +14,7 @@ import {
   LuGlobe,
   LuGroup,
   LuLink,
+  LuPlay,
   LuPlus,
   LuPuzzle,
   LuRefreshCw,
@@ -73,6 +74,13 @@ interface ProfileInfoDialogProps {
   onCloneProfile?: (profile: BrowserProfile) => void;
   onDeleteProfile?: (profile: BrowserProfile) => void;
   onLaunchWithSync?: (profile: BrowserProfile) => void;
+  /**
+   * Launch the profile in headless mode (no visible browser window). Wires
+   * the `launch_browser_profile_headless` Tauri command added in the
+   * functional-pass refactor; previously this capability was only reachable
+   * via the REST / MCP APIs.
+   */
+  onLaunchHeadless?: (profile: BrowserProfile) => void;
   crossOsUnlocked?: boolean;
   isRunning?: boolean;
   isDisabled?: boolean;
@@ -122,6 +130,7 @@ export function ProfileInfoDialog({
   onCloneProfile,
   onDeleteProfile,
   onLaunchWithSync,
+  onLaunchHeadless,
   crossOsUnlocked = false,
   isRunning = false,
   isDisabled = false,
@@ -245,6 +254,15 @@ export function ProfileInfoDialog({
   }
 
   const actions: ActionItem[] = [
+    {
+      icon: <LuPlay className="w-4 h-4" />,
+      label: t("profiles.actions.launchHeadless"),
+      onClick: () => {
+        handleAction(() => onLaunchHeadless?.(profile));
+      },
+      disabled: isCrossOs || isRunning || isDisabled || !onLaunchHeadless,
+      hidden: !onLaunchHeadless,
+    },
     {
       icon: <LuGlobe className="w-4 h-4" />,
       label: t("profiles.actions.viewNetwork"),
