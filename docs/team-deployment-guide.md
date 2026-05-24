@@ -348,6 +348,37 @@ vendor-private/cloakbrowser/linux-x64/...
 
 The `pnpm prepare-tauri-binaries` script copies that private folder into `src-tauri/resources/cloakbrowser/` before Tauri builds. The copied resource folder is also ignored by git. At runtime, Cloak profiles first use `cloak_config.executable_path` if set, then the bundled internal runtime. If neither exists, Shared Profiles preflight reports a missing CloakBrowser runtime.
 
+### Sourcing the CloakBrowser binary
+
+CloakBrowser has a public GitHub releases page at <https://github.com/CloakHQ/CloakBrowser/releases>. As of writing the platform availability is uneven — Linux x64 tracks every Chromium milestone, macOS arm64 is one major behind, Windows / macOS x64 are sporadic. Pick the most recent release with the asset you need:
+
+```bash
+# macOS Apple Silicon — last verified working release as of 2026-05
+mkdir -p vendor-private/cloakbrowser/macos-aarch64
+curl -fL -o /tmp/cloak.tgz \
+  https://github.com/CloakHQ/CloakBrowser/releases/download/chromium-v142.0.7444.175/cloakbrowser-darwin-arm64.tar.gz
+tar -xzf /tmp/cloak.tgz -C vendor-private/cloakbrowser/macos-aarch64
+```
+
+For other platforms, replace `darwin-arm64` with the matching asset name (`darwin-x64`, `linux-x64`, `windows-x64`). Always grab the latest release with that platform asset, not necessarily the latest release overall.
+
+If your team mirrors CloakBrowser internally, you can also drop the unpacked `Chromium.app` (macOS) / `chrome.exe` folder (Windows) / `chrome` binary tree (Linux) into the matching `vendor-private/cloakbrowser/<platform>/` directory by hand. The runtime detector in `src-tauri/src/cloakbrowser.rs::find_runtime_in_root` scans the folder for `.app` bundles or executables.
+
+### Hotpatch a running install (no rebuild)
+
+If you've already shipped a desktop build without Cloak and want to add it without rebuilding, drop the runtime directly into the installed `.app` bundle and re-sign:
+
+```bash
+APP_TARGET="/Applications/Donut.app/Contents/Resources/resources/cloakbrowser/macos-aarch64"
+mkdir -p "$APP_TARGET"
+tar -xzf /tmp/cloak.tgz -C "$APP_TARGET"
+xattr -dr com.apple.quarantine "$APP_TARGET/Chromium.app"
+codesign --force --deep --sign - "$APP_TARGET/Chromium.app"
+codesign --force --deep --sign - /Applications/Donut.app
+```
+
+(Modifying anything inside a signed `.app` bundle invalidates its outer signature, hence the second `codesign` call on the parent bundle.) Cloak profiles will pick up the runtime on the next launch without restarting the app.
+
 ## Practical Release Path
 
 Recommended order:

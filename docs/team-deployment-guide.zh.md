@@ -348,6 +348,37 @@ vendor-private/cloakbrowser/linux-x64/...
 
 `pnpm prepare-tauri-binaries` 会在 Tauri build 之前把这个私有目录复制到 `src-tauri/resources/cloakbrowser/`。复制后的 resource 目录也会被 git ignore。运行时，Cloak profile 会优先使用 `cloak_config.executable_path`，没有设置时使用安装包内置 runtime。如果两者都不存在，Shared Profiles 预检会明确提示缺少 CloakBrowser runtime。
 
+### CloakBrowser binary 从哪儿拿
+
+CloakBrowser 在 GitHub 上有公开 release：<https://github.com/CloakHQ/CloakBrowser/releases>。各平台节奏不一致 —— Linux x64 跟着每个 Chromium milestone 走，macOS arm64 一般落后一个大版本，Windows / macOS x64 偶尔放包。挑最近一个**带你需要平台 asset** 的 release：
+
+```bash
+# macOS Apple Silicon —— 截至 2026-05 已验证可用的版本
+mkdir -p vendor-private/cloakbrowser/macos-aarch64
+curl -fL -o /tmp/cloak.tgz \
+  https://github.com/CloakHQ/CloakBrowser/releases/download/chromium-v142.0.7444.175/cloakbrowser-darwin-arm64.tar.gz
+tar -xzf /tmp/cloak.tgz -C vendor-private/cloakbrowser/macos-aarch64
+```
+
+其它平台把 `darwin-arm64` 换成对应的 asset 名（`darwin-x64`、`linux-x64`、`windows-x64`）即可。要拿最新有该平台 asset 的 release，不一定是绝对的最新 release。
+
+如果团队内部自己镜像了 CloakBrowser，也可以直接把解压后的 `Chromium.app` (macOS) / `chrome.exe` 文件夹 (Windows) / `chrome` 可执行文件树 (Linux) 手动放进对应的 `vendor-private/cloakbrowser/<platform>/` 目录。`src-tauri/src/cloakbrowser.rs::find_runtime_in_root` 会自动扫描里面的 `.app` bundle 或可执行文件。
+
+### 已经装好的桌面 app 怎么热补丁加 Cloak runtime（不用重 build）
+
+如果已经发了不带 Cloak 的桌面包，想后续给一台机器单独加上去，直接把 runtime 塞进安装好的 `.app` 包里再重新签名：
+
+```bash
+APP_TARGET="/Applications/Donut.app/Contents/Resources/resources/cloakbrowser/macos-aarch64"
+mkdir -p "$APP_TARGET"
+tar -xzf /tmp/cloak.tgz -C "$APP_TARGET"
+xattr -dr com.apple.quarantine "$APP_TARGET/Chromium.app"
+codesign --force --deep --sign - "$APP_TARGET/Chromium.app"
+codesign --force --deep --sign - /Applications/Donut.app
+```
+
+（往签名后的 `.app` bundle 里改文件会让外层签名失效，所以最后要再签一次父 bundle。）Cloak profile 下次启动时就能自动找到这个 runtime，不用重启 app。
+
 ## 实际发布路线
 
 推荐顺序：
