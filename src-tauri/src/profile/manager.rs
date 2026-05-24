@@ -1,7 +1,6 @@
 use crate::api_client::is_browser_version_nightly;
 use crate::browser::{create_browser, BrowserType, ProxySettings};
 use crate::camoufox_manager::CamoufoxConfig;
-use crate::cloud_auth::CLOUD_AUTH;
 use crate::downloaded_browsers_registry::DownloadedBrowsersRegistry;
 use crate::events;
 use crate::profile::types::{get_host_os, BotBrowserConfig, BrowserProfile, CloakConfig, SyncMode};
@@ -80,14 +79,6 @@ impl ProfileManager {
     }
 
     let launch_hook = Self::normalize_launch_hook(launch_hook)?;
-
-    // Sync cloud proxy credentials if the profile uses a cloud or cloud-derived proxy
-    if let Some(ref pid) = proxy_id {
-      if PROXY_MANAGER.is_cloud_or_derived(pid) || pid == crate::proxy_manager::CLOUD_PROXY_ID {
-        log::info!("Syncing cloud proxy credentials before profile creation");
-        CLOUD_AUTH.sync_cloud_proxy().await;
-      }
-    }
 
     log::info!("Attempting to create profile: {name}");
 

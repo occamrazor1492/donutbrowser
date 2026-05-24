@@ -3164,11 +3164,6 @@ pub async fn set_proxy_sync_enabled(
     .find(|p| p.id == proxy_id)
     .ok_or_else(|| format!("Proxy with ID '{proxy_id}' not found"))?;
 
-  // Block modifying sync for cloud-managed proxies
-  if proxy.is_cloud_managed {
-    return Err("Cannot modify sync for a cloud-managed proxy".to_string());
-  }
-
   // If disabling, check if proxy is used by any synced profile
   if !enabled && is_proxy_used_by_synced_profile(&proxy_id) {
     return Err("Sync cannot be disabled while this proxy is used by synced profiles".to_string());
@@ -3427,10 +3422,7 @@ pub struct UnsyncedEntityCounts {
 pub fn get_unsynced_entity_counts() -> Result<UnsyncedEntityCounts, String> {
   let proxy_count = {
     let proxies = crate::proxy_manager::PROXY_MANAGER.get_stored_proxies();
-    proxies
-      .iter()
-      .filter(|p| !p.sync_enabled && !p.is_cloud_managed)
-      .count()
+    proxies.iter().filter(|p| !p.sync_enabled).count()
   };
 
   let group_count = {
@@ -3480,7 +3472,7 @@ pub async fn enable_sync_for_all_entities(app_handle: tauri::AppHandle) -> Resul
   {
     let proxies = crate::proxy_manager::PROXY_MANAGER.get_stored_proxies();
     for proxy in &proxies {
-      if !proxy.sync_enabled && !proxy.is_cloud_managed {
+      if !proxy.sync_enabled {
         if let Err(e) = set_proxy_sync_enabled(app_handle.clone(), proxy.id.clone(), true).await {
           log::warn!("Failed to enable sync for proxy {}: {e}", proxy.id);
         }

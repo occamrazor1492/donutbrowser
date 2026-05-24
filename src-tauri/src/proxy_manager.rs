@@ -91,9 +91,8 @@ pub struct ProxyCheckResult {
   pub is_valid: bool,
 }
 
-pub const CLOUD_PROXY_ID: &str = "cloud-included-proxy";
-
-// Stored proxy configuration with name and ID for reuse
+// Stored proxy configuration with name and ID for reuse.
+// Extra/legacy fields in older JSON files are silently dropped on deserialization.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoredProxy {
   pub id: String,
@@ -103,25 +102,6 @@ pub struct StoredProxy {
   pub sync_enabled: bool,
   #[serde(default)]
   pub last_sync: Option<u64>,
-  #[serde(default)]
-  pub is_cloud_managed: bool,
-  #[serde(default)]
-  pub is_cloud_derived: bool,
-  #[serde(default)]
-  pub geo_country: Option<String>,
-  // Legacy field kept for deserialization compat; mapped to geo_region on load
-  #[serde(default)]
-  pub geo_state: Option<String>,
-  #[serde(default)]
-  pub geo_region: Option<String>,
-  #[serde(default)]
-  pub geo_city: Option<String>,
-  #[serde(default)]
-  pub geo_isp: Option<String>,
-  #[serde(default)]
-  pub dynamic_proxy_url: Option<String>,
-  #[serde(default)]
-  pub dynamic_proxy_format: Option<String>,
 }
 
 impl StoredProxy {
@@ -133,29 +113,7 @@ impl StoredProxy {
       proxy_settings,
       sync_enabled,
       last_sync: None,
-      is_cloud_managed: false,
-      is_cloud_derived: false,
-      geo_country: None,
-      geo_state: None,
-      geo_region: None,
-      geo_city: None,
-      geo_isp: None,
-      dynamic_proxy_url: None,
-      dynamic_proxy_format: None,
     }
-  }
-
-  /// Migrate legacy geo_state to geo_region
-  #[allow(dead_code)]
-  pub fn migrate_geo_fields(&mut self) {
-    if self.geo_region.is_none() && self.geo_state.is_some() {
-      self.geo_region = self.geo_state.take();
-    }
-  }
-
-  /// Get the effective region (prefers geo_region, falls back to geo_state for compat)
-  pub fn effective_region(&self) -> Option<&String> {
-    self.geo_region.as_ref().or(self.geo_state.as_ref())
   }
 
   pub fn update_settings(&mut self, proxy_settings: ProxySettings) {
@@ -427,334 +385,12 @@ impl ProxyManager {
     Ok(stored_proxy)
   }
 
-  // Check if a cloud-managed proxy exists.
-  //
-  // Cloud-managed proxies are an artifact of the upstream commercial
-  // build. The internal fork stubs `cloud_auth.rs`, so nothing creates
-  // or asks about them at runtime — but the storage shape lives on
-  // (StoredProxy still has `is_cloud_managed` / `is_cloud_derived` /
-  // geo fields) so existing on-disk proxy JSON keeps deserializing
-  // correctly. Tagged dead_code rather than deleted so a future commit
-  // can rip the cloud_proxy data layer in one focused pass.
-  #[allow(dead_code)]
-  pub fn has_cloud_proxy(&self) -> bool {
+  /// Resolve proxy settings for a specific profile.
+  pub fn resolve_proxy_for_profile(&self, proxy_id: &str) -> Option<ProxySettings> {
     let stored_proxies = self.stored_proxies.lock().unwrap();
-    stored_proxies.contains_key(CLOUD_PROXY_ID)
-  }
-
-  // Upsert the cloud-managed proxy (create or update)
-  #[allow(dead_code)]
-  pub fn upsert_cloud_proxy(&self, proxy_settings: ProxySettings) -> Result<StoredProxy, String> {
-    let mut stored_proxies = self.stored_proxies.lock().unwrap();
-
-    if let Some(existing) = stored_proxies.get_mut(CLOUD_PROXY_ID) {
-      existing.proxy_settings = proxy_settings;
-      let updated = existing.clone();
-      drop(stored_proxies);
-
-      if let Err(e) = self.save_proxy(&updated) {
-        log::warn!("Failed to save cloud proxy: {e}");
-      }
-      if let Err(e) = events::emit_empty("proxies-changed") {
-        log::error!("Failed to emit proxies-changed event: {e}");
-      }
-      Ok(updated)
-    } else {
-      let cloud_proxy = StoredProxy {
-        id: CLOUD_PROXY_ID.to_string(),
-        name: "Included Proxy".to_string(),
-        proxy_settings,
-        sync_enabled: false,
-        last_sync: None,
-        is_cloud_managed: true,
-        is_cloud_derived: false,
-        geo_country: None,
-        geo_state: None,
-        geo_region: None,
-        geo_city: None,
-        geo_isp: None,
-        dynamic_proxy_url: None,
-        dynamic_proxy_format: None,
-      };
-      stored_proxies.insert(CLOUD_PROXY_ID.to_string(), cloud_proxy.clone());
-      drop(stored_proxies);
-
-      if let Err(e) = self.save_proxy(&cloud_proxy) {
-        log::warn!("Failed to save cloud proxy: {e}");
-      }
-      if let Err(e) = events::emit_empty("proxies-changed") {
-        log::error!("Failed to emit proxies-changed event: {e}");
-      }
-      Ok(cloud_proxy)
-    }
-  }
-
-  // Remove the cloud-managed proxy
-  #[allow(dead_code)]
-  pub fn remove_cloud_proxy(&self) {
-    let removed = {
-      let mut stored_proxies = self.stored_proxies.lock().unwrap();
-      stored_proxies.remove(CLOUD_PROXY_ID).is_some()
-    };
-
-    if removed {
-      if let Err(e) = self.delete_proxy_file(CLOUD_PROXY_ID) {
-        log::warn!("Failed to delete cloud proxy file: {e}");
-      }
-      if let Err(e) = events::emit_empty("proxies-changed") {
-        log::error!("Failed to emit proxies-changed event: {e}");
-      }
-    }
-  }
-
-  #[allow(dead_code)]
-  pub fn remove_cloud_proxies(&self) {
-    let removed_ids: Vec<String> = {
-      let mut stored_proxies = self.stored_proxies.lock().unwrap();
-      let ids_to_remove: Vec<String> = stored_proxies
-        .values()
-        .filter(|p| p.is_cloud_managed || p.is_cloud_derived)
-        .map(|p| p.id.clone())
-        .collect();
-      for id in &ids_to_remove {
-        stored_proxies.remove(id);
-      }
-      ids_to_remove
-    };
-
-    if !removed_ids.is_empty() {
-      for id in &removed_ids {
-        if let Err(e) = self.delete_proxy_file(id) {
-          log::warn!("Failed to delete cloud proxy file {id}: {e}");
-        }
-      }
-      if let Err(e) = events::emit_empty("proxies-changed") {
-        log::error!("Failed to emit proxies-changed event: {e}");
-      }
-      if let Err(e) = events::emit_empty("stored-proxies-changed") {
-        log::error!("Failed to emit stored-proxies-changed event: {e}");
-      }
-    }
-  }
-
-  // Build a geo-targeted username from base username and location parts
-  // LP v2 format: username-country-{cc}[-region-{region}][-city-{city}][-isp-{isp}]
-  // Note: sid and ttl are NOT included here — they are injected at browser launch time
-  // per-profile via resolve_proxy_for_profile()
-  #[allow(dead_code)]
-  fn build_geo_username(
-    base_username: &str,
-    country: &str,
-    region: &Option<String>,
-    city: &Option<String>,
-    isp: &Option<String>,
-  ) -> String {
-    let mut username = format!("{}-country-{}", base_username, country);
-    if let Some(region) = region {
-      username = format!("{}-region-{}", username, region);
-    }
-    if let Some(city) = city {
-      username = format!("{}-city-{}", username, city);
-    }
-    if let Some(isp) = isp {
-      username = format!("{}-isp-{}", username, isp);
-    }
-    username
-  }
-
-  /// Generate a deterministic 11-char alphanumeric session ID from a profile UUID.
-  /// This ensures the same profile always gets the same sticky IP session,
-  /// even across credential refreshes.
-  pub fn generate_sid_for_profile(profile_id: &str) -> String {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-
-    let mut hasher = DefaultHasher::new();
-    profile_id.hash(&mut hasher);
-    let hash = hasher.finish();
-
-    // Convert to base36 (a-z0-9) and take 11 chars
-    let chars: Vec<char> = "abcdefghijklmnopqrstuvwxyz0123456789".chars().collect();
-    let mut sid = String::with_capacity(11);
-    let mut val = hash;
-    for _ in 0..11 {
-      sid.push(chars[(val % 36) as usize]);
-      val /= 36;
-    }
-    sid
-  }
-
-  /// Build the full proxy username with sid and ttl for a specific profile launch.
-  /// This is called at browser launch time, not at proxy creation time.
-  pub fn build_username_with_sid(base_geo_username: &str, profile_id: &str) -> String {
-    let sid = Self::generate_sid_for_profile(profile_id);
-    format!("{}-sid-{}-ttl-1440m", base_geo_username, sid)
-  }
-
-  /// Resolve proxy settings for a specific profile, injecting profile-specific sid
-  /// for cloud-derived proxies with geo targeting.
-  pub fn resolve_proxy_for_profile(
-    &self,
-    proxy_id: &str,
-    profile_id: &str,
-  ) -> Option<ProxySettings> {
-    let stored_proxies = self.stored_proxies.lock().unwrap();
-    let proxy = stored_proxies.get(proxy_id)?;
-    let mut settings = proxy.proxy_settings.clone();
-
-    // For cloud-derived proxies with geo targeting, inject profile-specific sid
-    if proxy.is_cloud_derived && proxy.geo_country.is_some() {
-      if let Some(ref username) = settings.username {
-        settings.username = Some(Self::build_username_with_sid(username, profile_id));
-      }
-    }
-
-    Some(settings)
-  }
-
-  // Create a cloud-derived location proxy from the base cloud proxy credentials
-  #[allow(dead_code)]
-  pub fn create_cloud_location_proxy(
-    &self,
-    name: String,
-    country: String,
-    region: Option<String>,
-    city: Option<String>,
-    isp: Option<String>,
-  ) -> Result<StoredProxy, String> {
-    // Get base cloud proxy credentials
-    let base_proxy = {
-      let stored_proxies = self.stored_proxies.lock().unwrap();
-      stored_proxies
-        .get(CLOUD_PROXY_ID)
-        .cloned()
-        .ok_or_else(|| "No cloud proxy available. Please log in first.".to_string())?
-    };
-
-    let base_username = base_proxy
-      .proxy_settings
-      .username
-      .as_ref()
-      .ok_or_else(|| "Cloud proxy has no username".to_string())?;
-
-    let geo_username = Self::build_geo_username(base_username, &country, &region, &city, &isp);
-
-    let proxy_settings = ProxySettings {
-      proxy_type: base_proxy.proxy_settings.proxy_type.clone(),
-      host: base_proxy.proxy_settings.host.clone(),
-      port: base_proxy.proxy_settings.port,
-      username: Some(geo_username),
-      password: base_proxy.proxy_settings.password.clone(),
-    };
-
-    // Check if name already exists
-    {
-      let stored_proxies = self.stored_proxies.lock().unwrap();
-      if stored_proxies.values().any(|p| p.name == name) {
-        return Err(format!("Proxy with name '{}' already exists", name));
-      }
-    }
-
-    let stored_proxy = StoredProxy {
-      id: uuid::Uuid::new_v4().to_string(),
-      name,
-      proxy_settings,
-      sync_enabled: false,
-      last_sync: None,
-      is_cloud_managed: false,
-      is_cloud_derived: true,
-      geo_country: Some(country),
-      geo_state: None,
-      geo_region: region,
-      geo_city: city,
-      geo_isp: isp,
-      dynamic_proxy_url: None,
-      dynamic_proxy_format: None,
-    };
-
-    {
-      let mut stored_proxies = self.stored_proxies.lock().unwrap();
-      stored_proxies.insert(stored_proxy.id.clone(), stored_proxy.clone());
-    }
-
-    if let Err(e) = self.save_proxy(&stored_proxy) {
-      log::warn!("Failed to save location proxy: {e}");
-    }
-
-    if let Err(e) = events::emit_empty("proxies-changed") {
-      log::error!("Failed to emit proxies-changed event: {e}");
-    }
-
-    Ok(stored_proxy)
-  }
-
-  // Update all cloud-derived proxies when base cloud proxy credentials change
-  #[allow(dead_code)]
-  pub fn update_cloud_derived_proxies(&self) {
-    let base_proxy = {
-      let stored_proxies = self.stored_proxies.lock().unwrap();
-      match stored_proxies.get(CLOUD_PROXY_ID) {
-        Some(p) => p.clone(),
-        None => return, // No cloud proxy, nothing to update
-      }
-    };
-
-    let base_username = match &base_proxy.proxy_settings.username {
-      Some(u) => u.clone(),
-      None => return,
-    };
-
-    let mut updated = false;
-    let mut stored_proxies = self.stored_proxies.lock().unwrap();
-
-    for proxy in stored_proxies.values_mut() {
-      if !proxy.is_cloud_derived {
-        continue;
-      }
-
-      let country = match &proxy.geo_country {
-        Some(c) => c.clone(),
-        None => continue,
-      };
-
-      let region = proxy.effective_region().cloned();
-      let geo_username = Self::build_geo_username(
-        &base_username,
-        &country,
-        &region,
-        &proxy.geo_city,
-        &proxy.geo_isp,
-      );
-
-      proxy.proxy_settings.username = Some(geo_username);
-      proxy.proxy_settings.password = base_proxy.proxy_settings.password.clone();
-      proxy.proxy_settings.host = base_proxy.proxy_settings.host.clone();
-      proxy.proxy_settings.port = base_proxy.proxy_settings.port;
-
-      updated = true;
-    }
-
-    if updated {
-      // Save all updated proxies
-      let proxies_to_save: Vec<StoredProxy> = stored_proxies
-        .values()
-        .filter(|p| p.is_cloud_derived)
-        .cloned()
-        .collect();
-      drop(stored_proxies);
-
-      for proxy in &proxies_to_save {
-        if let Err(e) = self.save_proxy(proxy) {
-          log::warn!("Failed to save updated derived proxy {}: {e}", proxy.id);
-        }
-      }
-
-      if let Err(e) = events::emit_empty("proxies-changed") {
-        log::error!("Failed to emit proxies-changed event: {e}");
-      }
-
-      log::debug!("Updated {} cloud-derived proxies", proxies_to_save.len());
-    }
+    stored_proxies
+      .get(proxy_id)
+      .map(|p| p.proxy_settings.clone())
   }
 
   pub fn remove_from_memory(&self, proxy_id: &str) {
@@ -788,14 +424,6 @@ impl ProxyManager {
       // Check if proxy exists
       if !stored_proxies.contains_key(proxy_id) {
         return Err(format!("Proxy with ID '{proxy_id}' not found"));
-      }
-
-      // Block editing cloud-managed proxies
-      if stored_proxies
-        .get(proxy_id)
-        .is_some_and(|p| p.is_cloud_managed)
-      {
-        return Err("Cannot edit a cloud-managed proxy".to_string());
       }
 
       // Check if new name conflicts with existing proxies
@@ -855,15 +483,6 @@ impl ProxyManager {
     // Remember if sync was enabled before deleting
     let was_sync_enabled = {
       let stored_proxies = self.stored_proxies.lock().unwrap();
-
-      // Block deleting cloud-managed proxies
-      if stored_proxies
-        .get(proxy_id)
-        .is_some_and(|p| p.is_cloud_managed)
-      {
-        return Err("Cannot delete a cloud-managed proxy".to_string());
-      }
-
       stored_proxies
         .get(proxy_id)
         .map(|p| p.sync_enabled)
@@ -907,14 +526,6 @@ impl ProxyManager {
     }
 
     Ok(())
-  }
-
-  // Check if a proxy is cloud-managed or cloud-derived (needs fresh credentials)
-  pub fn is_cloud_or_derived(&self, proxy_id: &str) -> bool {
-    let stored_proxies = self.stored_proxies.lock().unwrap();
-    stored_proxies
-      .get(proxy_id)
-      .is_some_and(|p| p.is_cloud_managed || p.is_cloud_derived)
   }
 
   // Get proxy settings for a stored proxy ID
@@ -1243,7 +854,6 @@ impl ProxyManager {
     let stored_proxies = self.stored_proxies.lock().unwrap();
     let proxies: Vec<ExportedProxy> = stored_proxies
       .values()
-      .filter(|p| !p.is_cloud_managed && !p.is_cloud_derived)
       .map(|p| ExportedProxy {
         name: p.name.clone(),
         proxy_type: p.proxy_settings.proxy_type.clone(),
@@ -1269,7 +879,6 @@ impl ProxyManager {
     let stored_proxies = self.stored_proxies.lock().unwrap();
     stored_proxies
       .values()
-      .filter(|p| !p.is_cloud_managed && !p.is_cloud_derived)
       .map(|p| Self::build_proxy_url(&p.proxy_settings))
       .collect::<Vec<_>>()
       .join("\n")
@@ -3203,102 +2812,6 @@ mod tests {
       password: None,
     });
     assert_eq!(url, "http://justuser@host.io:3128");
-  }
-
-  #[test]
-  fn test_geo_username_construction() {
-    // Country only
-    let u = ProxyManager::build_geo_username("base_user", "US", &None, &None, &None);
-    assert_eq!(u, "base_user-country-US");
-
-    // Country + region
-    let u = ProxyManager::build_geo_username(
-      "base_user",
-      "US",
-      &Some("california".to_string()),
-      &None,
-      &None,
-    );
-    assert_eq!(u, "base_user-country-US-region-california");
-
-    // All fields
-    let u = ProxyManager::build_geo_username(
-      "user",
-      "DE",
-      &Some("bavaria".to_string()),
-      &Some("munich".to_string()),
-      &Some("Telekom".to_string()),
-    );
-    assert_eq!(u, "user-country-DE-region-bavaria-city-munich-isp-Telekom");
-  }
-
-  #[test]
-  fn test_sid_generation_determinism_and_format() {
-    let sid1 = ProxyManager::generate_sid_for_profile("my-profile-uuid");
-    let sid2 = ProxyManager::generate_sid_for_profile("my-profile-uuid");
-    assert_eq!(sid1, sid2, "Same input must produce same SID");
-    assert_eq!(sid1.len(), 11, "SID must be exactly 11 characters");
-
-    // All chars should be alphanumeric lowercase
-    assert!(
-      sid1
-        .chars()
-        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()),
-      "SID chars must be [a-z0-9]"
-    );
-
-    // Different profiles produce different SIDs
-    let sid3 = ProxyManager::generate_sid_for_profile("another-profile");
-    assert_ne!(sid1, sid3, "Different profiles must produce different SIDs");
-  }
-
-  #[test]
-  fn test_build_username_with_sid() {
-    let full = ProxyManager::build_username_with_sid("user-country-US", "profile-123");
-    // Should contain the geo base, then -sid-{11chars}-ttl-1440m
-    assert!(full.starts_with("user-country-US-sid-"));
-    assert!(full.ends_with("-ttl-1440m"));
-    // SID portion
-    let after_sid = full.strip_prefix("user-country-US-sid-").unwrap();
-    let sid = after_sid.strip_suffix("-ttl-1440m").unwrap();
-    assert_eq!(sid.len(), 11);
-  }
-
-  #[test]
-  fn test_stored_proxy_geo_field_migration() {
-    // Simulate legacy data with geo_state but no geo_region
-    let mut proxy = StoredProxy {
-      id: "test_migrate".to_string(),
-      name: "Test".to_string(),
-      proxy_settings: ProxySettings {
-        proxy_type: "http".to_string(),
-        host: "h.com".to_string(),
-        port: 80,
-        username: None,
-        password: None,
-      },
-      sync_enabled: false,
-      last_sync: None,
-      is_cloud_managed: false,
-      is_cloud_derived: false,
-      geo_country: Some("US".to_string()),
-      geo_state: Some("california".to_string()),
-      geo_region: None,
-      geo_city: None,
-      geo_isp: None,
-      dynamic_proxy_url: None,
-      dynamic_proxy_format: None,
-    };
-
-    // Before migration
-    assert_eq!(proxy.effective_region().unwrap(), "california");
-    assert!(proxy.geo_region.is_none());
-
-    // After migration
-    proxy.migrate_geo_fields();
-    assert_eq!(proxy.geo_region.as_deref(), Some("california"));
-    assert!(proxy.geo_state.is_none(), "geo_state should be taken");
-    assert_eq!(proxy.effective_region().unwrap(), "california");
   }
 
   #[test]
