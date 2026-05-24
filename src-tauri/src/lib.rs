@@ -63,6 +63,7 @@ mod proxy_failover;
 mod proxy_leak_test;
 mod tag_manager;
 mod task_scheduler;
+mod task_supervisor;
 mod team_lock;
 mod template_manager;
 mod tray_icon;
@@ -695,12 +696,34 @@ async fn add_mcp_to_claude_code(app_handle: tauri::AppHandle) -> Result<(), Stri
   let mcp_server = mcp_server::McpServer::instance();
   let port = mcp_server.get_port().ok_or("MCP server is not running")?;
 
+  // Subprocess hygiene: `port` is sourced from McpServer and `token` from
+  // settings_manager, both of which are internally controlled — but the
+  // values flow into `Command::args` so we still validate them before
+  // building the URL. A malformed token / out-of-range port would have
+  // landed inside a CLI argument and could in principle confuse the
+  // claude-code CLI's parser.
+  if !(1024..=65535).contains(&port) {
+    return Err(format!(
+      "Refusing to register MCP: port {port} out of range"
+    ));
+  }
+
   let settings_manager = settings_manager::SettingsManager::instance();
   let token = settings_manager
     .get_mcp_token(&app_handle)
     .await
     .map_err(|e| format!("Failed to get MCP token: {e}"))?
     .ok_or("MCP token not found")?;
+
+  if token.is_empty()
+    || !token
+      .chars()
+      .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+  {
+    return Err(
+      "Refusing to register MCP: token contains characters outside [a-zA-Z0-9_-]".to_string(),
+    );
+  }
 
   let url = format!("http://127.0.0.1:{port}/mcp/{token}");
 

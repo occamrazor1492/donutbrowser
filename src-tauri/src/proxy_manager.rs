@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Mutex, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri_plugin_shell::ShellExt;
 
@@ -127,7 +127,11 @@ impl StoredProxy {
 
 // Global proxy manager to track active proxies and stored proxy configurations
 pub struct ProxyManager {
-  active_proxies: Mutex<HashMap<u32, ProxyInfo>>, // Maps browser process ID to proxy info
+  // `active_proxies` is read on virtually every browser-state / UI-refresh
+  // call (`is_proxy_active_for_browser`, `get_active_proxy_for_browser`,
+  // `get_orphaned_proxies`, etc.) but written only when a browser launches
+  // or stops. `RwLock` lets all those reads run concurrently.
+  active_proxies: RwLock<HashMap<u32, ProxyInfo>>, // Maps browser process ID to proxy info
   // Store proxy info by profile name for persistence across browser restarts
   profile_proxies: Mutex<HashMap<String, ProxySettings>>, // Maps profile name to proxy settings
   // Track active proxy IDs by profile name for targeted cleanup
@@ -142,7 +146,7 @@ pub struct ProxyManager {
 impl ProxyManager {
   pub fn new() -> Self {
     let manager = Self {
-      active_proxies: Mutex::new(HashMap::new()),
+      active_proxies: RwLock::new(HashMap::new()),
       profile_proxies: Mutex::new(HashMap::new()),
       profile_active_proxy_ids: Mutex::new(HashMap::new()),
       stored_proxies: Mutex::new(HashMap::new()),
@@ -376,7 +380,7 @@ impl ProxyManager {
     if stored_proxy.sync_enabled {
       if let Some(scheduler) = crate::sync::get_global_scheduler() {
         let id = stored_proxy.id.clone();
-        tauri::async_runtime::spawn(async move {
+        crate::task_supervisor::spawn_logged("create_stored_proxy::queue_sync", async move {
           scheduler.queue_proxy_sync(id).await;
         });
       }
@@ -465,7 +469,7 @@ impl ProxyManager {
     if updated_proxy.sync_enabled {
       if let Some(scheduler) = crate::sync::get_global_scheduler() {
         let id = updated_proxy.id.clone();
-        tauri::async_runtime::spawn(async move {
+        crate::task_supervisor::spawn_logged("update_stored_proxy::queue_sync", async move {
           scheduler.queue_proxy_sync(id).await;
         });
       }
@@ -504,7 +508,7 @@ impl ProxyManager {
     if was_sync_enabled {
       let proxy_id_owned = proxy_id.to_string();
       let app_handle_clone = app_handle.clone();
-      tauri::async_runtime::spawn(async move {
+      crate::task_supervisor::spawn_logged("delete_stored_proxy::s3_delete", async move {
         match crate::sync::SyncEngine::create_from_settings(&app_handle_clone).await {
           Ok(engine) => {
             if let Err(e) = engine.delete_proxy(&proxy_id_owned).await {
@@ -1199,7 +1203,7 @@ impl ProxyManager {
       if let Some(existing_id) = maybe_existing_id {
         // Find the existing proxy info
         let existing_info = {
-          let proxies = self.active_proxies.lock().unwrap();
+          let proxies = self.active_proxies.read().unwrap();
           proxies.values().find(|p| p.id == existing_id).cloned()
         };
 
@@ -1217,7 +1221,7 @@ impl ProxyManager {
           if is_same_upstream {
             // Settings match - can reuse existing proxy
             // Just update the PID mapping if needed
-            let proxies = self.active_proxies.lock().unwrap();
+            let proxies = self.active_proxies.read().unwrap();
             if proxies.contains_key(&browser_pid) {
               // Already mapped, reuse it
               return Ok(ProxySettings {
@@ -1238,7 +1242,7 @@ impl ProxyManager {
     // Check if we already have a proxy for this browser PID
     // If settings match, reuse it; otherwise create a new one (don't stop the old one)
     {
-      let proxies = self.active_proxies.lock().unwrap();
+      let proxies = self.active_proxies.read().unwrap();
       if let Some(existing) = proxies.get(&browser_pid) {
         let desired_type = proxy_settings
           .map(|p| p.proxy_type.as_str())
@@ -1394,7 +1398,7 @@ impl ProxyManager {
 
     // Store the proxy info
     {
-      let mut proxies = self.active_proxies.lock().unwrap();
+      let mut proxies = self.active_proxies.write().unwrap();
       proxies.insert(browser_pid, proxy_info.clone());
     }
 
@@ -1426,7 +1430,7 @@ impl ProxyManager {
     browser_pid: u32,
   ) -> Result<(), String> {
     let (proxy_id, profile_id): (String, Option<String>) = {
-      let mut proxies = self.active_proxies.lock().unwrap();
+      let mut proxies = self.active_proxies.write().unwrap();
       match proxies.remove(&browser_pid) {
         Some(proxy) => (proxy.id, proxy.profile_id.clone()),
         None => return Ok(()), // No proxy to stop
@@ -1484,7 +1488,7 @@ impl ProxyManager {
     if let Some(proxy_id) = proxy_id {
       // Find the PID for this proxy
       let pid = {
-        let proxies = self.active_proxies.lock().unwrap();
+        let proxies = self.active_proxies.read().unwrap();
         proxies.iter().find_map(|(pid, proxy)| {
           if proxy.id == proxy_id {
             Some(*pid)
@@ -1534,7 +1538,7 @@ impl ProxyManager {
 
   // Update the PID mapping for an existing proxy
   pub fn update_proxy_pid(&self, old_pid: u32, new_pid: u32) -> Result<(), String> {
-    let mut proxies = self.active_proxies.lock().unwrap();
+    let mut proxies = self.active_proxies.write().unwrap();
     if let Some(proxy_info) = proxies.remove(&old_pid) {
       proxies.insert(new_pid, proxy_info);
       Ok(())
@@ -1564,7 +1568,7 @@ impl ProxyManager {
 
       let all_configs = list_proxy_configs();
       let tracked_proxy_ids: std::collections::HashSet<String> = {
-        let proxies = self.active_proxies.lock().unwrap();
+        let proxies = self.active_proxies.read().unwrap();
         proxies.values().map(|p| p.id.clone()).collect()
       };
 
@@ -1712,7 +1716,7 @@ impl ProxyManager {
       // Snapshot current active entries first so we don't hold the mutex
       // while running the (expensive on Windows) sysinfo scan.
       let snapshot: Vec<(u32, String, Option<String>)> = {
-        let proxies = self.active_proxies.lock().unwrap();
+        let proxies = self.active_proxies.read().unwrap();
         proxies
           .iter()
           .map(|(&browser_pid, info)| (browser_pid, info.id.clone(), info.profile_id.clone()))
@@ -1780,7 +1784,7 @@ impl ProxyManager {
             profile_id
           );
           {
-            let mut proxies = self.active_proxies.lock().unwrap();
+            let mut proxies = self.active_proxies.write().unwrap();
             // Re-check the entry still maps to the same proxy_id — another
             // thread may have replaced it with a new proxy since we snapshotted.
             if let Some(current) = proxies.get(&browser_pid) {
@@ -1835,14 +1839,14 @@ impl ProxyManager {
   /// Snapshot the set of tracked proxy IDs (for asserting in tests).
   #[cfg(test)]
   fn tracked_proxy_ids(&self) -> std::collections::HashSet<String> {
-    let proxies = self.active_proxies.lock().unwrap();
+    let proxies = self.active_proxies.read().unwrap();
     proxies.values().map(|p| p.id.clone()).collect()
   }
 
   /// Snapshot active proxy count.
   #[cfg(test)]
   fn active_proxy_count(&self) -> usize {
-    self.active_proxies.lock().unwrap().len()
+    self.active_proxies.read().unwrap().len()
   }
 
   /// Snapshot profile-to-proxy-id mapping count.
@@ -1856,7 +1860,7 @@ impl ProxyManager {
   fn insert_active_proxy(&self, browser_pid: u32, info: ProxyInfo) {
     self
       .active_proxies
-      .lock()
+      .write()
       .unwrap()
       .insert(browser_pid, info);
   }
@@ -1876,7 +1880,7 @@ impl ProxyManager {
   fn get_active_proxy(&self, browser_pid: u32) -> Option<ProxyInfo> {
     self
       .active_proxies
-      .lock()
+      .read()
       .unwrap()
       .get(&browser_pid)
       .cloned()
@@ -2027,7 +2031,7 @@ mod tests {
 
         // Add proxy
         {
-          let mut active_proxies = pm.active_proxies.lock().unwrap();
+          let mut active_proxies = pm.active_proxies.write().unwrap();
           active_proxies.insert(browser_pid, proxy_info);
         }
 
@@ -2470,7 +2474,7 @@ mod tests {
       let pm = pm.clone();
       handles.push(tokio::spawn(async move {
         let pid = 2000 + i as u32;
-        let mut proxies = pm.active_proxies.lock().unwrap();
+        let mut proxies = pm.active_proxies.write().unwrap();
         proxies.remove(&pid);
       }));
     }
@@ -2480,7 +2484,7 @@ mod tests {
     assert_eq!(pm.active_proxy_count(), 25);
 
     // Phase 3: remaining proxies should all have odd indices
-    let proxies = pm.active_proxies.lock().unwrap();
+    let proxies = pm.active_proxies.read().unwrap();
     for (&pid, info) in proxies.iter() {
       let idx = (pid - 2000) as usize;
       assert!(idx % 2 == 1, "Only odd-index proxies should remain");
@@ -2766,7 +2770,7 @@ mod tests {
 
     // Remove alpha's browser → should NOT affect beta
     {
-      let mut proxies = pm.active_proxies.lock().unwrap();
+      let mut proxies = pm.active_proxies.write().unwrap();
       proxies.remove(&3001);
     }
     {
