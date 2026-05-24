@@ -742,7 +742,9 @@
         "time": "Time",
         "user": "User",
         "target": "Target",
-        "allUsers": "All users"
+        "allUsers": "All users",
+        "exportCsv": "Export CSV",
+        "empty": "No matching audit log entries."
       },
       "engines": {
         "botbrowser": "BotBrowser",

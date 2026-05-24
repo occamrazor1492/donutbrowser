@@ -60,6 +60,92 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
+/**
+ * Map an audit action verb to a Badge variant. Keeps colour semantics
+ * consistent without forcing the component to import the full action
+ * vocabulary — anything not listed falls back to "secondary".
+ *
+ * `create` / `enable` / `unlock` → success
+ * `delete` / `disable` / `revoke` → destructive
+ * `update` / `rename` / `assign`   → default
+ * anything else                     → secondary
+ */
+function auditActionBadgeVariant(
+  action: string,
+): "default" | "secondary" | "destructive" {
+  const lower = action.toLowerCase();
+  if (
+    lower.includes("delete") ||
+    lower.includes("remove") ||
+    lower.includes("disable") ||
+    lower.includes("revoke")
+  ) {
+    return "destructive";
+  }
+  if (
+    lower.includes("create") ||
+    lower.includes("enable") ||
+    lower.includes("unlock") ||
+    lower.includes("grant")
+  ) {
+    return "default";
+  }
+  return "secondary";
+}
+
+/**
+ * Quote a CSV field per RFC 4180: if it contains a comma, quote, or
+ * newline, wrap in double-quotes and escape embedded quotes by doubling.
+ * Pure helper kept inline so the component file stays self-contained.
+ */
+function csvField(value: unknown): string {
+  const s = value == null ? "" : String(value);
+  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function exportAuditLogsToCsv(logs: TeamAuditLog[]): void {
+  if (typeof document === "undefined") return;
+  const headers = [
+    "created_at_iso",
+    "created_at_epoch_ms",
+    "user_email",
+    "user_id",
+    "action",
+    "target_type",
+    "target_id",
+    "metadata_json",
+  ];
+  const rows = logs.map((log) => [
+    new Date(log.createdAt).toISOString(),
+    String(new Date(log.createdAt).getTime()),
+    log.user?.email ?? "",
+    log.user?.id ?? "",
+    log.action,
+    log.targetType,
+    log.targetId ?? "",
+    log.metadata != null ? JSON.stringify(log.metadata) : "",
+  ]);
+  const csv = [headers, ...rows]
+    .map((row) => row.map(csvField).join(","))
+    .join("\n");
+  // Prepend BOM so Excel detects UTF-8 instead of guessing CP-1252.
+  const blob = new Blob(["﻿", csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `donut-audit-${new Date()
+    .toISOString()
+    .slice(0, 19)
+    .replace(/[:T]/g, "-")}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
   const { t } = useTranslation();
   const formatDateTime = useFormatDateTime();
@@ -771,6 +857,14 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                 >
                   {t("common.buttons.search")}
                 </Button>
+                <Button
+                  className="w-full lg:w-auto"
+                  variant="outline"
+                  disabled={auditLogs.length === 0}
+                  onClick={() => exportAuditLogsToCsv(auditLogs)}
+                >
+                  {t("sync.teamAdmin.audit.exportCsv")}
+                </Button>
               </div>
               <div className="overflow-x-auto rounded-md border">
                 <table className="w-full text-sm">
@@ -791,6 +885,16 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                     </tr>
                   </thead>
                   <tbody>
+                    {auditLogs.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-3 py-8 text-center text-muted-foreground"
+                        >
+                          {t("sync.teamAdmin.audit.empty")}
+                        </td>
+                      </tr>
+                    )}
                     {auditLogs.map((log) => (
                       <tr key={log.id} className="border-t">
                         <td className="px-3 py-2 whitespace-nowrap">
@@ -799,7 +903,14 @@ export function TeamAdminDialog({ isOpen, onClose }: TeamAdminDialogProps) {
                         <td className="px-3 py-2">
                           {log.user?.email ?? t("common.labels.none")}
                         </td>
-                        <td className="px-3 py-2">{log.action}</td>
+                        <td className="px-3 py-2">
+                          <Badge
+                            variant={auditActionBadgeVariant(log.action)}
+                            className="text-xs font-mono"
+                          >
+                            {log.action}
+                          </Badge>
+                        </td>
                         <td className="px-3 py-2">
                           {log.targetType}
                           {log.targetId ? ` · ${log.targetId}` : ""}

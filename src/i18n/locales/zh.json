@@ -742,7 +742,9 @@
         "time": "时间",
         "user": "用户",
         "target": "目标",
-        "allUsers": "全部用户"
+        "allUsers": "全部用户",
+        "exportCsv": "导出 CSV",
+        "empty": "没有匹配的审计日志条目。"
       },
       "engines": {
         "botbrowser": "BotBrowser",

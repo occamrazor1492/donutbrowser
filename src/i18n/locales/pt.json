@@ -742,7 +742,9 @@
         "time": "Time",
         "user": "User",
         "target": "Target",
-        "allUsers": "All users"
+        "allUsers": "All users",
+        "exportCsv": "Exportar CSV",
+        "empty": "Nenhuma entrada de auditoria corresponde."
       },
       "engines": {
         "botbrowser": "BotBrowser",
