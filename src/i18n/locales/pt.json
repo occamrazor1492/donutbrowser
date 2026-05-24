@@ -400,6 +400,16 @@
   },
   "proxies": {
     "title": "Proxies",
+    "leakTest": {
+      "label": "Teste de vazamento",
+      "ariaLabel": "Executar teste de vazamento de proxy",
+      "tooltip": "Compara o IP de saída com seu IP real e indica se o proxy está mascarando seu endereço.",
+      "testing": "Testando…",
+      "resultOk": "Proxy OK · saída {{exit}} ({{location}}) · {{rtt}}ms",
+      "resultLeaking": "PROXY VAZANDO — IP de saída igual ao seu IP real",
+      "resultUnknown": "Inconclusivo — não foi possível obter um dos IPs",
+      "failed": "Falha no teste de vazamento: {{error}}"
+    },
     "management": {
       "description": "Gerencie suas configurações de proxy e VPN para reutilizar nos perfis",
       "tabProxies": "Proxies",

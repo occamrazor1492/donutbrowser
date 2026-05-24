@@ -400,6 +400,16 @@
   },
   "proxies": {
     "title": "代理",
+    "leakTest": {
+      "label": "泄露测试",
+      "ariaLabel": "运行代理泄露测试",
+      "tooltip": "对比出口 IP 与你的真实 IP，判断代理是否在隐藏你的地址。",
+      "testing": "测试中…",
+      "resultOk": "代理正常 · 出口 {{exit}} ({{location}}) · {{rtt}}ms",
+      "resultLeaking": "代理正在泄露 — 出口 IP 与你的真实 IP 相同",
+      "resultUnknown": "无法确定 — 无法获取其中一个 IP",
+      "failed": "泄露测试失败: {{error}}"
+    },
     "management": {
       "description": "管理代理和 VPN 配置以便在配置文件中重复使用",
       "tabProxies": "代理",

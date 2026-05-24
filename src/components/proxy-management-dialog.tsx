@@ -115,6 +115,66 @@ export function ProxyManagementDialog({
   const [proxyToDelete, setProxyToDelete] = useState<StoredProxy | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [checkingProxyId, setCheckingProxyId] = useState<string | null>(null);
+  const [leakTestRunningId, setLeakTestRunningId] = useState<string | null>(
+    null,
+  );
+
+  const runLeakTest = useCallback(
+    async (proxyId: string) => {
+      setLeakTestRunningId(proxyId);
+      try {
+        const report = await invoke<{
+          severity: "ok" | "unknown" | "leaking";
+          exit_ip: {
+            ip?: string | null;
+            country?: string | null;
+            city?: string | null;
+          };
+          real_ip: { ip?: string | null };
+          proxy_rtt_ms?: number | null;
+          notes: string[];
+        }>("run_proxy_leak_test", { proxyId });
+        const locationParts = [
+          report.exit_ip.city,
+          report.exit_ip.country,
+        ].filter(Boolean);
+        const location =
+          locationParts.length > 0 ? locationParts.join(", ") : "—";
+        const headline =
+          report.severity === "leaking"
+            ? t("proxies.leakTest.resultLeaking")
+            : report.severity === "ok"
+              ? t("proxies.leakTest.resultOk", {
+                  exit: report.exit_ip.ip ?? "?",
+                  location,
+                  rtt: report.proxy_rtt_ms ?? "?",
+                })
+              : t("proxies.leakTest.resultUnknown");
+        const description =
+          report.notes.length > 0 ? report.notes.join("\n") : undefined;
+        if (report.severity === "leaking") {
+          showErrorToast(
+            headline,
+            description ? { description, duration: 8000 } : undefined,
+          );
+        } else {
+          showSuccessToast(
+            headline,
+            description ? { description, duration: 6000 } : undefined,
+          );
+        }
+      } catch (err) {
+        showErrorToast(
+          t("proxies.leakTest.failed", {
+            error: err instanceof Error ? err.message : String(err),
+          }),
+        );
+      } finally {
+        setLeakTestRunningId(null);
+      }
+    },
+    [t],
+  );
   const [proxyCheckResults, setProxyCheckResults] = useState<
     Record<string, ProxyCheckResult>
   >({});
@@ -568,6 +628,30 @@ export function ProxyManagementDialog({
                                         }));
                                       }}
                                     />
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          aria-label={t(
+                                            "proxies.leakTest.ariaLabel",
+                                          )}
+                                          onClick={() =>
+                                            void runLeakTest(proxy.id)
+                                          }
+                                          disabled={
+                                            leakTestRunningId === proxy.id
+                                          }
+                                        >
+                                          {leakTestRunningId === proxy.id
+                                            ? t("proxies.leakTest.testing")
+                                            : t("proxies.leakTest.label")}
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {t("proxies.leakTest.tooltip")}
+                                      </TooltipContent>
+                                    </Tooltip>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button

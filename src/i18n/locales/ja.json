@@ -400,6 +400,16 @@
   },
   "proxies": {
     "title": "プロキシ",
+    "leakTest": {
+      "label": "リークテスト",
+      "ariaLabel": "プロキシのリークテストを実行",
+      "tooltip": "出口 IP と実 IP を比較し、プロキシがアドレスをマスクしているか確認します。",
+      "testing": "テスト中…",
+      "resultOk": "プロキシ OK · 出口 {{exit}} ({{location}}) · {{rtt}}ms",
+      "resultLeaking": "プロキシがリークしています — 出口 IP が実 IP と一致",
+      "resultUnknown": "判定不能 — いずれかの IP を取得できませんでした",
+      "failed": "リークテストに失敗しました: {{error}}"
+    },
     "management": {
       "description": "プロキシと VPN の構成を管理し、プロファイル間で再利用します",
       "tabProxies": "プロキシ",

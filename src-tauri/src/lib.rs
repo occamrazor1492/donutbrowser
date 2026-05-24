@@ -59,6 +59,7 @@ pub mod daemon_ws;
 pub mod events;
 mod health_check;
 mod mcp_server;
+mod proxy_leak_test;
 mod tag_manager;
 mod team_lock;
 mod template_manager;
@@ -1996,6 +1997,7 @@ pub fn run() {
       health_check::score_all_profiles,
       webhook_dispatcher::set_webhook_url,
       webhook_dispatcher::get_webhook_url,
+      proxy_leak_test::run_proxy_leak_test,
       fetch_browser_versions_with_count,
       fetch_browser_versions_cached_first,
       fetch_browser_versions_with_count_cached_first,
