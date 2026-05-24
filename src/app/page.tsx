@@ -706,16 +706,28 @@ export default function Home() {
       }
 
       try {
+        // Team preflight is only a hard launch-block for BotBrowser
+        // profiles, because BotBrowser cannot start without the `.enc`
+        // fingerprint template that lives on the sync server.
+        //
+        // Wayfern and Cloak profiles are locally self-contained — the
+        // sync server only stores their config + cookies, not the
+        // runtime. Pre-fix we ran the team preflight for them too,
+        // which made launch fail whenever the server had stale / no
+        // team-profile row for this id (a fresh login, a server-side
+        // delete, or a transient server error all looked the same:
+        // "preflight failed: 浏览器运行时, 指纹数据" and the user was
+        // stuck). Team registration + lock acquisition still happens
+        // inside `launch_browser_profile` via
+        // `acquire_team_lock_if_needed`, which already degrades to a
+        // warning on failure — so the local launch path stays clean.
+        const isBotBrowser =
+          profile.browser === "botbrowser" || profile.engine === "botbrowser";
         if (
           selfHostedSyncConfigured &&
           profile.sync_mode &&
           profile.sync_mode !== "Disabled" &&
-          (profile.browser === "botbrowser" ||
-            profile.engine === "botbrowser" ||
-            profile.browser === "wayfern" ||
-            profile.engine === "wayfern" ||
-            profile.browser === "cloak" ||
-            profile.engine === "cloak")
+          isBotBrowser
         ) {
           const preflight = await invoke<BotBrowserPreflightResult>(
             "team_preflight_botbrowser_profile",
