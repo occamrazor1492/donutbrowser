@@ -1927,6 +1927,13 @@
     "field": "Champ",
     "diffCount": "{{count}} champs différents"
   },
+  "savedViews": {
+    "label": "Vues enregistrées",
+    "saveCurrent": "Enregistrer la vue actuelle…",
+    "promptName": "Nom de la vue :",
+    "confirmDelete": "Supprimer la vue « {{name}} » ?",
+    "deleteAria": "Supprimer la vue {{name}}"
+  },
   "mcpTools": {
     "title": "Référence des outils MCP",
     "description": "Tous les outils exposés par le serveur MCP ({{count}} au total). Cliquez sur un outil pour inspecter son JSON Schema.",

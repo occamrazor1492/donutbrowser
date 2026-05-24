@@ -1927,6 +1927,13 @@
     "field": "Field",
     "diffCount": "{{count}} differing fields"
   },
+  "savedViews": {
+    "label": "Saved views",
+    "saveCurrent": "Save current as view…",
+    "promptName": "View name:",
+    "confirmDelete": "Delete saved view \"{{name}}\"?",
+    "deleteAria": "Delete view {{name}}"
+  },
   "mcpTools": {
     "title": "MCP Tools Reference",
     "description": "Every tool the MCP server exposes ({{count}} total). Click a tool to inspect its JSON Schema.",

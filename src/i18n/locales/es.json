@@ -1927,6 +1927,13 @@
     "field": "Campo",
     "diffCount": "{{count}} campos distintos"
   },
+  "savedViews": {
+    "label": "Vistas guardadas",
+    "saveCurrent": "Guardar actual como vista…",
+    "promptName": "Nombre de la vista:",
+    "confirmDelete": "¿Eliminar la vista «{{name}}»?",
+    "deleteAria": "Eliminar vista {{name}}"
+  },
   "mcpTools": {
     "title": "Referencia de herramientas MCP",
     "description": "Todas las herramientas que expone el servidor MCP ({{count}} en total). Haz clic en una herramienta para inspeccionar su JSON Schema.",

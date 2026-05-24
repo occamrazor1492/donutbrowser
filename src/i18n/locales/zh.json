@@ -1927,6 +1927,13 @@
     "field": "字段",
     "diffCount": "{{count}} 个不同字段"
   },
+  "savedViews": {
+    "label": "已保存视图",
+    "saveCurrent": "保存当前为视图…",
+    "promptName": "视图名称：",
+    "confirmDelete": "删除已保存的视图「{{name}}」？",
+    "deleteAria": "删除视图 {{name}}"
+  },
   "mcpTools": {
     "title": "MCP 工具参考",
     "description": "MCP 服务器暴露的所有工具（共 {{count}} 个）。点击工具查看其 JSON Schema。",

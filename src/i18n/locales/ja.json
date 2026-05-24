@@ -1927,6 +1927,13 @@
     "field": "フィールド",
     "diffCount": "{{count}} 個の異なるフィールド"
   },
+  "savedViews": {
+    "label": "保存したビュー",
+    "saveCurrent": "現在の状態をビューとして保存…",
+    "promptName": "ビュー名:",
+    "confirmDelete": "ビュー「{{name}}」を削除しますか？",
+    "deleteAria": "ビュー {{name}} を削除"
+  },
   "mcpTools": {
     "title": "MCP ツールリファレンス",
     "description": "MCP サーバーが公開するすべてのツール（合計 {{count}}）。ツールをクリックすると JSON Schema を確認できます。",

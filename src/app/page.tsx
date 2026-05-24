@@ -29,6 +29,7 @@ import { ProfileSelectorDialog } from "@/components/profile-selector-dialog";
 import { ProfileSyncDialog } from "@/components/profile-sync-dialog";
 import { ProxyAssignmentDialog } from "@/components/proxy-assignment-dialog";
 import { ProxyManagementDialog } from "@/components/proxy-management-dialog";
+import { SavedViewsBar } from "@/components/saved-views-bar";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { ShareProfileDialog } from "@/components/share-profile-dialog";
 import { SyncAllDialog } from "@/components/sync-all-dialog";
@@ -1313,6 +1314,16 @@ export default function Home() {
             onGroupSelect={handleSelectGroup}
             groups={groupsData}
             isLoading={isLoading}
+          />
+          <SavedViewsBar
+            searchQuery={searchQuery}
+            selectedGroupId={
+              selectedGroupId === "default" ? null : selectedGroupId
+            }
+            onApply={(view) => {
+              setSearchQuery(view.searchQuery);
+              setSelectedGroupId(view.selectedGroupId ?? "default");
+            }}
           />
           <ProfilesDataTable
             className="min-h-0 flex-1"

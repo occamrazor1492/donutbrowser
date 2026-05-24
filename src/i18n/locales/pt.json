@@ -1927,6 +1927,13 @@
     "field": "Campo",
     "diffCount": "{{count}} campos diferentes"
   },
+  "savedViews": {
+    "label": "Visualizações salvas",
+    "saveCurrent": "Salvar atual como visualização…",
+    "promptName": "Nome da visualização:",
+    "confirmDelete": "Excluir a visualização \"{{name}}\"?",
+    "deleteAria": "Excluir visualização {{name}}"
+  },
   "mcpTools": {
     "title": "Referência de ferramentas MCP",
     "description": "Todas as ferramentas expostas pelo servidor MCP ({{count}} no total). Clique em uma ferramenta para inspecionar seu JSON Schema.",
