@@ -1,25 +1,20 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import Color from "color";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BsCamera, BsMic } from "react-icons/bs";
 import { DnsBlocklistDialog } from "@/components/dns-blocklist-dialog";
 import { LoadingButton } from "@/components/loading-button";
+import {
+  AppearanceSettings,
+  type CustomThemeState,
+} from "@/components/settings/appearance-settings";
+import { DnsBlocklistSettings } from "@/components/settings/dns-blocklist-settings";
+import { EncryptionSettings } from "@/components/settings/encryption-settings";
+import { PermissionSettings } from "@/components/settings/permission-settings";
 import { useTheme } from "@/components/theme-provider";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  ColorPicker,
-  ColorPickerAlpha,
-  ColorPickerEyeDropper,
-  ColorPickerFormat,
-  ColorPickerHue,
-  ColorPickerOutput,
-  ColorPickerSelection,
-} from "@/components/ui/color-picker";
 import {
   Dialog,
   DialogContent,
@@ -27,29 +22,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useLanguage } from "@/hooks/use-language";
-import type { PermissionType } from "@/hooks/use-permissions";
-import { usePermissions } from "@/hooks/use-permissions";
-import {
-  getThemeByColors,
-  getThemeById,
-  THEME_VARIABLES,
-  THEMES,
-} from "@/lib/themes";
+import { getThemeByColors, getThemeById, THEME_VARIABLES } from "@/lib/themes";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import { RippleButton } from "./ui/ripple";
 
@@ -64,46 +39,29 @@ interface AppSettings {
   minimize_to_tray?: boolean;
 }
 
-interface CustomThemeState {
-  selectedThemeId: string | null;
-  colors: Record<string, string>;
-}
-
-interface PermissionInfo {
-  permission_type: PermissionType;
-  isGranted: boolean;
-  description: string;
-}
-
-// Version update progress toasts are handled globally via useVersionUpdater
-
 interface SettingsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onIntegrationsOpen?: () => void;
 }
 
+const DEFAULT_SETTINGS: AppSettings = {
+  set_as_default_browser: false,
+  theme: "system",
+  custom_theme: undefined,
+  api_enabled: false,
+  api_port: 10108,
+  api_token: undefined,
+};
+
 export function SettingsDialog({
   isOpen,
   onClose,
   onIntegrationsOpen,
 }: SettingsDialogProps) {
-  const [settings, setSettings] = useState<AppSettings>({
-    set_as_default_browser: false,
-    theme: "system",
-    custom_theme: undefined,
-    api_enabled: false,
-    api_port: 10108,
-    api_token: undefined,
-  });
-  const [originalSettings, setOriginalSettings] = useState<AppSettings>({
-    set_as_default_browser: false,
-    theme: "system",
-    custom_theme: undefined,
-    api_enabled: false,
-    api_port: 10108,
-    api_token: undefined,
-  });
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [originalSettings, setOriginalSettings] =
+    useState<AppSettings>(DEFAULT_SETTINGS);
   const [customThemeState, setCustomThemeState] = useState<CustomThemeState>({
     selectedThemeId: null,
     colors: {},
@@ -115,18 +73,10 @@ export function SettingsDialog({
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [isExportingBackup, setIsExportingBackup] = useState(false);
   const [isImportingBackup, setIsImportingBackup] = useState(false);
-  const [permissions, setPermissions] = useState<PermissionInfo[]>([]);
-  const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
-  const [requestingPermission, setRequestingPermission] =
-    useState<PermissionType | null>(null);
   const [isMacOS, setIsMacOS] = useState(false);
   const [dnsBlocklistDialogOpen, setDnsBlocklistDialogOpen] = useState(false);
   const [isLinux, setIsLinux] = useState(false);
   const [hasE2ePassword, setHasE2ePassword] = useState(false);
-  const [e2ePassword, setE2ePassword] = useState("");
-  const [e2ePasswordConfirm, setE2ePasswordConfirm] = useState("");
-  const [e2eError, setE2eError] = useState("");
-  const [isSavingE2e, setIsSavingE2e] = useState(false);
   const [systemInfo, setSystemInfo] = useState<{
     app_version: string;
     os: string;
@@ -137,13 +87,6 @@ export function SettingsDialog({
   const { t } = useTranslation();
   const { setTheme } = useTheme();
   const {
-    requestPermission,
-    isMicrophoneAccessGranted,
-    isCameraAccessGranted,
-  } = usePermissions();
-  // Cloud "team plan, member-not-owner" encryption gate removed in the
-  // internal-use fork — every user can set the E2E password.
-  const {
     currentLanguage,
     changeLanguage,
     supportedLanguages,
@@ -151,56 +94,6 @@ export function SettingsDialog({
   } = useLanguage();
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [originalLanguage, setOriginalLanguage] = useState<string | null>(null);
-
-  const getPermissionIcon = useCallback((type: PermissionType) => {
-    switch (type) {
-      case "microphone":
-        return <BsMic className="w-4 h-4" />;
-      case "camera":
-        return <BsCamera className="w-4 h-4" />;
-    }
-  }, []);
-
-  const getPermissionDisplayName = useCallback(
-    (type: PermissionType) => {
-      switch (type) {
-        case "microphone":
-          return t("settings.permissions.microphone");
-        case "camera":
-          return t("settings.permissions.camera");
-      }
-    },
-    [t],
-  );
-
-  const getStatusBadge = useCallback(
-    (isGranted: boolean) => {
-      if (isGranted) {
-        return (
-          <Badge
-            variant="default"
-            className="text-success-foreground bg-success"
-          >
-            {t("common.status.granted")}
-          </Badge>
-        );
-      }
-      return <Badge variant="secondary">{t("common.status.notGranted")}</Badge>;
-    },
-    [t],
-  );
-
-  const getPermissionDescription = useCallback(
-    (type: PermissionType) => {
-      switch (type) {
-        case "microphone":
-          return t("settings.permissions.microphoneDescription");
-        case "camera":
-          return t("settings.permissions.cameraDescription");
-      }
-    },
-    [t],
-  );
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -274,41 +167,6 @@ export function SettingsDialog({
       root.style.removeProperty(key as string);
     });
   }, []);
-
-  const loadPermissions = useCallback(() => {
-    setIsLoadingPermissions(true);
-    try {
-      if (!isMacOS) {
-        // On non-macOS platforms, don't show permissions
-        setPermissions([]);
-        return;
-      }
-
-      const permissionList: PermissionInfo[] = [
-        {
-          permission_type: "microphone",
-          isGranted: isMicrophoneAccessGranted,
-          description: getPermissionDescription("microphone"),
-        },
-        {
-          permission_type: "camera",
-          isGranted: isCameraAccessGranted,
-          description: getPermissionDescription("camera"),
-        },
-      ];
-
-      setPermissions(permissionList);
-    } catch (error) {
-      console.error("Failed to load permissions:", error);
-    } finally {
-      setIsLoadingPermissions(false);
-    }
-  }, [
-    getPermissionDescription,
-    isCameraAccessGranted,
-    isMacOS,
-    isMicrophoneAccessGranted,
-  ]);
 
   const checkDefaultBrowserStatus = useCallback(async () => {
     try {
@@ -426,25 +284,6 @@ export function SettingsDialog({
       setIsClearingCache(false);
     }
   }, [t]);
-
-  const handleRequestPermission = useCallback(
-    async (permissionType: PermissionType) => {
-      setRequestingPermission(permissionType);
-      try {
-        await requestPermission(permissionType);
-        showSuccessToast(
-          t("settings.permissions.accessRequested", {
-            permission: getPermissionDisplayName(permissionType),
-          }),
-        );
-      } catch (error) {
-        console.error("Failed to request permission:", error);
-      } finally {
-        setRequestingPermission(null);
-      }
-    },
-    [getPermissionDisplayName, requestPermission, t],
-  );
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -608,9 +447,8 @@ export function SettingsDialog({
       const isLin = !userAgent.includes("Mac") && !userAgent.includes("Win");
       setIsLinux(isLin);
 
-      if (isMac) {
-        loadPermissions();
-      }
+      // Permission rows are derived from usePermissions inside the
+      // PermissionSettings child; nothing async happens at the parent level.
 
       // Set up interval to check default browser status
       const intervalId = setInterval(() => {
@@ -624,7 +462,7 @@ export function SettingsDialog({
         clearInterval(intervalId);
       };
     }
-  }, [isOpen, loadPermissions, checkDefaultBrowserStatus, loadSettings]);
+  }, [isOpen, checkDefaultBrowserStatus, loadSettings]);
 
   // Initialize language selection when dialog opens or language loads
   useEffect(() => {
@@ -633,32 +471,6 @@ export function SettingsDialog({
       setOriginalLanguage(currentLanguage);
     }
   }, [isOpen, currentLanguage, isLanguageLoading]);
-
-  // Update permissions when the permission states change
-  useEffect(() => {
-    if (isMacOS) {
-      const permissionList: PermissionInfo[] = [
-        {
-          permission_type: "microphone",
-          isGranted: isMicrophoneAccessGranted,
-          description: getPermissionDescription("microphone"),
-        },
-        {
-          permission_type: "camera",
-          isGranted: isCameraAccessGranted,
-          description: getPermissionDescription("camera"),
-        },
-      ];
-      setPermissions(permissionList);
-    } else {
-      setPermissions([]);
-    }
-  }, [
-    isMacOS,
-    isMicrophoneAccessGranted,
-    isCameraAccessGranted,
-    getPermissionDescription,
-  ]);
 
   // Check if settings have changed (excluding default browser setting)
   const hasChanges =
@@ -682,216 +494,18 @@ export function SettingsDialog({
           </DialogHeader>
 
           <div className="grid overflow-y-auto flex-1 gap-6 py-4 min-h-0">
-            {/* Appearance Section */}
-            <div className="space-y-4">
-              <Label className="text-base font-medium">
-                {t("settings.appearance.title")}
-              </Label>
-
-              <div className="grid gap-2">
-                <Label htmlFor="theme-select" className="text-sm">
-                  {t("settings.appearance.theme")}
-                </Label>
-                <Select
-                  value={settings.theme}
-                  onValueChange={(value) => {
-                    updateSetting("theme", value);
-                    if (value === "custom") {
-                      const tokyoNightTheme = getThemeById("tokyo-night");
-                      if (tokyoNightTheme) {
-                        setCustomThemeState({
-                          selectedThemeId: "tokyo-night",
-                          colors: tokyoNightTheme.colors,
-                        });
-                      }
-                    }
-                  }}
-                >
-                  <SelectTrigger id="theme-select">
-                    <SelectValue
-                      placeholder={t("settings.appearance.selectTheme")}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">
-                      {t("settings.appearance.light")}
-                    </SelectItem>
-                    <SelectItem value="dark">
-                      {t("settings.appearance.dark")}
-                    </SelectItem>
-                    <SelectItem value="system">
-                      {t("settings.appearance.system")}
-                    </SelectItem>
-                    <SelectItem value="custom">
-                      {t("common.labels.custom")}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                {t("settings.appearance.themeDescription")}
-              </p>
-
-              {settings.theme === "custom" && (
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="theme-preset-select"
-                      className="text-sm font-medium"
-                    >
-                      {t("settings.appearance.themePreset")}
-                    </Label>
-                    <Select
-                      value={customThemeState.selectedThemeId ?? "custom"}
-                      onValueChange={(value) => {
-                        if (value === "custom") {
-                          setCustomThemeState((prev) => ({
-                            ...prev,
-                            selectedThemeId: null,
-                          }));
-                        } else {
-                          const theme = getThemeById(value);
-                          if (theme) {
-                            setCustomThemeState({
-                              selectedThemeId: value,
-                              colors: theme.colors,
-                            });
-                          }
-                        }
-                      }}
-                    >
-                      <SelectTrigger id="theme-preset-select">
-                        <SelectValue
-                          placeholder={t(
-                            "settings.appearance.selectThemePreset",
-                          )}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {THEMES.map((theme) => (
-                          <SelectItem key={theme.id} value={theme.id}>
-                            {theme.name}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="custom">
-                          {t("settings.appearance.yourOwn")}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="text-sm font-medium">
-                    {t("settings.appearance.customColors")}
-                  </div>
-                  <div className="grid grid-cols-4 gap-3">
-                    {THEME_VARIABLES.map(({ key, label }) => {
-                      const colorValue =
-                        customThemeState.colors[key] ?? "#000000";
-                      return (
-                        <div
-                          key={key}
-                          className="flex flex-col gap-1 items-center"
-                        >
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button
-                                type="button"
-                                aria-label={label}
-                                className="w-8 h-8 rounded-md border shadow-sm cursor-pointer"
-                                style={{ backgroundColor: colorValue }}
-                              />
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-[320px] p-3"
-                              sideOffset={6}
-                            >
-                              <ColorPicker
-                                className="p-3 rounded-md border shadow-sm bg-background"
-                                value={colorValue}
-                                onColorChange={([r, g, b, a]) => {
-                                  const next = Color({ r, g, b }).alpha(a);
-                                  const nextStr = next.hexa();
-                                  const newColors = {
-                                    ...customThemeState.colors,
-                                    [key]: nextStr,
-                                  };
-
-                                  // Check if colors match any preset theme
-                                  const matchingTheme =
-                                    getThemeByColors(newColors);
-
-                                  setCustomThemeState({
-                                    selectedThemeId: matchingTheme?.id ?? null,
-                                    colors: newColors,
-                                  });
-                                }}
-                              >
-                                <ColorPickerSelection className="h-36 rounded" />
-                                <div className="flex gap-3 items-center mt-3">
-                                  <ColorPickerEyeDropper />
-                                  <div className="grid gap-1 w-full">
-                                    <ColorPickerHue />
-                                    <ColorPickerAlpha />
-                                  </div>
-                                </div>
-                                <div className="flex gap-2 items-center mt-3">
-                                  <ColorPickerOutput />
-                                  <ColorPickerFormat />
-                                </div>
-                              </ColorPicker>
-                            </PopoverContent>
-                          </Popover>
-                          <div className="text-[10px] text-muted-foreground text-center leading-tight">
-                            {label}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Language Section */}
-            <div className="space-y-4">
-              <Label className="text-base font-medium">
-                {t("settings.language.title")}
-              </Label>
-
-              <div className="grid gap-2">
-                <Label htmlFor="language-select" className="text-sm">
-                  {t("settings.language.interface")}
-                </Label>
-                <Select
-                  value={selectedLanguage ?? "system"}
-                  onValueChange={(value) => {
-                    setSelectedLanguage(value);
-                  }}
-                  disabled={isLanguageLoading}
-                >
-                  <SelectTrigger id="language-select">
-                    <SelectValue
-                      placeholder={t("settings.language.selectLanguage")}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="system">
-                      {t("settings.language.systemDefault")}
-                    </SelectItem>
-                    {supportedLanguages.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.nativeName} ({lang.name})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                {t("settings.language.description")}
-              </p>
-            </div>
+            <AppearanceSettings
+              theme={settings.theme}
+              onThemeChange={(value) => {
+                updateSetting("theme", value);
+              }}
+              customThemeState={customThemeState}
+              onCustomThemeStateChange={setCustomThemeState}
+              selectedLanguage={selectedLanguage}
+              onSelectedLanguageChange={setSelectedLanguage}
+              supportedLanguages={supportedLanguages}
+              isLanguageLoading={isLanguageLoading}
+            />
 
             {/* Default Browser Section - hidden in portable mode */}
             {!systemInfo?.portable && (
@@ -929,70 +543,7 @@ export function SettingsDialog({
               </div>
             )}
 
-            {/* Permissions Section - Only show on macOS */}
-            {isMacOS && (
-              <div className="space-y-4">
-                <Label className="text-base font-medium">
-                  {t("settings.permissions.title")}
-                </Label>
-
-                {isLoadingPermissions ? (
-                  <div className="text-sm text-muted-foreground">
-                    {t("settings.permissions.loading")}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {permissions.map((permission) => (
-                      <div
-                        key={permission.permission_type}
-                        className="flex justify-between items-center p-3 rounded-lg border"
-                      >
-                        <div className="flex items-center space-x-3">
-                          {getPermissionIcon(permission.permission_type)}
-                          <div>
-                            <div className="text-sm font-medium">
-                              {getPermissionDisplayName(
-                                permission.permission_type,
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {permission.description}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {getStatusBadge(permission.isGranted)}
-                          {!permission.isGranted && (
-                            <LoadingButton
-                              size="sm"
-                              isLoading={
-                                requestingPermission ===
-                                permission.permission_type
-                              }
-                              onClick={() => {
-                                handleRequestPermission(
-                                  permission.permission_type,
-                                ).catch((err: unknown) => {
-                                  console.error(err);
-                                });
-                              }}
-                            >
-                              Grant
-                            </LoadingButton>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <p className="text-xs text-muted-foreground">
-                  These permissions allow browsers launched from Donut Browser
-                  to access system resources. Each website will still ask for
-                  your permission individually.
-                </p>
-              </div>
-            )}
+            {isMacOS && <PermissionSettings />}
 
             {/* Integrations Section */}
             <div className="space-y-4">
@@ -1011,131 +562,14 @@ export function SettingsDialog({
               </RippleButton>
             </div>
 
-            {/* DNS Blocklist Section */}
-            <div className="space-y-4">
-              <Label className="text-base font-medium">
-                {t("dnsBlocklist.title")}
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                {t("dnsBlocklist.settingsDescription")}
-              </p>
-              <RippleButton
-                variant="outline"
-                className="w-full"
-                onClick={() => setDnsBlocklistDialogOpen(true)}
-              >
-                {t("dnsBlocklist.manageLists")}
-              </RippleButton>
-            </div>
+            <DnsBlocklistSettings
+              onManage={() => setDnsBlocklistDialogOpen(true)}
+            />
 
-            {/* Sync Encryption Section */}
-            <div className="space-y-4">
-              <Label className="text-base font-medium">
-                {t("settings.encryption.title")}
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                {t("settings.encryption.description")}
-              </p>
-
-              {hasE2ePassword ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default">
-                      {t("settings.encryption.passwordSet")}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {t("settings.encryption.passwordSetDescription")}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setHasE2ePassword(false);
-                        setE2ePassword("");
-                        setE2ePasswordConfirm("");
-                        setE2eError("");
-                      }}
-                    >
-                      {t("settings.encryption.changePassword")}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          await invoke("delete_e2e_password");
-                          setHasE2ePassword(false);
-                          showSuccessToast(t("settings.encryption.removed"));
-                        } catch (error) {
-                          showErrorToast(String(error));
-                        }
-                      }}
-                    >
-                      {t("settings.encryption.removePassword")}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Input
-                    type="password"
-                    placeholder={t("settings.encryption.passwordPlaceholder")}
-                    value={e2ePassword}
-                    onChange={(e) => {
-                      setE2ePassword(e.target.value);
-                      setE2eError("");
-                    }}
-                  />
-                  <Input
-                    type="password"
-                    placeholder={t("settings.encryption.confirmPlaceholder")}
-                    value={e2ePasswordConfirm}
-                    onChange={(e) => {
-                      setE2ePasswordConfirm(e.target.value);
-                      setE2eError("");
-                    }}
-                  />
-                  {e2eError && (
-                    <p className="text-sm text-destructive">{e2eError}</p>
-                  )}
-                  <LoadingButton
-                    variant="default"
-                    size="sm"
-                    isLoading={isSavingE2e}
-                    onClick={async () => {
-                      if (e2ePassword.length < 8) {
-                        setE2eError(t("settings.encryption.passwordTooShort"));
-                        return;
-                      }
-                      if (e2ePassword !== e2ePasswordConfirm) {
-                        setE2eError(t("settings.encryption.passwordMismatch"));
-                        return;
-                      }
-                      setIsSavingE2e(true);
-                      try {
-                        await invoke("set_e2e_password", {
-                          password: e2ePassword,
-                        });
-                        setHasE2ePassword(true);
-                        setE2ePassword("");
-                        setE2ePasswordConfirm("");
-                        showSuccessToast(
-                          t("settings.encryption.passwordSaved"),
-                        );
-                      } catch (error) {
-                        showErrorToast(String(error));
-                      } finally {
-                        setIsSavingE2e(false);
-                      }
-                    }}
-                  >
-                    {t("settings.encryption.setPassword")}
-                  </LoadingButton>
-                </div>
-              )}
-            </div>
+            <EncryptionSettings
+              hasE2ePassword={hasE2ePassword}
+              onHasE2ePasswordChange={setHasE2ePassword}
+            />
 
             {/* Advanced Section */}
             <div className="space-y-4">
