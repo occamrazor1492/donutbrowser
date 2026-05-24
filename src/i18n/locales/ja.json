@@ -190,7 +190,7 @@
       "templates": "プロファイルテンプレート",
       "compareProfiles": "プロファイルを比較",
       "scheduledTasks": "スケジュールされたタスク",
-      "syncService": "アカウント",
+      "syncService": "同期サービス",
       "integrations": "統合",
       "importProfile": "プロファイルをインポート",
       "extensions": "拡張機能",

@@ -190,7 +190,7 @@
       "templates": "配置文件模板",
       "compareProfiles": "对比配置文件",
       "scheduledTasks": "计划任务",
-      "syncService": "账户",
+      "syncService": "同步服务",
       "integrations": "集成",
       "importProfile": "导入配置文件",
       "extensions": "扩展程序",
