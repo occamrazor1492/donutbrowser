@@ -1089,6 +1089,12 @@
     "setupVpnListenersFailed": "Не удалось настроить слушатели событий VPN: {{error}}",
     "themeNotFound": "Тема Tokyo Night не найдена"
   },
+  "errorBoundary": {
+    "title": "Что-то пошло не так",
+    "description": "Интерфейс столкнулся с неожиданной ошибкой. Попробуйте операцию ещё раз или перезагрузите приложение, если проблема не исчезла.",
+    "retry": "Повторить",
+    "reload": "Перезагрузить приложение"
+  },
   "browser": {
     "camoufox": "Camoufox",
     "wayfern": "Wayfern"

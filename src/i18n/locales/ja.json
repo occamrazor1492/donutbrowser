@@ -1089,6 +1089,12 @@
     "setupVpnListenersFailed": "VPNイベントリスナーの設定に失敗しました: {{error}}",
     "themeNotFound": "Tokyo Night テーマが見つかりません"
   },
+  "errorBoundary": {
+    "title": "問題が発生しました",
+    "description": "予期しないエラーが発生しました。操作をやり直すか、問題が続く場合はアプリを再読み込みしてください。",
+    "retry": "再試行",
+    "reload": "アプリを再読み込み"
+  },
   "browser": {
     "camoufox": "Camoufox",
     "wayfern": "Wayfern"

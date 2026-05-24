@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { I18nProvider } from "@/components/i18n-provider";
 import { CustomThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -17,7 +18,9 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
     <I18nProvider>
       <CustomThemeProvider>
         <WindowDragArea />
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </TooltipProvider>
         <Toaster />
       </CustomThemeProvider>
     </I18nProvider>

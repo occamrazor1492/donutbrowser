@@ -1088,6 +1088,12 @@
     "setupVpnListenersFailed": "Failed to setup VPN event listeners: {{error}}",
     "themeNotFound": "Tokyo Night theme not found"
   },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "The interface hit an unexpected error. Try the operation again, or reload the app if the problem persists.",
+    "retry": "Try again",
+    "reload": "Reload app"
+  },
   "browser": {
     "camoufox": "Camoufox",
     "wayfern": "Wayfern"

@@ -1089,6 +1089,12 @@
     "setupVpnListenersFailed": "设置 VPN 事件监听器失败: {{error}}",
     "themeNotFound": "未找到 Tokyo Night 主题"
   },
+  "errorBoundary": {
+    "title": "出现问题",
+    "description": "界面遇到意外错误。可以重试当前操作，如果问题持续，请重新加载应用。",
+    "retry": "重试",
+    "reload": "重新加载应用"
+  },
   "browser": {
     "camoufox": "Camoufox",
     "wayfern": "Wayfern"

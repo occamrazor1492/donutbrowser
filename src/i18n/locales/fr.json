@@ -1089,6 +1089,12 @@
     "setupVpnListenersFailed": "Échec de la configuration des écouteurs d’événements VPN : {{error}}",
     "themeNotFound": "Thème Tokyo Night introuvable"
   },
+  "errorBoundary": {
+    "title": "Une erreur s’est produite",
+    "description": "L’interface a rencontré une erreur inattendue. Réessayez l’opération ou rechargez l’application si le problème persiste.",
+    "retry": "Réessayer",
+    "reload": "Recharger l’application"
+  },
   "browser": {
     "camoufox": "Camoufox",
     "wayfern": "Wayfern"
