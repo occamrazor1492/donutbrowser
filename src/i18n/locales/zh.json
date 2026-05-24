@@ -185,6 +185,7 @@
       "settings": "设置",
       "proxies": "代理和VPN",
       "groups": "分组",
+      "templates": "配置文件模板",
       "syncService": "账户",
       "integrations": "集成",
       "importProfile": "导入配置文件",
@@ -229,6 +230,7 @@
     "actions": {
       "launch": "启动",
       "launchHeadless": "无界面启动",
+      "saveAsTemplate": "保存为模板",
       "stop": "停止",
       "edit": "编辑",
       "delete": "删除",
@@ -1862,6 +1864,31 @@
     "toasts": {
       "published": "已共享到团队",
       "publishFailed": "共享环境失败：{{error}}"
+    }
+  },
+  "templates": {
+    "title": "配置文件模板",
+    "description": "保存可重用的配置文件预设，并从中创建新的配置文件。",
+    "empty": "还没有模板。在任意配置文件的「信息」对话框中保存第一个吧。",
+    "createBlank": "创建空模板",
+    "namePlaceholder": "模板名称（例如「工作 Wayfern」）",
+    "create": "创建",
+    "created": "模板已创建",
+    "deleted": "模板已删除",
+    "use": "使用",
+    "deleteAria": "删除模板 {{name}}",
+    "createdAt": "创建于 {{time}}",
+    "confirmDelete": "删除模板「{{name}}」？",
+    "promptName": "模板名称：",
+    "savedAlert": "模板「{{name}}」已保存。",
+    "toasts": {
+      "opened": "正在使用模板「{{name}}」打开「创建配置文件」…"
+    },
+    "errors": {
+      "listFailed": "加载模板失败: {{error}}",
+      "createFailed": "创建模板失败: {{error}}",
+      "deleteFailed": "删除模板失败: {{error}}",
+      "applyFailed": "应用模板失败: {{error}}"
     }
   }
 }

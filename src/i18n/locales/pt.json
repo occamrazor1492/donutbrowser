@@ -185,6 +185,7 @@
       "settings": "Configurações",
       "proxies": "Proxies e VPNs",
       "groups": "Grupos",
+      "templates": "Modelos de perfil",
       "syncService": "Conta",
       "integrations": "Integrações",
       "importProfile": "Importar Perfil",
@@ -229,6 +230,7 @@
     "actions": {
       "launch": "Iniciar",
       "launchHeadless": "Iniciar sem interface",
+      "saveAsTemplate": "Salvar como modelo",
       "stop": "Parar",
       "edit": "Editar",
       "delete": "Excluir",
@@ -1862,6 +1864,31 @@
     "toasts": {
       "published": "Profile shared with the team",
       "publishFailed": "Failed to share profile: {{error}}"
+    }
+  },
+  "templates": {
+    "title": "Modelos de perfil",
+    "description": "Salve configurações de perfil reutilizáveis e crie novos perfis a partir delas.",
+    "empty": "Nenhum modelo ainda. Salve o primeiro a partir do diálogo Info de qualquer perfil.",
+    "createBlank": "Criar um modelo em branco",
+    "namePlaceholder": "Nome do modelo (ex.: \"Trabalho Wayfern\")",
+    "create": "Criar",
+    "created": "Modelo criado",
+    "deleted": "Modelo excluído",
+    "use": "Usar",
+    "deleteAria": "Excluir modelo {{name}}",
+    "createdAt": "Criado em {{time}}",
+    "confirmDelete": "Excluir o modelo \"{{name}}\"?",
+    "promptName": "Nome do modelo:",
+    "savedAlert": "Modelo \"{{name}}\" salvo.",
+    "toasts": {
+      "opened": "Abrindo Criar Perfil com o modelo \"{{name}}\"…"
+    },
+    "errors": {
+      "listFailed": "Falha ao carregar modelos: {{error}}",
+      "createFailed": "Falha ao criar o modelo: {{error}}",
+      "deleteFailed": "Falha ao excluir o modelo: {{error}}",
+      "applyFailed": "Falha ao aplicar o modelo: {{error}}"
     }
   }
 }

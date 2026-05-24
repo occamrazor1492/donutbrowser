@@ -185,6 +185,7 @@
       "settings": "Settings",
       "proxies": "Proxies & VPNs",
       "groups": "Groups",
+      "templates": "Profile Templates",
       "syncService": "Account",
       "integrations": "Integrations",
       "importProfile": "Import Profile",
@@ -229,6 +230,7 @@
     "actions": {
       "launch": "Launch",
       "launchHeadless": "Launch headless",
+      "saveAsTemplate": "Save as template",
       "stop": "Stop",
       "edit": "Edit",
       "delete": "Delete",
@@ -1862,6 +1864,31 @@
     "toasts": {
       "published": "Profile shared with the team",
       "publishFailed": "Failed to share profile: {{error}}"
+    }
+  },
+  "templates": {
+    "title": "Profile Templates",
+    "description": "Save reusable profile configurations and create new profiles from them.",
+    "empty": "No templates yet. Save your first one from any profile's Info dialog.",
+    "createBlank": "Create a blank template",
+    "namePlaceholder": "Template name (e.g. \"Work Wayfern\")",
+    "create": "Create",
+    "created": "Template created",
+    "deleted": "Template deleted",
+    "use": "Use",
+    "deleteAria": "Delete template {{name}}",
+    "createdAt": "Created {{time}}",
+    "confirmDelete": "Delete template \"{{name}}\"?",
+    "promptName": "Template name:",
+    "savedAlert": "Template \"{{name}}\" saved.",
+    "toasts": {
+      "opened": "Opening Create Profile with template \"{{name}}\"…"
+    },
+    "errors": {
+      "listFailed": "Failed to load templates: {{error}}",
+      "createFailed": "Failed to create template: {{error}}",
+      "deleteFailed": "Failed to delete template: {{error}}",
+      "applyFailed": "Failed to apply template: {{error}}"
     }
   }
 }

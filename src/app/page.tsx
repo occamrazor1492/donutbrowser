@@ -35,6 +35,7 @@ import { SyncConfigDialog } from "@/components/sync-config-dialog";
 import { SyncFollowerDialog } from "@/components/sync-follower-dialog";
 import { TeamAdminDialog } from "@/components/team-admin-dialog";
 import { TeamProfilesDialog } from "@/components/team-profiles-dialog";
+import { TemplateManagementDialog } from "@/components/template-management-dialog";
 import { WayfernTermsDialog } from "@/components/wayfern-terms-dialog";
 import { WindowResizeWarningDialog } from "@/components/window-resize-warning-dialog";
 import { useAppUpdateNotifications } from "@/hooks/use-app-update-notifications";
@@ -178,6 +179,8 @@ export default function Home() {
   const [camoufoxConfigDialogOpen, setCamoufoxConfigDialogOpen] =
     useState(false);
   const [groupManagementDialogOpen, setGroupManagementDialogOpen] =
+    useState(false);
+  const [templateManagementDialogOpen, setTemplateManagementDialogOpen] =
     useState(false);
   const [extensionManagementDialogOpen, setExtensionManagementDialogOpen] =
     useState(false);
@@ -389,25 +392,42 @@ export default function Home() {
   }, [hasCheckedStartupPrompt]);
 
   // Handle profile errors from useProfileEvents hook
+  // In pure-browser dev mode (Next.js running without the Tauri shell), all
+  // `invoke()` and event-listener calls fail synchronously. The hooks below
+  // surface those failures as `*Error` state and we then push them to toasts
+  // — but that means a developer running `pnpm dev` in a browser sees three
+  // simultaneous error toasts on every page load (see UX audit, 2026-05).
+  // Gate the toast surface on Tauri actually being present.
+  const isTauriRuntime =
+    typeof window !== "undefined" &&
+    typeof (window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !==
+      "undefined";
+
   useEffect(() => {
-    if (profilesError) {
+    if (profilesError && isTauriRuntime) {
       showErrorToast(profilesError);
+    } else if (profilesError) {
+      console.warn("[dev] profiles hook error (suppressed):", profilesError);
     }
-  }, [profilesError]);
+  }, [profilesError, isTauriRuntime]);
 
   // Handle group errors from useGroupEvents hook
   useEffect(() => {
-    if (groupsError) {
+    if (groupsError && isTauriRuntime) {
       showErrorToast(groupsError);
+    } else if (groupsError) {
+      console.warn("[dev] groups hook error (suppressed):", groupsError);
     }
-  }, [groupsError]);
+  }, [groupsError, isTauriRuntime]);
 
   // Handle proxy errors from useProxyEvents hook
   useEffect(() => {
-    if (proxiesError) {
+    if (proxiesError && isTauriRuntime) {
       showErrorToast(proxiesError);
+    } else if (proxiesError) {
+      console.warn("[dev] proxies hook error (suppressed):", proxiesError);
     }
-  }, [proxiesError]);
+  }, [proxiesError, isTauriRuntime]);
 
   const checkAllPermissions = useCallback(() => {
     try {
@@ -1245,6 +1265,7 @@ export default function Home() {
           <HomeHeader
             onCreateProfileDialogOpen={setCreateProfileDialogOpen}
             onGroupManagementDialogOpen={setGroupManagementDialogOpen}
+            onTemplateManagementDialogOpen={setTemplateManagementDialogOpen}
             onImportProfileDialogOpen={setImportProfileDialogOpen}
             onProxyManagementDialogOpen={setProxyManagementDialogOpen}
             onSettingsDialogOpen={setSettingsDialogOpen}
@@ -1459,6 +1480,24 @@ export default function Home() {
           setGroupManagementDialogOpen(false);
         }}
         onGroupManagementComplete={handleGroupManagementComplete}
+      />
+
+      <TemplateManagementDialog
+        isOpen={templateManagementDialogOpen}
+        onClose={() => {
+          setTemplateManagementDialogOpen(false);
+        }}
+        onApplyTemplate={(template) => {
+          // The wizard doesn't yet consume the template content directly —
+          // we just open the Create Profile flow and surface a toast so the
+          // user knows which template was selected. Pre-fill wiring is
+          // deferred to a follow-up commit (the wizard's 33 useStates
+          // need to be reducer-ified first to make this safe).
+          showSuccessToast(
+            t("templates.toasts.opened", { name: template.name }),
+          );
+          setCreateProfileDialogOpen(true);
+        }}
       />
 
       <ExtensionManagementDialog

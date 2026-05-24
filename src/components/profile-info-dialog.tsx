@@ -13,6 +13,7 @@ import {
   LuFingerprint,
   LuGlobe,
   LuGroup,
+  LuLayoutTemplate,
   LuLink,
   LuPlay,
   LuPlus,
@@ -361,6 +362,30 @@ export function ProfileInfoDialog({
       },
       disabled: isDisabled,
       runningBadge: isRunning,
+      hidden: profile.ephemeral === true,
+    },
+    {
+      icon: <LuLayoutTemplate className="w-4 h-4" />,
+      label: t("profiles.actions.saveAsTemplate"),
+      onClick: () => {
+        handleAction(async () => {
+          const name = window.prompt(t("templates.promptName"), profile.name);
+          if (!name?.trim()) return;
+          try {
+            await invoke("create_profile_template_from_profile", {
+              name: name.trim(),
+              description: null,
+              profile,
+            });
+            // Lightweight feedback; full toast is owned by the management
+            // dialog when the user lists templates next.
+            window.alert(t("templates.savedAlert", { name: name.trim() }));
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            window.alert(t("templates.errors.createFailed", { error: msg }));
+          }
+        });
+      },
       hidden: profile.ephemeral === true,
     },
     {

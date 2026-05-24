@@ -185,6 +185,7 @@
       "settings": "Paramètres",
       "proxies": "Proxys et VPNs",
       "groups": "Groupes",
+      "templates": "Modèles de profil",
       "syncService": "Compte",
       "integrations": "Intégrations",
       "importProfile": "Importer un profil",
@@ -229,6 +230,7 @@
     "actions": {
       "launch": "Lancer",
       "launchHeadless": "Lancer en mode headless",
+      "saveAsTemplate": "Enregistrer comme modèle",
       "stop": "Arrêter",
       "edit": "Modifier",
       "delete": "Supprimer",
@@ -1862,6 +1864,31 @@
     "toasts": {
       "published": "Profile shared with the team",
       "publishFailed": "Failed to share profile: {{error}}"
+    }
+  },
+  "templates": {
+    "title": "Modèles de profil",
+    "description": "Enregistrez des configurations de profil réutilisables et créez de nouveaux profils à partir d'elles.",
+    "empty": "Aucun modèle pour l'instant. Enregistrez-en un depuis la boîte de dialogue Info d'un profil.",
+    "createBlank": "Créer un modèle vide",
+    "namePlaceholder": "Nom du modèle (ex. « Travail Wayfern »)",
+    "create": "Créer",
+    "created": "Modèle créé",
+    "deleted": "Modèle supprimé",
+    "use": "Utiliser",
+    "deleteAria": "Supprimer le modèle {{name}}",
+    "createdAt": "Créé {{time}}",
+    "confirmDelete": "Supprimer le modèle « {{name}} » ?",
+    "promptName": "Nom du modèle :",
+    "savedAlert": "Modèle « {{name}} » enregistré.",
+    "toasts": {
+      "opened": "Ouverture de Créer un profil avec le modèle « {{name}} »…"
+    },
+    "errors": {
+      "listFailed": "Échec du chargement des modèles : {{error}}",
+      "createFailed": "Échec de la création du modèle : {{error}}",
+      "deleteFailed": "Échec de la suppression du modèle : {{error}}",
+      "applyFailed": "Échec de l'application du modèle : {{error}}"
     }
   }
 }

@@ -185,6 +185,7 @@
       "settings": "Configuración",
       "proxies": "Proxies y VPNs",
       "groups": "Grupos",
+      "templates": "Plantillas de perfil",
       "syncService": "Cuenta",
       "integrations": "Integraciones",
       "importProfile": "Importar Perfil",
@@ -229,6 +230,7 @@
     "actions": {
       "launch": "Iniciar",
       "launchHeadless": "Iniciar sin interfaz",
+      "saveAsTemplate": "Guardar como plantilla",
       "stop": "Detener",
       "edit": "Editar",
       "delete": "Eliminar",
@@ -1862,6 +1864,31 @@
     "toasts": {
       "published": "Profile shared with the team",
       "publishFailed": "Failed to share profile: {{error}}"
+    }
+  },
+  "templates": {
+    "title": "Plantillas de perfil",
+    "description": "Guarda configuraciones reutilizables de perfil y crea nuevos perfiles a partir de ellas.",
+    "empty": "Aún no hay plantillas. Guarda la primera desde el diálogo Info de cualquier perfil.",
+    "createBlank": "Crear una plantilla en blanco",
+    "namePlaceholder": "Nombre de la plantilla (p. ej. «Trabajo Wayfern»)",
+    "create": "Crear",
+    "created": "Plantilla creada",
+    "deleted": "Plantilla eliminada",
+    "use": "Usar",
+    "deleteAria": "Eliminar plantilla {{name}}",
+    "createdAt": "Creada {{time}}",
+    "confirmDelete": "¿Eliminar la plantilla «{{name}}»?",
+    "promptName": "Nombre de la plantilla:",
+    "savedAlert": "Plantilla «{{name}}» guardada.",
+    "toasts": {
+      "opened": "Abriendo Crear Perfil con la plantilla «{{name}}»…"
+    },
+    "errors": {
+      "listFailed": "No se pudieron cargar las plantillas: {{error}}",
+      "createFailed": "No se pudo crear la plantilla: {{error}}",
+      "deleteFailed": "No se pudo eliminar la plantilla: {{error}}",
+      "applyFailed": "No se pudo aplicar la plantilla: {{error}}"
     }
   }
 }

@@ -59,6 +59,7 @@ pub mod events;
 mod mcp_server;
 mod tag_manager;
 mod team_lock;
+mod template_manager;
 mod tray_icon;
 mod version_updater;
 pub mod vpn;
@@ -1981,6 +1982,11 @@ pub fn run() {
       list_browser_profiles,
       launch_browser_profile,
       browser_runner::launch_browser_profile_headless,
+      template_manager::list_profile_templates,
+      template_manager::get_profile_template,
+      template_manager::create_profile_template,
+      template_manager::create_profile_template_from_profile,
+      template_manager::delete_profile_template,
       fetch_browser_versions_with_count,
       fetch_browser_versions_cached_first,
       fetch_browser_versions_with_count_cached_first,

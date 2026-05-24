@@ -5,6 +5,7 @@ import { FiWifi } from "react-icons/fi";
 import { GoGear, GoKebabHorizontal, GoPlus } from "react-icons/go";
 import {
   LuCloud,
+  LuLayoutTemplate,
   LuPlug,
   LuPuzzle,
   LuSearch,
@@ -171,6 +172,7 @@ interface Props {
   onSettingsDialogOpen: (open: boolean) => void;
   onProxyManagementDialogOpen: (open: boolean) => void;
   onGroupManagementDialogOpen: (open: boolean) => void;
+  onTemplateManagementDialogOpen: (open: boolean) => void;
   onImportProfileDialogOpen: (open: boolean) => void;
   onCreateProfileDialogOpen: (open: boolean) => void;
   onSyncConfigDialogOpen: (open: boolean) => void;
@@ -189,6 +191,7 @@ const HomeHeader = ({
   onSettingsDialogOpen,
   onProxyManagementDialogOpen,
   onGroupManagementDialogOpen,
+  onTemplateManagementDialogOpen,
   onImportProfileDialogOpen,
   onCreateProfileDialogOpen,
   onSyncConfigDialogOpen,
@@ -353,6 +356,14 @@ const HomeHeader = ({
               <LuUsers className="mr-2 w-4 h-4" />
               {t("header.menu.groups")}
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                onTemplateManagementDialogOpen(true);
+              }}
+            >
+              <LuLayoutTemplate className="mr-2 w-4 h-4" />
+              {t("header.menu.templates")}
+            </DropdownMenuItem>
             {showExtensions && (
               <DropdownMenuItem
                 onClick={() => {
@@ -398,6 +409,7 @@ const HomeHeader = ({
                   onCreateProfileDialogOpen(true);
                 }}
                 className="flex gap-2 items-center h-[36px]"
+                aria-label={t("header.createProfile")}
               >
                 <GoPlus className="w-4 h-4" />
               </Button>

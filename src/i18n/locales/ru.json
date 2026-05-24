@@ -185,6 +185,7 @@
       "settings": "Настройки",
       "proxies": "Прокси и VPN",
       "groups": "Группы",
+      "templates": "Шаблоны профилей",
       "syncService": "Аккаунт",
       "integrations": "Интеграции",
       "importProfile": "Импорт профиля",
@@ -229,6 +230,7 @@
     "actions": {
       "launch": "Запустить",
       "launchHeadless": "Запустить в headless-режиме",
+      "saveAsTemplate": "Сохранить как шаблон",
       "stop": "Остановить",
       "edit": "Редактировать",
       "delete": "Удалить",
@@ -1862,6 +1864,31 @@
     "toasts": {
       "published": "Profile shared with the team",
       "publishFailed": "Failed to share profile: {{error}}"
+    }
+  },
+  "templates": {
+    "title": "Шаблоны профилей",
+    "description": "Сохраняйте многоразовые конфигурации профиля и создавайте новые профили на их основе.",
+    "empty": "Шаблонов пока нет. Сохраните первый из диалога «Информация» любого профиля.",
+    "createBlank": "Создать пустой шаблон",
+    "namePlaceholder": "Название шаблона (например, «Рабочий Wayfern»)",
+    "create": "Создать",
+    "created": "Шаблон создан",
+    "deleted": "Шаблон удалён",
+    "use": "Использовать",
+    "deleteAria": "Удалить шаблон {{name}}",
+    "createdAt": "Создано {{time}}",
+    "confirmDelete": "Удалить шаблон «{{name}}»?",
+    "promptName": "Название шаблона:",
+    "savedAlert": "Шаблон «{{name}}» сохранён.",
+    "toasts": {
+      "opened": "Открываем «Создать профиль» с шаблоном «{{name}}»…"
+    },
+    "errors": {
+      "listFailed": "Не удалось загрузить шаблоны: {{error}}",
+      "createFailed": "Не удалось создать шаблон: {{error}}",
+      "deleteFailed": "Не удалось удалить шаблон: {{error}}",
+      "applyFailed": "Не удалось применить шаблон: {{error}}"
     }
   }
 }

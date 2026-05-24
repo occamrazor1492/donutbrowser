@@ -185,6 +185,7 @@
       "settings": "設定",
       "proxies": "プロキシ & VPN",
       "groups": "グループ",
+      "templates": "プロファイルテンプレート",
       "syncService": "アカウント",
       "integrations": "統合",
       "importProfile": "プロファイルをインポート",
@@ -229,6 +230,7 @@
     "actions": {
       "launch": "起動",
       "launchHeadless": "ヘッドレスで起動",
+      "saveAsTemplate": "テンプレートとして保存",
       "stop": "停止",
       "edit": "編集",
       "delete": "削除",
@@ -1862,6 +1864,31 @@
     "toasts": {
       "published": "Profile shared with the team",
       "publishFailed": "Failed to share profile: {{error}}"
+    }
+  },
+  "templates": {
+    "title": "プロファイルテンプレート",
+    "description": "再利用可能なプロファイル設定を保存し、そこから新しいプロファイルを作成します。",
+    "empty": "まだテンプレートがありません。プロファイルの情報ダイアログから最初のものを保存してください。",
+    "createBlank": "空のテンプレートを作成",
+    "namePlaceholder": "テンプレート名（例: 「仕事 Wayfern」）",
+    "create": "作成",
+    "created": "テンプレートを作成しました",
+    "deleted": "テンプレートを削除しました",
+    "use": "使用",
+    "deleteAria": "テンプレート {{name}} を削除",
+    "createdAt": "{{time}} 作成",
+    "confirmDelete": "テンプレート「{{name}}」を削除しますか？",
+    "promptName": "テンプレート名:",
+    "savedAlert": "テンプレート「{{name}}」を保存しました。",
+    "toasts": {
+      "opened": "テンプレート「{{name}}」でプロファイル作成を開きます…"
+    },
+    "errors": {
+      "listFailed": "テンプレートの読み込みに失敗しました: {{error}}",
+      "createFailed": "テンプレートの作成に失敗しました: {{error}}",
+      "deleteFailed": "テンプレートの削除に失敗しました: {{error}}",
+      "applyFailed": "テンプレートの適用に失敗しました: {{error}}"
     }
   }
 }
