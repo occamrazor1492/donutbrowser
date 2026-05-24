@@ -1,5 +1,7 @@
 # donut-sync
 
+Languages: [English](./README.md) | [中文](./README.zh.md)
+
 Self-hosted team sync server for [Donut Browser (internal-use fork)](../README.md).
 
 `donut-sync` is a NestJS API backed by **Postgres** (users, teams, profile metadata, permissions, locks, audit log) and **S3-compatible object storage** (profile bundles, BotBrowser `.enc` templates, extensions, tombstones — MinIO bundled by default). The desktop app authenticates with JWT and round-trips big blobs via presigned URLs straight to the object store.

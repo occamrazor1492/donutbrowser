@@ -1,5 +1,7 @@
 # Self-hosting `donut-sync`
 
+Languages: [English](./self-hosting-donut-sync.md) | [中文](./self-hosting-donut-sync.zh.md)
+
 `donut-sync` is the team-aware sync server that backs this internal-use fork. It stores user accounts, team profile metadata, permissions, profile locks, and audit logs in **Postgres**, and profile bundles + extensions + BotBrowser `.enc` templates in **S3-compatible object storage** (MinIO bundled by default).
 
 This guide covers self-hosting it with Docker Compose. For a production VPS / 宝塔 / Caddy walkthrough with HTTPS, also read [team-deployment-guide.md](./team-deployment-guide.md) (and its [中文版](./team-deployment-guide.zh.md)).

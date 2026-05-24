@@ -1,5 +1,7 @@
 # Technical architecture
 
+Languages: [English](./architecture.md) | [中文](./architecture.zh.md)
+
 How this fork actually works under the hood — what runs where, what the data shapes are, what's different from upstream, and where each subsystem lives in the source tree.
 
 If you want a higher-level "what's different from upstream" summary, see [README.md § What's different from upstream](../README.md#whats-different-from-upstream). This doc is the deeper drilldown.

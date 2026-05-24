@@ -17,6 +17,8 @@
 
 ---
 
+Languages: [English](./README.md) | [中文](./README.zh.md)
+
 This is an **internal-use fork** of [zhom/donutbrowser](https://github.com/zhom/donutbrowser) maintained for self-hosted team deployments. It strips every cloud-subscription touchpoint from the upstream build — no commercial trial modal, no cloud control plane, no Pro feature gates — and replaces them with a single self-hosted `donut-sync` server that you run yourself.
 
 If you want the upstream commercial product (paid cloud sync, location proxies, BotBrowser fingerprint tokens), use [zhom/donutbrowser](https://github.com/zhom/donutbrowser) directly. This fork is for teams that prefer to own their own infrastructure end-to-end.
