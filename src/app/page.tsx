@@ -50,6 +50,7 @@ import { useGroupEvents } from "@/hooks/use-group-events";
 import type { PermissionType } from "@/hooks/use-permissions";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useProfileEvents } from "@/hooks/use-profile-events";
+import { useProfileHealth } from "@/hooks/use-profile-health";
 import { useProxyEvents } from "@/hooks/use-proxy-events";
 import { useSyncSessions } from "@/hooks/use-sync-session";
 import { useUpdateNotifications } from "@/hooks/use-update-notifications";
@@ -106,6 +107,27 @@ export default function Home() {
   } = useProxyEvents();
 
   const { vpnConfigs } = useVpnEvents();
+
+  // Cheap per-profile health scorer (no IO). Refreshed each time the
+  // profile list changes so a follow-up commit can render the scores as
+  // table badges; for now we just keep the hook live so the Tauri
+  // command stays exercised and any low-score profiles surface via the
+  // browser console for power users.
+  const { byProfileId: profileHealth } = useProfileHealth({
+    invalidateKey: profiles.length,
+  });
+  useEffect(() => {
+    if (profileHealth.size === 0) return;
+    const flagged = Array.from(profileHealth.values()).filter(
+      (r) => r.score < 100,
+    );
+    if (flagged.length > 0) {
+      console.debug(
+        `[health] ${flagged.length} profile(s) below 100:`,
+        flagged.map((r) => ({ id: r.profile_id, score: r.score })),
+      );
+    }
+  }, [profileHealth]);
 
   // Synchronizer sessions
   const { getProfileSyncInfo } = useSyncSessions();

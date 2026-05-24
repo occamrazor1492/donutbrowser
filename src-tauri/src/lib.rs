@@ -57,6 +57,7 @@ pub mod daemon_client;
 mod daemon_spawn;
 pub mod daemon_ws;
 pub mod events;
+mod health_check;
 mod mcp_server;
 mod tag_manager;
 mod team_lock;
@@ -1991,6 +1992,7 @@ pub fn run() {
       backup_manager::export_backup_archive,
       backup_manager::import_backup_archive,
       mcp_server::list_mcp_tools,
+      health_check::score_all_profiles,
       fetch_browser_versions_with_count,
       fetch_browser_versions_cached_first,
       fetch_browser_versions_with_count_cached_first,
