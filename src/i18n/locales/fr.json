@@ -767,6 +767,16 @@
       "copyToken": "Copier le jeton",
       "regenerateToken": "Régénérer le jeton"
     },
+    "tabWebhooks": "Webhooks",
+    "webhook": {
+      "urlLabel": "URL du webhook sortant",
+      "description": "Envoie un POST JSON à cette URL au lancement/arrêt d'un profil ou en cas d'échec de sync. Sans nouvelle tentative. Laissez vide pour désactiver.",
+      "activeAt": "Actif : {{url}}",
+      "eventsTitle": "Événements envoyés",
+      "saved": "URL du webhook enregistrée",
+      "cleared": "Webhook désactivé",
+      "invalidUrl": "L'URL doit commencer par http:// ou https://"
+    },
     "mcp": {
       "title": "Serveur MCP",
       "description": "Activez le serveur MCP (Model Context Protocol) pour les intégrations avec les assistants IA.",

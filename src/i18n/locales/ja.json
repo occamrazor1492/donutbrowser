@@ -767,6 +767,16 @@
       "copyToken": "トークンをコピー",
       "regenerateToken": "トークンを再生成"
     },
+    "tabWebhooks": "Webhook",
+    "webhook": {
+      "urlLabel": "送信先 Webhook URL",
+      "description": "プロファイルの起動・停止・同期失敗時にこの URL へ JSON を POST します。リトライなし。空欄で無効化。",
+      "activeAt": "有効: {{url}}",
+      "eventsTitle": "送信されるイベント名",
+      "saved": "Webhook URL を保存しました",
+      "cleared": "Webhook を無効化しました",
+      "invalidUrl": "URL は http:// または https:// で始まる必要があります"
+    },
     "mcp": {
       "title": "MCPサーバー",
       "description": "AIアシスタント統合用のMCP（モデルコンテキストプロトコル）サーバーを有効にします。",

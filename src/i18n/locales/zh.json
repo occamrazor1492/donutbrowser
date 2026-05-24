@@ -767,6 +767,16 @@
       "copyToken": "复制令牌",
       "regenerateToken": "重新生成令牌"
     },
+    "tabWebhooks": "Webhook",
+    "webhook": {
+      "urlLabel": "出站 Webhook URL",
+      "description": "在配置文件启动/停止或同步失败时向此 URL 发送 JSON POST。不重试。留空可禁用。",
+      "activeAt": "已启用: {{url}}",
+      "eventsTitle": "发送的事件名称",
+      "saved": "Webhook URL 已保存",
+      "cleared": "Webhook 已禁用",
+      "invalidUrl": "URL 必须以 http:// 或 https:// 开头"
+    },
     "mcp": {
       "title": "MCP 服务器",
       "description": "启用 MCP（模型上下文协议）服务器以与 AI 助手集成。",

@@ -767,6 +767,16 @@
       "copyToken": "Copy Token",
       "regenerateToken": "Regenerate Token"
     },
+    "tabWebhooks": "Webhooks",
+    "webhook": {
+      "urlLabel": "Outbound webhook URL",
+      "description": "POSTs a JSON payload to this URL when a profile is launched / stopped or a sync fails. Fire-and-forget — no retries. Leave empty to disable.",
+      "activeAt": "Active: {{url}}",
+      "eventsTitle": "Event names sent",
+      "saved": "Webhook URL saved",
+      "cleared": "Webhook disabled",
+      "invalidUrl": "URL must start with http:// or https://"
+    },
     "mcp": {
       "title": "MCP Server",
       "description": "Enable the MCP (Model Context Protocol) server for AI assistant integrations.",

@@ -67,6 +67,7 @@ mod version_updater;
 pub mod vpn;
 pub mod vpn_worker_runner;
 pub mod vpn_worker_storage;
+mod webhook_dispatcher;
 
 use browser_runner::{
   check_browser_exists, kill_browser_profile, launch_browser_profile, open_url_with_profile,
@@ -1993,6 +1994,8 @@ pub fn run() {
       backup_manager::import_backup_archive,
       mcp_server::list_mcp_tools,
       health_check::score_all_profiles,
+      webhook_dispatcher::set_webhook_url,
+      webhook_dispatcher::get_webhook_url,
       fetch_browser_versions_with_count,
       fetch_browser_versions_cached_first,
       fetch_browser_versions_with_count_cached_first,

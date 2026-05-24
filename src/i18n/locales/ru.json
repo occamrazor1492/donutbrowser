@@ -767,6 +767,16 @@
       "copyToken": "Копировать токен",
       "regenerateToken": "Перегенерировать токен"
     },
+    "tabWebhooks": "Webhook-и",
+    "webhook": {
+      "urlLabel": "URL исходящего webhook",
+      "description": "Отправляет JSON POST на этот URL при запуске/остановке профиля или сбое синхронизации. Без повторных попыток. Оставьте пустым, чтобы отключить.",
+      "activeAt": "Активен: {{url}}",
+      "eventsTitle": "Отправляемые события",
+      "saved": "URL webhook сохранён",
+      "cleared": "Webhook отключён",
+      "invalidUrl": "URL должен начинаться с http:// или https://"
+    },
     "mcp": {
       "title": "MCP сервер",
       "description": "Включите MCP (Model Context Protocol) сервер для интеграции с AI-ассистентами.",

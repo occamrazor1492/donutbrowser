@@ -2680,6 +2680,15 @@ pub async fn launch_browser_profile(
     let _ = PROXY_MANAGER.update_proxy_pid(1u32, actual_pid);
   }
 
+  // Fire outbound webhook for "profile launched" — fire-and-forget so a
+  // slow user webhook never blocks the user from working in the browser.
+  crate::webhook_dispatcher::dispatch(
+    crate::webhook_dispatcher::WebhookEvent::ProfileLaunched,
+    &updated_profile.id.to_string(),
+    &updated_profile.name,
+    None,
+  );
+
   Ok(updated_profile)
 }
 
@@ -2714,6 +2723,16 @@ pub async fn kill_browser_profile(
         "Successfully killed browser profile: {} (ID: {})",
         profile.name,
         profile.id
+      );
+
+      // Fire outbound webhook so external systems (CRMs, monitoring,
+      // automation pipelines) get a "profile stopped" notification
+      // without polling. No-op if the user hasn't configured a URL.
+      crate::webhook_dispatcher::dispatch(
+        crate::webhook_dispatcher::WebhookEvent::ProfileStopped,
+        &profile.id.to_string(),
+        &profile.name,
+        None,
       );
 
       // Release team lock if applicable

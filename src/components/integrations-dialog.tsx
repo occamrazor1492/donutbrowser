@@ -58,6 +58,8 @@ export function IntegrationsDialog({
   const [showApiToken, setShowApiToken] = useState(false);
   const [showMcpToken, setShowMcpToken] = useState(false);
   const [mcpToolsDialogOpen, setMcpToolsDialogOpen] = useState(false);
+  const [webhookUrlInput, setWebhookUrlInput] = useState("");
+  const [webhookUrlSaved, setWebhookUrlSaved] = useState<string | null>(null);
   const [isApiStarting, setIsApiStarting] = useState(false);
   const [isMcpStarting, setIsMcpStarting] = useState(false);
   const [mcpInClaudeDesktop, setMcpInClaudeDesktop] = useState(false);
@@ -119,6 +121,37 @@ export function IntegrationsDialog({
     }
   }, []);
 
+  const loadWebhookUrl = useCallback(async () => {
+    try {
+      const url = await invoke<string | null>("get_webhook_url");
+      setWebhookUrlSaved(url);
+      setWebhookUrlInput(url ?? "");
+    } catch (e) {
+      console.error("Failed to load webhook URL:", e);
+    }
+  }, []);
+
+  const handleSaveWebhookUrl = useCallback(async () => {
+    try {
+      const trimmed = webhookUrlInput.trim();
+      const stored = await invoke<string | null>("set_webhook_url", {
+        url: trimmed.length > 0 ? trimmed : null,
+      });
+      setWebhookUrlSaved(stored);
+      if (stored == null && trimmed.length > 0) {
+        showErrorToast(t("integrations.webhook.invalidUrl"));
+      } else if (stored != null) {
+        showSuccessToast(t("integrations.webhook.saved"));
+      } else {
+        showSuccessToast(t("integrations.webhook.cleared"));
+      }
+    } catch (e) {
+      showErrorToast(
+        e instanceof Error ? e.message : t("integrations.apiUnknownError"),
+      );
+    }
+  }, [webhookUrlInput, t]);
+
   useEffect(() => {
     if (isOpen) {
       void loadSettings();
@@ -127,6 +160,7 @@ export function IntegrationsDialog({
       void loadMcpServerStatus();
       void loadClaudeDesktopStatus();
       void loadClaudeCodeStatus();
+      void loadWebhookUrl();
     }
   }, [
     isOpen,
@@ -136,6 +170,7 @@ export function IntegrationsDialog({
     loadMcpServerStatus,
     loadClaudeDesktopStatus,
     loadClaudeCodeStatus,
+    loadWebhookUrl,
   ]);
 
   const handleApiToggle = async (enabled: boolean) => {
@@ -216,10 +251,58 @@ export function IntegrationsDialog({
 
         <div className="overflow-y-auto flex-1 min-h-0">
           <Tabs defaultValue="api" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="api">{t("integrations.tabApi")}</TabsTrigger>
               <TabsTrigger value="mcp">{t("integrations.tabMcp")}</TabsTrigger>
+              <TabsTrigger value="webhooks">
+                {t("integrations.tabWebhooks")}
+              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="webhooks" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="webhook-url" className="text-sm font-medium">
+                  {t("integrations.webhook.urlLabel")}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("integrations.webhook.description")}
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    id="webhook-url"
+                    type="url"
+                    placeholder="https://example.com/webhook"
+                    value={webhookUrlInput}
+                    onChange={(e) => setWebhookUrlInput(e.target.value)}
+                    className="font-mono text-xs"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void handleSaveWebhookUrl()}
+                  >
+                    {t("common.buttons.save")}
+                  </Button>
+                </div>
+                {webhookUrlSaved && (
+                  <p className="text-xs text-success">
+                    {t("integrations.webhook.activeAt", {
+                      url: webhookUrlSaved,
+                    })}
+                  </p>
+                )}
+                <details className="text-xs text-muted-foreground">
+                  <summary className="cursor-pointer">
+                    {t("integrations.webhook.eventsTitle")}
+                  </summary>
+                  <ul className="mt-2 list-disc list-inside space-y-1 font-mono">
+                    <li>profile.launched</li>
+                    <li>profile.stopped</li>
+                    <li>profile.sync_failed</li>
+                  </ul>
+                </details>
+              </div>
+            </TabsContent>
 
             <TabsContent value="api" className="space-y-4 mt-4">
               <div className="flex items-center space-x-2">

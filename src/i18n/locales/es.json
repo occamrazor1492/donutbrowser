@@ -767,6 +767,16 @@
       "copyToken": "Copiar Token",
       "regenerateToken": "Regenerar Token"
     },
+    "tabWebhooks": "Webhooks",
+    "webhook": {
+      "urlLabel": "URL del webhook saliente",
+      "description": "Envía un JSON por POST a esta URL cuando se inicia/detiene un perfil o falla una sincronización. Sin reintentos. Deja vacío para desactivar.",
+      "activeAt": "Activo: {{url}}",
+      "eventsTitle": "Eventos enviados",
+      "saved": "URL del webhook guardada",
+      "cleared": "Webhook desactivado",
+      "invalidUrl": "La URL debe empezar por http:// o https://"
+    },
     "mcp": {
       "title": "Servidor MCP",
       "description": "Habilita el servidor MCP (Protocolo de Contexto de Modelo) para integraciones con asistentes de IA.",
