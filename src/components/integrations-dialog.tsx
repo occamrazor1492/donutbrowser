@@ -54,7 +54,13 @@ export function IntegrationsDialog({
   });
   const [apiServerPort, setApiServerPort] = useState<number | null>(null);
   const [mcpConfig, setMcpConfig] = useState<McpConfig | null>(null);
-  const [, setMcpRunning] = useState(false);
+  // `mcpServerPort` mirrors `apiServerPort` — both come from a
+  // `get_<x>_server_status` Tauri command that returns `Option<u16>`
+  // (null when the server isn't running). The dialog only uses these
+  // to gate the "running on port X" copy and the start/stop button
+  // state; the canonical "should this server be on?" preference lives
+  // in `settings.mcp_enabled` / `settings.api_server_enabled`.
+  const [mcpServerPort, setMcpServerPort] = useState<number | null>(null);
   const [showApiToken, setShowApiToken] = useState(false);
   const [showMcpToken, setShowMcpToken] = useState(false);
   const [mcpToolsDialogOpen, setMcpToolsDialogOpen] = useState(false);
@@ -87,8 +93,8 @@ export function IntegrationsDialog({
 
   const loadMcpServerStatus = useCallback(async () => {
     try {
-      const isRunning = await invoke<boolean>("get_mcp_server_status");
-      setMcpRunning(isRunning);
+      const port = await invoke<number | null>("get_mcp_server_status");
+      setMcpServerPort(port);
     } catch (e) {
       console.error("Failed to get MCP server status:", e);
     }
@@ -215,6 +221,7 @@ export function IntegrationsDialog({
           settings: { ...settings, mcp_enabled: true, mcp_port: port },
         });
         setSettings(next);
+        setMcpServerPort(port);
         void loadMcpConfig();
         showSuccessToast(t("integrations.mcpStarted", { port }));
       } else {
@@ -224,6 +231,7 @@ export function IntegrationsDialog({
         });
         setSettings(next);
         setMcpConfig(null);
+        setMcpServerPort(null);
         showSuccessToast(t("integrations.mcpStopped"));
       }
     } catch (e) {
@@ -475,6 +483,13 @@ export function IntegrationsDialog({
                     {!termsAccepted && (
                       <span className="ml-1 text-warning">
                         {t("integrations.mcpAcceptTermsFirst")}
+                      </span>
+                    )}
+                    {mcpServerPort !== null && (
+                      <span className="ml-1">
+                        {t("integrations.mcpRunningOnPort", {
+                          port: mcpServerPort,
+                        })}
                       </span>
                     )}
                   </p>

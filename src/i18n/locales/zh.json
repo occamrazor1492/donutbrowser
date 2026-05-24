@@ -832,6 +832,7 @@
     "tokenCopied": "令牌已复制",
     "mcpEnableLabel": "启用 MCP 服务器 (Model Context Protocol)",
     "mcpEnableDescription": "允许 Claude Desktop 等 AI 助手控制浏览器。",
+    "mcpRunningOnPort": "（运行在端口 {{port}}）",
     "mcpAcceptTermsFirst": "(请先在设置中接受 Wayfern 条款)",
     "mcpStarted": "MCP 服务器已在端口 {{port}} 上启动",
     "mcpStopped": "MCP 服务器已停止",

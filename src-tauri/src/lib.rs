@@ -421,9 +421,22 @@ async fn stop_mcp_server() -> Result<(), String> {
   mcp_server::McpServer::instance().stop().await
 }
 
+/// Returns the bound port if the MCP server is running, else `None`.
+///
+/// Symmetric with `get_api_server_status` (also `Option<u16>`) so the
+/// frontend can treat both servers the same way: a single state slot,
+/// `Some(port)` ↔ "running", `None` ↔ "stopped". Pre-symmetry the MCP
+/// status command returned a bare `bool`, which forced callers that
+/// wanted both pieces of info to make a second `start_mcp_server`-
+/// derived call to learn the port.
 #[tauri::command]
-fn get_mcp_server_status() -> bool {
-  mcp_server::McpServer::instance().is_running()
+fn get_mcp_server_status() -> Option<u16> {
+  let server = mcp_server::McpServer::instance();
+  if server.is_running() {
+    server.get_port()
+  } else {
+    None
+  }
 }
 
 #[derive(serde::Serialize)]

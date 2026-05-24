@@ -832,6 +832,7 @@
     "tokenCopied": "Токен скопирован",
     "mcpEnableLabel": "Включить MCP сервер (Model Context Protocol)",
     "mcpEnableDescription": "Позволяет ИИ-ассистентам, таким как Claude Desktop, управлять браузерами.",
+    "mcpRunningOnPort": "(работает на порту {{port}})",
     "mcpAcceptTermsFirst": "(Сначала примите условия Wayfern в Настройках)",
     "mcpStarted": "MCP сервер запущен на порту {{port}}",
     "mcpStopped": "MCP сервер остановлен",

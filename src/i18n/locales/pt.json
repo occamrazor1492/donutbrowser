@@ -832,6 +832,7 @@
     "tokenCopied": "Token copiado",
     "mcpEnableLabel": "Ativar servidor MCP (Model Context Protocol)",
     "mcpEnableDescription": "Permite que assistentes de IA como o Claude Desktop controlem navegadores.",
+    "mcpRunningOnPort": "(executando na porta {{port}})",
     "mcpAcceptTermsFirst": "(Aceite primeiro os termos da Wayfern nas Configurações)",
     "mcpStarted": "Servidor MCP iniciado na porta {{port}}",
     "mcpStopped": "Servidor MCP parado",
