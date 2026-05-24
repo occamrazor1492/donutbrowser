@@ -2075,7 +2075,15 @@ impl BrowserRunner {
       let system = System::new_all();
       if let Some(process) = system.process(sysinfo::Pid::from(pid as usize)) {
         let cmd = process.cmd();
-        let exe_name = process.name().to_string_lossy();
+        // Lowercase before handing to is_correct_browser_process — the
+        // detection logic uses `contains("chrome")` / `contains("firefox")`
+        // style substring checks, and on macOS the literal process name is
+        // "Google Chrome", which would never match the lowercase needle.
+        // The slower fallback path (find_browser_process_by_profile) was
+        // already lowercasing; keep both code paths consistent so the
+        // fast-path PID-known case actually fires when the OS reports a
+        // proper-cased name.
+        let exe_name = process.name().to_string_lossy().to_lowercase();
 
         let is_correct_browser = is_correct_browser_process(&profile.browser, &exe_name, cmd);
 
@@ -2950,22 +2958,6 @@ mod tests {
     assert!(is_correct_browser_process("chromium", "chrome", &[]));
     assert!(is_correct_browser_process("chromium", "google chrome", &[]));
     assert!(!is_correct_browser_process("chromium", "firefox", &[]));
-  }
-
-  #[test]
-  #[ignore = "BUG: kill_browser_process passes exe_name without lowercasing, so capitalized \
-              process names like 'Google Chrome' (macOS) fail the chromium match. \
-              find_browser_process_by_profile does .to_lowercase() and works. The kill path \
-              should match. File: src/browser_runner.rs ~line 1991. Fix by lowercasing exe_name \
-              before passing to is_correct_browser_process in the kill path."]
-  fn is_correct_browser_chromium_accepts_capitalized_chrome() {
-    // This is the case macOS reports on a real install: the binary name is
-    // literally "Google Chrome". The current production logic in the kill
-    // path does not lowercase, so the chromium check fails to match and the
-    // kill path falls through to find_browser_process_by_profile — which
-    // does lowercase and DOES match. Net effect: kill still works but goes
-    // down a slower fallback path. Worth fixing for correctness.
-    assert!(is_correct_browser_process("chromium", "Google Chrome", &[]));
   }
 
   #[test]
