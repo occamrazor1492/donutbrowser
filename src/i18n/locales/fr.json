@@ -197,6 +197,7 @@
       "groups": "Groupes",
       "templates": "Modèles de profil",
       "compareProfiles": "Comparer les profils",
+      "scheduledTasks": "Tâches planifiées",
       "syncService": "Compte",
       "integrations": "Intégrations",
       "importProfile": "Importer un profil",
@@ -1936,6 +1937,35 @@
     "identical": "Ces deux profils ont une configuration identique.",
     "field": "Champ",
     "diffCount": "{{count}} champs différents"
+  },
+  "scheduledTasks": {
+    "title": "Tâches planifiées",
+    "description": "Actions récurrentes en arrière-plan. L'intervalle est en minutes (max 7 jours). Désactivez pour mettre en pause sans supprimer.",
+    "createNew": "Créer une tâche",
+    "name": "Nom",
+    "namePlaceholder": "ex. sync nocturne",
+    "profile": "Profil",
+    "pickProfile": "Choisir un profil",
+    "action": "Action",
+    "intervalMinutes": "Intervalle (minutes)",
+    "create": "Créer la tâche",
+    "created": "Tâche créée",
+    "empty": "Aucune tâche planifiée pour l'instant.",
+    "everyN": "toutes les {{minutes}} min",
+    "lastRun": "dernière exécution {{time}}",
+    "confirmDelete": "Supprimer cette tâche planifiée ?",
+    "deleteAria": "Supprimer la tâche",
+    "actions": {
+      "syncProfile": "Synchroniser le profil",
+      "launchProfile": "Lancer le profil",
+      "snapshotCookies": "Capturer les cookies"
+    },
+    "errors": {
+      "listFailed": "Échec du chargement des tâches : {{error}}",
+      "createFailed": "Échec de la création : {{error}}",
+      "deleteFailed": "Échec de la suppression : {{error}}",
+      "toggleFailed": "Échec du basculement : {{error}}"
+    }
   },
   "cookieSnapshots": {
     "takeNow": "Capturer les cookies maintenant",

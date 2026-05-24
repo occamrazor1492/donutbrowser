@@ -197,6 +197,7 @@
       "groups": "分组",
       "templates": "配置文件模板",
       "compareProfiles": "对比配置文件",
+      "scheduledTasks": "计划任务",
       "syncService": "账户",
       "integrations": "集成",
       "importProfile": "导入配置文件",
@@ -1936,6 +1937,35 @@
     "identical": "这两个配置文件配置完全相同。",
     "field": "字段",
     "diffCount": "{{count}} 个不同字段"
+  },
+  "scheduledTasks": {
+    "title": "计划任务",
+    "description": "后台周期执行的动作。间隔以分钟为单位（最长 7 天）。禁用可暂停而不删除。",
+    "createNew": "创建任务",
+    "name": "名称",
+    "namePlaceholder": "例如：夜间同步",
+    "profile": "配置文件",
+    "pickProfile": "选择配置文件",
+    "action": "动作",
+    "intervalMinutes": "间隔（分钟）",
+    "create": "创建任务",
+    "created": "任务已创建",
+    "empty": "尚无计划任务。",
+    "everyN": "每 {{minutes}} 分钟",
+    "lastRun": "上次执行 {{time}}",
+    "confirmDelete": "删除此计划任务？",
+    "deleteAria": "删除任务",
+    "actions": {
+      "syncProfile": "同步配置文件",
+      "launchProfile": "启动配置文件",
+      "snapshotCookies": "Cookie 快照"
+    },
+    "errors": {
+      "listFailed": "加载任务失败: {{error}}",
+      "createFailed": "创建任务失败: {{error}}",
+      "deleteFailed": "删除任务失败: {{error}}",
+      "toggleFailed": "切换任务状态失败: {{error}}"
+    }
   },
   "cookieSnapshots": {
     "takeNow": "立即拍 Cookie 快照",

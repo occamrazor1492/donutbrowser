@@ -4,6 +4,7 @@ import { FaDownload } from "react-icons/fa";
 import { FiWifi } from "react-icons/fi";
 import { GoGear, GoKebabHorizontal, GoPlus } from "react-icons/go";
 import {
+  LuCalendarClock,
   LuCloud,
   LuLayoutTemplate,
   LuPlug,
@@ -175,6 +176,7 @@ interface Props {
   onGroupManagementDialogOpen: (open: boolean) => void;
   onTemplateManagementDialogOpen: (open: boolean) => void;
   onCompareProfilesDialogOpen: (open: boolean) => void;
+  onScheduledTasksDialogOpen: (open: boolean) => void;
   onImportProfileDialogOpen: (open: boolean) => void;
   onCreateProfileDialogOpen: (open: boolean) => void;
   onSyncConfigDialogOpen: (open: boolean) => void;
@@ -195,6 +197,7 @@ const HomeHeader = ({
   onGroupManagementDialogOpen,
   onTemplateManagementDialogOpen,
   onCompareProfilesDialogOpen,
+  onScheduledTasksDialogOpen,
   onImportProfileDialogOpen,
   onCreateProfileDialogOpen,
   onSyncConfigDialogOpen,
@@ -374,6 +377,14 @@ const HomeHeader = ({
             >
               <LuScale className="mr-2 w-4 h-4" />
               {t("header.menu.compareProfiles")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                onScheduledTasksDialogOpen(true);
+              }}
+            >
+              <LuCalendarClock className="mr-2 w-4 h-4" />
+              {t("header.menu.scheduledTasks")}
             </DropdownMenuItem>
             {showExtensions && (
               <DropdownMenuItem

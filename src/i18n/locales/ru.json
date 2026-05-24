@@ -197,6 +197,7 @@
       "groups": "Группы",
       "templates": "Шаблоны профилей",
       "compareProfiles": "Сравнить профили",
+      "scheduledTasks": "Запланированные задачи",
       "syncService": "Аккаунт",
       "integrations": "Интеграции",
       "importProfile": "Импорт профиля",
@@ -1936,6 +1937,35 @@
     "identical": "Эти два профиля имеют одинаковую конфигурацию.",
     "field": "Поле",
     "diffCount": "{{count}} различных полей"
+  },
+  "scheduledTasks": {
+    "title": "Запланированные задачи",
+    "description": "Повторяющиеся фоновые действия. Интервал в минутах (макс. 7 дней). Отключите, чтобы приостановить без удаления.",
+    "createNew": "Создать задачу",
+    "name": "Имя",
+    "namePlaceholder": "напр. ночная синхронизация",
+    "profile": "Профиль",
+    "pickProfile": "Выберите профиль",
+    "action": "Действие",
+    "intervalMinutes": "Интервал (минут)",
+    "create": "Создать задачу",
+    "created": "Задача создана",
+    "empty": "Запланированных задач пока нет.",
+    "everyN": "каждые {{minutes}} мин",
+    "lastRun": "последний запуск {{time}}",
+    "confirmDelete": "Удалить эту запланированную задачу?",
+    "deleteAria": "Удалить задачу",
+    "actions": {
+      "syncProfile": "Синхронизировать профиль",
+      "launchProfile": "Запустить профиль",
+      "snapshotCookies": "Снимок cookies"
+    },
+    "errors": {
+      "listFailed": "Не удалось загрузить задачи: {{error}}",
+      "createFailed": "Не удалось создать задачу: {{error}}",
+      "deleteFailed": "Не удалось удалить задачу: {{error}}",
+      "toggleFailed": "Не удалось переключить задачу: {{error}}"
+    }
   },
   "cookieSnapshots": {
     "takeNow": "Сделать снимок cookies сейчас",

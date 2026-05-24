@@ -1944,6 +1944,48 @@
     "confirmDelete": "Delete saved view \"{{name}}\"?",
     "deleteAria": "Delete view {{name}}"
   },
+  "scheduledTasks": {
+    "title": "Scheduled tasks",
+    "description": "Recurring background actions. Interval is minutes (max 7 days). Disable to pause without deleting.",
+    "createNew": "Create a task",
+    "name": "Name",
+    "namePlaceholder": "e.g. nightly sync",
+    "profile": "Profile",
+    "pickProfile": "Pick a profile",
+    "action": "Action",
+    "intervalMinutes": "Interval (minutes)",
+    "create": "Create task",
+    "created": "Task created",
+    "empty": "No scheduled tasks yet.",
+    "everyN": "every {{minutes}} min",
+    "lastRun": "last run {{time}}",
+    "confirmDelete": "Delete this scheduled task?",
+    "deleteAria": "Delete task",
+    "actions": {
+      "syncProfile": "Sync profile",
+      "launchProfile": "Launch profile",
+      "snapshotCookies": "Snapshot cookies"
+    },
+    "errors": {
+      "listFailed": "Failed to load tasks: {{error}}",
+      "createFailed": "Failed to create task: {{error}}",
+      "deleteFailed": "Failed to delete task: {{error}}",
+      "toggleFailed": "Failed to toggle task: {{error}}"
+    }
+  },
+  "cookieSnapshots": {
+    "takeNow": "Snapshot cookies now",
+    "manage": "Manage cookie snapshots",
+    "promptLabel": "Snapshot label (e.g. 'after login'):",
+    "takeSuccess": "Cookie snapshot saved.",
+    "takeFailed": "Failed to take snapshot: {{error}}",
+    "none": "No cookie snapshots saved for this profile yet.",
+    "pickPrompt": "Enter the number of the snapshot to act on:",
+    "actionPrompt": "Type 'restore' to roll back to \"{{label}}\" or 'delete' to remove it:",
+    "restoreSuccess": "Cookies restored. The next browser launch will use the snapshot.",
+    "deleteSuccess": "Cookie snapshot deleted.",
+    "manageFailed": "Snapshot operation failed: {{error}}"
+  },
   "mcpTools": {
     "title": "MCP Tools Reference",
     "description": "Every tool the MCP server exposes ({{count}} total). Click a tool to inspect its JSON Schema.",

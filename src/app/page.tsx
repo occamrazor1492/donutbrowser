@@ -30,6 +30,7 @@ import { ProfileSyncDialog } from "@/components/profile-sync-dialog";
 import { ProxyAssignmentDialog } from "@/components/proxy-assignment-dialog";
 import { ProxyManagementDialog } from "@/components/proxy-management-dialog";
 import { SavedViewsBar } from "@/components/saved-views-bar";
+import { ScheduledTasksDialog } from "@/components/scheduled-tasks-dialog";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { ShareProfileDialog } from "@/components/share-profile-dialog";
 import { SyncAllDialog } from "@/components/sync-all-dialog";
@@ -207,6 +208,8 @@ export default function Home() {
   const [templateManagementDialogOpen, setTemplateManagementDialogOpen] =
     useState(false);
   const [compareProfilesDialogOpen, setCompareProfilesDialogOpen] =
+    useState(false);
+  const [scheduledTasksDialogOpen, setScheduledTasksDialogOpen] =
     useState(false);
   const [extensionManagementDialogOpen, setExtensionManagementDialogOpen] =
     useState(false);
@@ -1293,6 +1296,7 @@ export default function Home() {
             onGroupManagementDialogOpen={setGroupManagementDialogOpen}
             onTemplateManagementDialogOpen={setTemplateManagementDialogOpen}
             onCompareProfilesDialogOpen={setCompareProfilesDialogOpen}
+            onScheduledTasksDialogOpen={setScheduledTasksDialogOpen}
             onImportProfileDialogOpen={setImportProfileDialogOpen}
             onProxyManagementDialogOpen={setProxyManagementDialogOpen}
             onSettingsDialogOpen={setSettingsDialogOpen}
@@ -1522,6 +1526,12 @@ export default function Home() {
       <ProfileCompareDialog
         isOpen={compareProfilesDialogOpen}
         onClose={() => setCompareProfilesDialogOpen(false)}
+        profiles={profiles}
+      />
+
+      <ScheduledTasksDialog
+        isOpen={scheduledTasksDialogOpen}
+        onClose={() => setScheduledTasksDialogOpen(false)}
         profiles={profiles}
       />
 

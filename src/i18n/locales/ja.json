@@ -197,6 +197,7 @@
       "groups": "グループ",
       "templates": "プロファイルテンプレート",
       "compareProfiles": "プロファイルを比較",
+      "scheduledTasks": "スケジュールされたタスク",
       "syncService": "アカウント",
       "integrations": "統合",
       "importProfile": "プロファイルをインポート",
@@ -1936,6 +1937,35 @@
     "identical": "この2つのプロファイルの設定は同一です。",
     "field": "フィールド",
     "diffCount": "{{count}} 個の異なるフィールド"
+  },
+  "scheduledTasks": {
+    "title": "スケジュールされたタスク",
+    "description": "バックグラウンドで繰り返し実行されるアクション。間隔は分単位（最大7日）。無効化すると一時停止できます。",
+    "createNew": "タスクを作成",
+    "name": "名前",
+    "namePlaceholder": "例: 夜間同期",
+    "profile": "プロファイル",
+    "pickProfile": "プロファイルを選択",
+    "action": "アクション",
+    "intervalMinutes": "間隔（分）",
+    "create": "タスクを作成",
+    "created": "タスクを作成しました",
+    "empty": "スケジュールされたタスクはまだありません。",
+    "everyN": "{{minutes}} 分ごと",
+    "lastRun": "最終実行 {{time}}",
+    "confirmDelete": "このスケジュールタスクを削除しますか？",
+    "deleteAria": "タスクを削除",
+    "actions": {
+      "syncProfile": "プロファイルを同期",
+      "launchProfile": "プロファイルを起動",
+      "snapshotCookies": "Cookie をスナップショット"
+    },
+    "errors": {
+      "listFailed": "タスクの読み込みに失敗: {{error}}",
+      "createFailed": "タスクの作成に失敗: {{error}}",
+      "deleteFailed": "タスクの削除に失敗: {{error}}",
+      "toggleFailed": "タスクの切り替えに失敗: {{error}}"
+    }
   },
   "cookieSnapshots": {
     "takeNow": "Cookie をスナップショット",

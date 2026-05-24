@@ -197,6 +197,7 @@
       "groups": "Grupos",
       "templates": "Plantillas de perfil",
       "compareProfiles": "Comparar perfiles",
+      "scheduledTasks": "Tareas programadas",
       "syncService": "Cuenta",
       "integrations": "Integraciones",
       "importProfile": "Importar Perfil",
@@ -1936,6 +1937,35 @@
     "identical": "Estos dos perfiles tienen una configuración idéntica.",
     "field": "Campo",
     "diffCount": "{{count}} campos distintos"
+  },
+  "scheduledTasks": {
+    "title": "Tareas programadas",
+    "description": "Acciones recurrentes en segundo plano. El intervalo es en minutos (máx. 7 días). Deshabilita para pausar sin eliminar.",
+    "createNew": "Crear una tarea",
+    "name": "Nombre",
+    "namePlaceholder": "p. ej. sync nocturno",
+    "profile": "Perfil",
+    "pickProfile": "Elige un perfil",
+    "action": "Acción",
+    "intervalMinutes": "Intervalo (minutos)",
+    "create": "Crear tarea",
+    "created": "Tarea creada",
+    "empty": "Aún no hay tareas programadas.",
+    "everyN": "cada {{minutes}} min",
+    "lastRun": "última ejecución {{time}}",
+    "confirmDelete": "¿Eliminar esta tarea programada?",
+    "deleteAria": "Eliminar tarea",
+    "actions": {
+      "syncProfile": "Sincronizar perfil",
+      "launchProfile": "Iniciar perfil",
+      "snapshotCookies": "Snapshot de cookies"
+    },
+    "errors": {
+      "listFailed": "Error al cargar tareas: {{error}}",
+      "createFailed": "Error al crear tarea: {{error}}",
+      "deleteFailed": "Error al eliminar tarea: {{error}}",
+      "toggleFailed": "Error al alternar tarea: {{error}}"
+    }
   },
   "cookieSnapshots": {
     "takeNow": "Hacer snapshot de cookies ahora",

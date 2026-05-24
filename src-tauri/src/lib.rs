@@ -62,6 +62,7 @@ mod health_check;
 mod mcp_server;
 mod proxy_leak_test;
 mod tag_manager;
+mod task_scheduler;
 mod team_lock;
 mod template_manager;
 mod tray_icon;
@@ -2003,6 +2004,10 @@ pub fn run() {
       cookie_snapshot::list_cookie_snapshots,
       cookie_snapshot::restore_cookie_snapshot,
       cookie_snapshot::delete_cookie_snapshot,
+      task_scheduler::list_scheduled_tasks,
+      task_scheduler::create_scheduled_task,
+      task_scheduler::delete_scheduled_task,
+      task_scheduler::set_scheduled_task_enabled,
       fetch_browser_versions_with_count,
       fetch_browser_versions_cached_first,
       fetch_browser_versions_with_count_cached_first,

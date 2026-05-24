@@ -197,6 +197,7 @@
       "groups": "Grupos",
       "templates": "Modelos de perfil",
       "compareProfiles": "Comparar perfis",
+      "scheduledTasks": "Tarefas agendadas",
       "syncService": "Conta",
       "integrations": "Integrações",
       "importProfile": "Importar Perfil",
@@ -1936,6 +1937,35 @@
     "identical": "Esses dois perfis têm configuração idêntica.",
     "field": "Campo",
     "diffCount": "{{count}} campos diferentes"
+  },
+  "scheduledTasks": {
+    "title": "Tarefas agendadas",
+    "description": "Ações recorrentes em segundo plano. O intervalo é em minutos (máx. 7 dias). Desative para pausar sem excluir.",
+    "createNew": "Criar uma tarefa",
+    "name": "Nome",
+    "namePlaceholder": "ex.: sync noturno",
+    "profile": "Perfil",
+    "pickProfile": "Escolher um perfil",
+    "action": "Ação",
+    "intervalMinutes": "Intervalo (minutos)",
+    "create": "Criar tarefa",
+    "created": "Tarefa criada",
+    "empty": "Ainda não há tarefas agendadas.",
+    "everyN": "a cada {{minutes}} min",
+    "lastRun": "última execução {{time}}",
+    "confirmDelete": "Excluir esta tarefa agendada?",
+    "deleteAria": "Excluir tarefa",
+    "actions": {
+      "syncProfile": "Sincronizar perfil",
+      "launchProfile": "Iniciar perfil",
+      "snapshotCookies": "Snapshot de cookies"
+    },
+    "errors": {
+      "listFailed": "Falha ao carregar tarefas: {{error}}",
+      "createFailed": "Falha ao criar tarefa: {{error}}",
+      "deleteFailed": "Falha ao excluir tarefa: {{error}}",
+      "toggleFailed": "Falha ao alternar tarefa: {{error}}"
+    }
   },
   "cookieSnapshots": {
     "takeNow": "Criar snapshot de cookies agora",
