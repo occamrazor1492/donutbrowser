@@ -69,7 +69,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useBrowserState } from "@/hooks/use-browser-state";
-import { useCloudAuth } from "@/hooks/use-cloud-auth";
 import { useProxyEvents } from "@/hooks/use-proxy-events";
 import { useTableSorting } from "@/hooks/use-table-sorting";
 import { useTeamLocks } from "@/hooks/use-team-locks";
@@ -206,8 +205,6 @@ interface TableMeta {
   syncStatuses: Record<string, { status: string; error?: string }>;
   onOpenProfileSyncDialog?: (profile: BrowserProfile) => void;
   onToggleProfileSync?: (profile: BrowserProfile) => void;
-  crossOsUnlocked?: boolean;
-  syncUnlocked?: boolean;
 
   // Country proxy creation (inline in proxy dropdown)
   countries: LocationItem[];
@@ -357,8 +354,12 @@ interface ProfilesDataTableProps {
   onAssignExtensionGroup?: (profileIds: string[]) => void;
   onOpenProfileSyncDialog?: (profile: BrowserProfile) => void;
   onToggleProfileSync?: (profile: BrowserProfile) => void;
-  crossOsUnlocked?: boolean;
-  syncUnlocked?: boolean;
+  /**
+   * Self-hosted user id, used by `useTeamLocks` to tell the user's own
+   * locks apart from teammates'. Cloud-auth gating was removed in the
+   * internal-use fork.
+   */
+  currentUserId?: string;
   getProfileSyncInfo?: (profileId: string) =>
     | {
         session: SyncSessionInfo;
@@ -402,8 +403,7 @@ export function ProfilesDataTable({
   onAssignExtensionGroup,
   onOpenProfileSyncDialog,
   onToggleProfileSync,
-  crossOsUnlocked = false,
-  syncUnlocked = false,
+  currentUserId,
   getProfileSyncInfo,
   onLaunchWithSync,
   onLaunchHeadless,
@@ -496,8 +496,7 @@ export function ProfilesDataTable({
 
   const { storedProxies } = useProxyEvents();
   const { vpnConfigs } = useVpnEvents();
-  const { user } = useCloudAuth();
-  const { isProfileLocked, getLockInfo } = useTeamLocks(user?.id);
+  const { isProfileLocked, getLockInfo } = useTeamLocks(currentUserId);
 
   const [proxyOverrides, setProxyOverrides] = React.useState<
     Record<string, string | null>
@@ -1117,8 +1116,6 @@ export function ProfilesDataTable({
       syncStatuses,
       onOpenProfileSyncDialog,
       onToggleProfileSync,
-      crossOsUnlocked,
-      syncUnlocked,
 
       // Country proxy creation
       countries,
@@ -1185,8 +1182,6 @@ export function ProfilesDataTable({
       syncStatuses,
       onOpenProfileSyncDialog,
       onToggleProfileSync,
-      crossOsUnlocked,
-      syncUnlocked,
       countries,
       loadCountries,
       handleCreateCountryProxy,
@@ -2298,7 +2293,6 @@ export function ProfilesDataTable({
                 setProfileForInfoDialog(null);
                 setProfileToDelete(profile);
               }}
-              crossOsUnlocked={crossOsUnlocked}
               isRunning={infoIsRunning}
               isDisabled={infoIsDisabled}
               isCrossOs={infoIsCrossOs}

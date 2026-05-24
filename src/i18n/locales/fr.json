@@ -155,8 +155,7 @@
       "removed": "Mot de passe de chiffrement supprimé",
       "passwordSaved": "Mot de passe de chiffrement défini",
       "passwordMismatch": "Les mots de passe ne correspondent pas",
-      "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
-      "requiresProOrOwner": "Le chiffrement des profils est disponible pour les utilisateurs Pro et les propriétaires d'équipe."
+      "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères"
     },
     "advanced": {
       "title": "Avancé",
@@ -980,8 +979,7 @@
       "selectFile": "Choisir un Fichier",
       "preview": "{{count}} cookies trouvés",
       "success": "{{imported}} cookies importés avec succès ({{replaced}} remplacés)",
-      "error": "Échec de l'importation des cookies",
-      "proFeature": "L'importation de cookies est une fonctionnalité Pro"
+      "error": "Échec de l'importation des cookies"
     },
     "export": {
       "title": "Exporter les Cookies",
@@ -1186,7 +1184,6 @@
     "productSub": "Produit Sub",
     "brand": "Marque",
     "brandVersion": "Version de la marque",
-    "proFeature": "Ceci est une fonctionnalité Pro",
     "generateFingerprint": "Générer l'empreinte",
     "refreshFingerprint": "Actualiser l'empreinte",
     "canvasNoiseSeedPlaceholder": "Entrez une graine pour l'empreinte canvas",
@@ -1283,7 +1280,6 @@
     "extensionsTab": "Extensions",
     "groupsTab": "Groupes",
     "managedNotice": "Les extensions gérées ici remplaceront toutes les extensions installées manuellement dans les profils lors du lancement.",
-    "proRequired": "La gestion des extensions est une fonctionnalité Pro",
     "empty": "Aucune extension téléchargée pour l'instant.",
     "noGroups": "Aucun groupe d'extensions créé pour l'instant.",
     "createGroup": "Créer un Groupe",

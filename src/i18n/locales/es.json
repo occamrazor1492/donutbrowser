@@ -155,8 +155,7 @@
       "removed": "Contraseña de cifrado eliminada",
       "passwordSaved": "Contraseña de cifrado establecida",
       "passwordMismatch": "Las contraseñas no coinciden",
-      "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
-      "requiresProOrOwner": "El cifrado de perfiles está disponible para usuarios Pro y propietarios de equipos."
+      "passwordTooShort": "La contraseña debe tener al menos 8 caracteres"
     },
     "advanced": {
       "title": "Avanzado",
@@ -980,8 +979,7 @@
       "selectFile": "Elegir Archivo",
       "preview": "{{count}} cookies encontradas",
       "success": "Se importaron {{imported}} cookies exitosamente ({{replaced}} reemplazadas)",
-      "error": "Error al importar cookies",
-      "proFeature": "La importación de cookies es una función Pro"
+      "error": "Error al importar cookies"
     },
     "export": {
       "title": "Exportar Cookies",
@@ -1186,7 +1184,6 @@
     "productSub": "Producto Sub",
     "brand": "Marca",
     "brandVersion": "Versión de marca",
-    "proFeature": "Esta es una función Pro",
     "generateFingerprint": "Generar Huella Digital",
     "refreshFingerprint": "Actualizar Huella Digital",
     "canvasNoiseSeedPlaceholder": "Introduce una semilla para la huella digital del canvas",
@@ -1283,7 +1280,6 @@
     "extensionsTab": "Extensiones",
     "groupsTab": "Grupos",
     "managedNotice": "Las extensiones administradas aquí reemplazarán cualquier extensión instalada manualmente en los perfiles al iniciarlos.",
-    "proRequired": "La gestión de extensiones es una función Pro",
     "empty": "No se han subido extensiones aún.",
     "noGroups": "No se han creado grupos de extensiones aún.",
     "createGroup": "Crear Grupo",

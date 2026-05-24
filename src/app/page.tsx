@@ -172,11 +172,13 @@ export default function Home() {
   } = useWayfernTerms();
 
   // The upstream Donut Browser gated cross-OS profile launch, encrypted
-  // sync, and team UI on a paid cloud subscription. This internal-use
+  // sync, and team UI on a paid cloud subscription. The internal-use
   // fork has no cloud control plane (cloud_auth is a stub), so every
-  // gated feature is unconditionally unlocked. Self-hosted sync still
-  // controls whether the sync settings dialog shows configured state.
-  const crossOsUnlocked = true;
+  // gated feature is unconditionally unlocked — the Pro gating sweep
+  // dropped `crossOsUnlocked` / `syncUnlocked` props throughout the
+  // tree. `selfHostedSyncConfigured` is still tracked so the sidebar
+  // can hide the "Configure sync" entry once a server URL is saved,
+  // and `selfHostedUser` drives the team-admin menu visibility.
   const [selfHostedSyncConfigured, setSelfHostedSyncConfigured] =
     useState(false);
   const [selfHostedUser, setSelfHostedUser] = useState<
@@ -200,7 +202,6 @@ export default function Home() {
     }
   }, []);
 
-  const syncUnlocked = crossOsUnlocked || selfHostedSyncConfigured;
   const showTeamMenu = Boolean(selfHostedUser);
   const showTeamAdmin = selfHostedUser?.role === "admin";
 
@@ -1318,7 +1319,7 @@ export default function Home() {
             onTeamProfilesDialogOpen={setTeamProfilesDialogOpen}
             showTeamMenu={showTeamMenu}
             showTeamAdmin={showTeamAdmin}
-            showExtensions={crossOsUnlocked}
+            showExtensions={true}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
           />
@@ -1387,8 +1388,7 @@ export default function Home() {
                   }
                 : undefined
             }
-            crossOsUnlocked={crossOsUnlocked}
-            syncUnlocked={syncUnlocked}
+            currentUserId={selfHostedUser?.id}
             getProfileSyncInfo={getProfileSyncInfo}
             onLaunchWithSync={(profile) => {
               setSyncLeaderProfile(profile);
@@ -1404,7 +1404,6 @@ export default function Home() {
         }}
         onCreateProfile={handleCreateProfile}
         selectedGroupId={selectedGroupId}
-        crossOsUnlocked={crossOsUnlocked}
       />
 
       <SettingsDialog
@@ -1468,7 +1467,6 @@ export default function Home() {
         onClose={() => {
           setImportProfileDialogOpen(false);
         }}
-        crossOsUnlocked={crossOsUnlocked}
       />
 
       <ProxyManagementDialog
@@ -1523,7 +1521,6 @@ export default function Home() {
             ? runningProfiles.has(currentProfileForCamoufoxConfig.id)
             : false
         }
-        crossOsUnlocked={crossOsUnlocked}
       />
 
       <GroupManagementDialog
@@ -1569,7 +1566,6 @@ export default function Home() {
         onClose={() => {
           setExtensionManagementDialogOpen(false);
         }}
-        limitedMode={!crossOsUnlocked}
       />
 
       <GroupAssignmentDialog

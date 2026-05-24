@@ -155,8 +155,7 @@
       "removed": "Пароль шифрования удалён",
       "passwordSaved": "Пароль шифрования установлен",
       "passwordMismatch": "Пароли не совпадают",
-      "passwordTooShort": "Пароль должен содержать не менее 8 символов",
-      "requiresProOrOwner": "Шифрование профилей доступно для пользователей Pro и владельцев команд."
+      "passwordTooShort": "Пароль должен содержать не менее 8 символов"
     },
     "advanced": {
       "title": "Дополнительно",
@@ -980,8 +979,7 @@
       "selectFile": "Выбрать файл",
       "preview": "Найдено {{count}} cookies",
       "success": "Успешно импортировано {{imported}} cookies ({{replaced}} заменено)",
-      "error": "Ошибка импорта cookies",
-      "proFeature": "Импорт cookies — функция Pro"
+      "error": "Ошибка импорта cookies"
     },
     "export": {
       "title": "Экспорт Cookies",
@@ -1186,7 +1184,6 @@
     "productSub": "Подверсия продукта",
     "brand": "Бренд",
     "brandVersion": "Версия бренда",
-    "proFeature": "Это функция Pro",
     "generateFingerprint": "Сгенерировать отпечаток",
     "refreshFingerprint": "Обновить отпечаток",
     "canvasNoiseSeedPlaceholder": "Введите строку-семя для отпечатка canvas",
@@ -1283,7 +1280,6 @@
     "extensionsTab": "Расширения",
     "groupsTab": "Группы",
     "managedNotice": "Расширения, управляемые здесь, заменят все вручную установленные расширения в профилях при запуске.",
-    "proRequired": "Управление расширениями — функция Pro",
     "empty": "Расширения ещё не загружены.",
     "noGroups": "Группы расширений ещё не созданы.",
     "createGroup": "Создать группу",

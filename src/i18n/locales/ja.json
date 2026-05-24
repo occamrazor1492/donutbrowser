@@ -155,8 +155,7 @@
       "removed": "暗号化パスワードが削除されました",
       "passwordSaved": "暗号化パスワードが設定されました",
       "passwordMismatch": "パスワードが一致しません",
-      "passwordTooShort": "パスワードは8文字以上である必要があります",
-      "requiresProOrOwner": "プロファイルの暗号化はProユーザーとチームオーナーのみ利用できます。"
+      "passwordTooShort": "パスワードは8文字以上である必要があります"
     },
     "advanced": {
       "title": "詳細設定",
@@ -980,8 +979,7 @@
       "selectFile": "ファイルを選択",
       "preview": "{{count}}件のCookieが見つかりました",
       "success": "{{imported}}件のCookieをインポートしました（{{replaced}}件を置換）",
-      "error": "Cookieのインポートに失敗しました",
-      "proFeature": "Cookieのインポートはプロ機能です"
+      "error": "Cookieのインポートに失敗しました"
     },
     "export": {
       "title": "Cookieのエクスポート",
@@ -1186,7 +1184,6 @@
     "productSub": "プロダクトサブ",
     "brand": "ブランド",
     "brandVersion": "ブランドバージョン",
-    "proFeature": "これはPro機能です",
     "generateFingerprint": "フィンガープリントを生成",
     "refreshFingerprint": "フィンガープリントを更新",
     "canvasNoiseSeedPlaceholder": "キャンバスフィンガープリント用のシード文字列を入力",
@@ -1283,7 +1280,6 @@
     "extensionsTab": "拡張機能",
     "groupsTab": "グループ",
     "managedNotice": "ここで管理される拡張機能は、起動時にプロファイルに手動でインストールされた拡張機能を置き換えます。",
-    "proRequired": "拡張機能管理はプロ機能です",
     "empty": "まだ拡張機能がアップロードされていません。",
     "noGroups": "まだ拡張機能グループが作成されていません。",
     "createGroup": "グループを作成",

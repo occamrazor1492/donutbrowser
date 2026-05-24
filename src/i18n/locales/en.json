@@ -155,8 +155,7 @@
       "removed": "Encryption password removed",
       "passwordSaved": "Encryption password set",
       "passwordMismatch": "Passwords do not match",
-      "passwordTooShort": "Password must be at least 8 characters",
-      "requiresProOrOwner": "Profile encryption is available for Pro users and team owners."
+      "passwordTooShort": "Password must be at least 8 characters"
     },
     "advanced": {
       "title": "Advanced",
@@ -979,8 +978,7 @@
       "selectFile": "Choose File",
       "preview": "{{count}} cookies found",
       "success": "Successfully imported {{imported}} cookies ({{replaced}} replaced)",
-      "error": "Failed to import cookies",
-      "proFeature": "Cookie import is a Pro feature"
+      "error": "Failed to import cookies"
     },
     "export": {
       "title": "Export Cookies",
@@ -1185,7 +1183,6 @@
     "productSub": "Product Sub",
     "brand": "Brand",
     "brandVersion": "Brand Version",
-    "proFeature": "This is a Pro feature",
     "generateFingerprint": "Generate Fingerprint",
     "refreshFingerprint": "Refresh Fingerprint",
     "canvasNoiseSeedPlaceholder": "Enter a seed string for canvas fingerprint",
@@ -1282,7 +1279,6 @@
     "extensionsTab": "Extensions",
     "groupsTab": "Groups",
     "managedNotice": "Extensions managed here will replace any manually installed extensions in profiles when launched.",
-    "proRequired": "Extension management is a Pro feature",
     "empty": "No extensions uploaded yet.",
     "noGroups": "No extension groups created yet.",
     "createGroup": "Create Group",

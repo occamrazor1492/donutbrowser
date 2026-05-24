@@ -155,8 +155,7 @@
       "removed": "Senha de criptografia removida",
       "passwordSaved": "Senha de criptografia definida",
       "passwordMismatch": "As senhas não coincidem",
-      "passwordTooShort": "A senha deve ter pelo menos 8 caracteres",
-      "requiresProOrOwner": "A criptografia de perfis está disponível para usuários Pro e proprietários de equipe."
+      "passwordTooShort": "A senha deve ter pelo menos 8 caracteres"
     },
     "advanced": {
       "title": "Avançado",
@@ -980,8 +979,7 @@
       "selectFile": "Escolher Arquivo",
       "preview": "{{count}} cookies encontrados",
       "success": "{{imported}} cookies importados com sucesso ({{replaced}} substituídos)",
-      "error": "Falha ao importar cookies",
-      "proFeature": "A importação de cookies é um recurso Pro"
+      "error": "Falha ao importar cookies"
     },
     "export": {
       "title": "Exportar Cookies",
@@ -1186,7 +1184,6 @@
     "productSub": "Produto Sub",
     "brand": "Marca",
     "brandVersion": "Versão da Marca",
-    "proFeature": "Este é um recurso Pro",
     "generateFingerprint": "Gerar Impressão Digital",
     "refreshFingerprint": "Atualizar Impressão Digital",
     "canvasNoiseSeedPlaceholder": "Insira uma string seed para a impressão digital do canvas",
@@ -1283,7 +1280,6 @@
     "extensionsTab": "Extensões",
     "groupsTab": "Grupos",
     "managedNotice": "As extensões gerenciadas aqui substituirão quaisquer extensões instaladas manualmente nos perfis ao serem iniciados.",
-    "proRequired": "O gerenciamento de extensões é um recurso Pro",
     "empty": "Nenhuma extensão enviada ainda.",
     "noGroups": "Nenhum grupo de extensões criado ainda.",
     "createGroup": "Criar Grupo",

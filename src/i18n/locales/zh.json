@@ -155,8 +155,7 @@
       "removed": "加密密码已删除",
       "passwordSaved": "加密密码已设置",
       "passwordMismatch": "密码不匹配",
-      "passwordTooShort": "密码必须至少8个字符",
-      "requiresProOrOwner": "配置文件加密仅适用于Pro用户和团队所有者。"
+      "passwordTooShort": "密码必须至少8个字符"
     },
     "advanced": {
       "title": "高级",
@@ -980,8 +979,7 @@
       "selectFile": "选择文件",
       "preview": "找到 {{count}} 个 Cookies",
       "success": "成功导入 {{imported}} 个 Cookies（替换了 {{replaced}} 个）",
-      "error": "导入 Cookies 失败",
-      "proFeature": "导入 Cookies 是 Pro 功能"
+      "error": "导入 Cookies 失败"
     },
     "export": {
       "title": "导出 Cookies",
@@ -1186,7 +1184,6 @@
     "productSub": "产品子版本",
     "brand": "品牌",
     "brandVersion": "品牌版本",
-    "proFeature": "这是 Pro 功能",
     "generateFingerprint": "生成指纹",
     "refreshFingerprint": "刷新指纹",
     "canvasNoiseSeedPlaceholder": "输入用于 canvas 指纹的种子字符串",
@@ -1283,7 +1280,6 @@
     "extensionsTab": "扩展程序",
     "groupsTab": "分组",
     "managedNotice": "此处管理的扩展程序将在启动时替换配置文件中手动安装的所有扩展程序。",
-    "proRequired": "扩展程序管理是 Pro 功能",
     "empty": "尚未上传任何扩展程序。",
     "noGroups": "尚未创建任何扩展程序组。",
     "createGroup": "创建分组",
