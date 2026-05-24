@@ -115,6 +115,8 @@ export function SettingsDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [isSettingDefault, setIsSettingDefault] = useState(false);
   const [isClearingCache, setIsClearingCache] = useState(false);
+  const [isExportingBackup, setIsExportingBackup] = useState(false);
+  const [isImportingBackup, setIsImportingBackup] = useState(false);
   const [permissions, setPermissions] = useState<PermissionInfo[]>([]);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
   const [requestingPermission, setRequestingPermission] =
@@ -335,6 +337,83 @@ export function SettingsDialog({
       setIsSettingDefault(false);
     }
   }, [checkDefaultBrowserStatus]);
+
+  const handleExportBackup = useCallback(async () => {
+    setIsExportingBackup(true);
+    try {
+      // Lazy-load tauri-plugin-dialog so the dependency cost is paid only
+      // when the user actually opens this panel.
+      const { save } = await import("@tauri-apps/plugin-dialog");
+      const filename = `donut-backup-${new Date()
+        .toISOString()
+        .slice(0, 10)}.donutbackup`;
+      const destination = await save({
+        defaultPath: filename,
+        filters: [{ name: "Donut backup", extensions: ["donutbackup"] }],
+      });
+      if (!destination) return;
+      const passphrase = window.prompt(
+        t("settings.backup.passphrasePromptExport"),
+        "",
+      );
+      const passArg =
+        passphrase != null && passphrase.length > 0 ? passphrase : null;
+      const size = await invoke<number>("export_backup_archive", {
+        destinationPath: destination,
+        passphrase: passArg,
+      });
+      showSuccessToast(t("settings.backup.exportSuccess", { bytes: size }));
+    } catch (err) {
+      showErrorToast(t("settings.backup.exportFailed"), {
+        description: err instanceof Error ? err.message : String(err),
+        duration: 5000,
+      });
+    } finally {
+      setIsExportingBackup(false);
+    }
+  }, [t]);
+
+  const handleImportBackup = useCallback(async () => {
+    setIsImportingBackup(true);
+    try {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const source = await open({
+        multiple: false,
+        filters: [{ name: "Donut backup", extensions: ["donutbackup"] }],
+      });
+      if (!source || typeof source !== "string") return;
+      const passphrase = window.prompt(
+        t("settings.backup.passphrasePromptImport"),
+        "",
+      );
+      const passArg =
+        passphrase != null && passphrase.length > 0 ? passphrase : null;
+      const report = await invoke<{
+        profiles_added: number;
+        profiles_skipped: number;
+        templates_added: number;
+        templates_skipped: number;
+        warnings: string[];
+      }>("import_backup_archive", { sourcePath: source, passphrase: passArg });
+      const desc =
+        report.warnings.length > 0 ? report.warnings.join("\n") : undefined;
+      showSuccessToast(
+        t("settings.backup.importSuccess", {
+          profiles: report.profiles_added,
+          templates: report.templates_added,
+          skipped: report.profiles_skipped + report.templates_skipped,
+        }),
+        desc ? { description: desc, duration: 8000 } : undefined,
+      );
+    } catch (err) {
+      showErrorToast(t("settings.backup.importFailed"), {
+        description: err instanceof Error ? err.message : String(err),
+        duration: 5000,
+      });
+    } finally {
+      setIsImportingBackup(false);
+    }
+  }, [t]);
 
   const handleClearCache = useCallback(async () => {
     setIsClearingCache(true);
@@ -1149,6 +1228,23 @@ export function SettingsDialog({
                     {t("settings.minimizeToTrayDescription")}
                   </p>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <LoadingButton
+                  isLoading={isExportingBackup}
+                  onClick={() => void handleExportBackup()}
+                  variant="outline"
+                >
+                  {t("settings.backup.export")}
+                </LoadingButton>
+                <LoadingButton
+                  isLoading={isImportingBackup}
+                  onClick={() => void handleImportBackup()}
+                  variant="outline"
+                >
+                  {t("settings.backup.import")}
+                </LoadingButton>
               </div>
 
               <LoadingButton

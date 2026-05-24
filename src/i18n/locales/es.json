@@ -174,7 +174,17 @@
     "disableAutoUpdates": "Desactivar Actualizaciones Automáticas de la App",
     "disableAutoUpdatesDescription": "Evita que la aplicación busque e instale actualizaciones de Donut Browser automáticamente. Las actualizaciones de navegadores no se ven afectadas.",
     "minimizeToTray": "Minimizar a la bandeja del sistema",
-    "minimizeToTrayDescription": "Al cerrar la ventana principal, Donut Browser se oculta en la bandeja del sistema en lugar de cerrarse. Usa el icono de la bandeja para reabrir o salir."
+    "minimizeToTrayDescription": "Al cerrar la ventana principal, Donut Browser se oculta en la bandeja del sistema en lugar de cerrarse. Usa el icono de la bandeja para reabrir o salir.",
+    "backup": {
+      "export": "Exportar copia de seguridad…",
+      "import": "Importar copia de seguridad…",
+      "passphrasePromptExport": "Frase de paso opcional para cifrar la copia (deja vacío para JSON sin cifrar):",
+      "passphrasePromptImport": "Frase de paso para descifrar la copia (deja vacío si no está cifrada):",
+      "exportSuccess": "Copia exportada ({{bytes}} bytes).",
+      "exportFailed": "Error al exportar la copia",
+      "importSuccess": "Restaurados {{profiles}} perfil(es) y {{templates}} plantilla(s). {{skipped}} omitidos como duplicados.",
+      "importFailed": "Error al importar la copia"
+    }
   },
   "header": {
     "searchPlaceholder": "Buscar perfiles...",

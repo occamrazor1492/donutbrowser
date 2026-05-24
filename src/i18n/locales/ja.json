@@ -174,7 +174,17 @@
     "disableAutoUpdates": "アプリの自動更新を無効にする",
     "disableAutoUpdatesDescription": "Donut Browserの自動更新確認・インストールを無効にします。ブラウザの更新には影響しません。",
     "minimizeToTray": "システムトレイに最小化",
-    "minimizeToTrayDescription": "メインウィンドウを閉じるとアプリを終了せず、システムトレイに格納します。トレイアイコンから再表示・終了できます。"
+    "minimizeToTrayDescription": "メインウィンドウを閉じるとアプリを終了せず、システムトレイに格納します。トレイアイコンから再表示・終了できます。",
+    "backup": {
+      "export": "バックアップをエクスポート…",
+      "import": "バックアップをインポート…",
+      "passphrasePromptExport": "バックアップを暗号化するためのパスフレーズ（任意。空のままで平文JSON）:",
+      "passphrasePromptImport": "バックアップを復号するためのパスフレーズ（暗号化されていなければ空のまま）:",
+      "exportSuccess": "バックアップをエクスポートしました（{{bytes}} バイト）。",
+      "exportFailed": "バックアップのエクスポートに失敗しました",
+      "importSuccess": "{{profiles}} 件のプロファイルと {{templates}} 件のテンプレートを復元しました。{{skipped}} 件は重複のためスキップされました。",
+      "importFailed": "バックアップのインポートに失敗しました"
+    }
   },
   "header": {
     "searchPlaceholder": "プロファイルを検索...",

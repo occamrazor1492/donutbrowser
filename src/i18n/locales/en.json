@@ -174,7 +174,17 @@
     "disableAutoUpdates": "Disable App Auto Updates",
     "disableAutoUpdatesDescription": "Prevent the app from automatically checking and installing Donut Browser updates. Browser updates are not affected.",
     "minimizeToTray": "Minimize to System Tray",
-    "minimizeToTrayDescription": "Closing the main window hides Donut Browser to the system tray instead of quitting. Use the tray icon to reopen or quit the app."
+    "minimizeToTrayDescription": "Closing the main window hides Donut Browser to the system tray instead of quitting. Use the tray icon to reopen or quit the app.",
+    "backup": {
+      "export": "Export backup…",
+      "import": "Import backup…",
+      "passphrasePromptExport": "Optional passphrase to encrypt the backup (leave empty for plain JSON):",
+      "passphrasePromptImport": "Passphrase to decrypt the backup (leave empty if it isn't encrypted):",
+      "exportSuccess": "Backup exported ({{bytes}} bytes).",
+      "exportFailed": "Failed to export backup",
+      "importSuccess": "Restored {{profiles}} profile(s) and {{templates}} template(s). {{skipped}} skipped as duplicates.",
+      "importFailed": "Failed to import backup"
+    }
   },
   "header": {
     "searchPlaceholder": "Search profiles...",

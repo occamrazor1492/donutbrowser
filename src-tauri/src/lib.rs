@@ -46,6 +46,7 @@ pub mod traffic_stats;
 mod wayfern_manager;
 mod wayfern_terms;
 // mod theme_detector; // removed: theme detection handled in webview via CSS prefers-color-scheme
+mod backup_manager;
 mod cloakbrowser;
 pub mod cloud_auth;
 mod commercial_license;
@@ -1987,6 +1988,8 @@ pub fn run() {
       template_manager::create_profile_template,
       template_manager::create_profile_template_from_profile,
       template_manager::delete_profile_template,
+      backup_manager::export_backup_archive,
+      backup_manager::import_backup_archive,
       fetch_browser_versions_with_count,
       fetch_browser_versions_cached_first,
       fetch_browser_versions_with_count_cached_first,
