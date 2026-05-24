@@ -8,6 +8,7 @@ import {
   LuChevronRight,
   LuClipboard,
   LuClipboardCheck,
+  LuClock,
   LuCookie,
   LuCopy,
   LuFingerprint,
@@ -387,6 +388,92 @@ export function ProfileInfoDialog({
         });
       },
       hidden: profile.ephemeral === true,
+    },
+    {
+      icon: <LuClock className="w-4 h-4" />,
+      label: t("cookieSnapshots.takeNow"),
+      onClick: () => {
+        handleAction(async () => {
+          const label = window.prompt(t("cookieSnapshots.promptLabel"));
+          if (!label?.trim()) return;
+          try {
+            await invoke("take_cookie_snapshot", {
+              profile,
+              label: label.trim(),
+            });
+            window.alert(t("cookieSnapshots.takeSuccess"));
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            window.alert(t("cookieSnapshots.takeFailed", { error: msg }));
+          }
+        });
+      },
+      disabled: isDisabled || profile.ephemeral === true,
+      hidden:
+        profile.ephemeral === true ||
+        (profile.browser !== "wayfern" &&
+          profile.browser !== "cloak" &&
+          profile.browser !== "camoufox"),
+    },
+    {
+      icon: <LuClock className="w-4 h-4" />,
+      label: t("cookieSnapshots.manage"),
+      onClick: () => {
+        handleAction(async () => {
+          try {
+            const snaps = await invoke<
+              Array<{
+                id: string;
+                label: string;
+                created_at: number;
+                size_bytes: number;
+              }>
+            >("list_cookie_snapshots", { profileId: profile.id });
+            if (snaps.length === 0) {
+              window.alert(t("cookieSnapshots.none"));
+              return;
+            }
+            // Minimal picker via window.prompt — a proper modal can land
+            // in a follow-up, but this gets restore/delete working today.
+            const choices = snaps
+              .map((s, i) => `${i + 1}. ${s.label} (${s.size_bytes} bytes)`)
+              .join("\n");
+            const pick = window.prompt(
+              `${t("cookieSnapshots.pickPrompt")}\n${choices}`,
+            );
+            if (!pick) return;
+            const idx = Number.parseInt(pick.trim(), 10) - 1;
+            if (Number.isNaN(idx) || idx < 0 || idx >= snaps.length) return;
+            const action = window.prompt(
+              t("cookieSnapshots.actionPrompt", {
+                label: snaps[idx].label,
+              }),
+              "restore",
+            );
+            if (action === "restore") {
+              await invoke("restore_cookie_snapshot", {
+                profile,
+                snapshotId: snaps[idx].id,
+              });
+              window.alert(t("cookieSnapshots.restoreSuccess"));
+            } else if (action === "delete") {
+              await invoke("delete_cookie_snapshot", {
+                profileId: profile.id,
+                snapshotId: snaps[idx].id,
+              });
+              window.alert(t("cookieSnapshots.deleteSuccess"));
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            window.alert(t("cookieSnapshots.manageFailed", { error: msg }));
+          }
+        });
+      },
+      hidden:
+        profile.ephemeral === true ||
+        (profile.browser !== "wayfern" &&
+          profile.browser !== "cloak" &&
+          profile.browser !== "camoufox"),
     },
     {
       icon: <LuPuzzle className="w-4 h-4" />,

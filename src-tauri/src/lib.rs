@@ -51,6 +51,7 @@ mod cloakbrowser;
 pub mod cloud_auth;
 mod commercial_license;
 mod cookie_manager;
+mod cookie_snapshot;
 pub mod daemon;
 pub mod daemon_client;
 #[allow(dead_code)]
@@ -1998,6 +1999,10 @@ pub fn run() {
       webhook_dispatcher::set_webhook_url,
       webhook_dispatcher::get_webhook_url,
       proxy_leak_test::run_proxy_leak_test,
+      cookie_snapshot::take_cookie_snapshot,
+      cookie_snapshot::list_cookie_snapshots,
+      cookie_snapshot::restore_cookie_snapshot,
+      cookie_snapshot::delete_cookie_snapshot,
       fetch_browser_versions_with_count,
       fetch_browser_versions_cached_first,
       fetch_browser_versions_with_count_cached_first,

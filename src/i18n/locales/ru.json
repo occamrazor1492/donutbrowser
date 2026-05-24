@@ -1937,6 +1937,19 @@
     "field": "Поле",
     "diffCount": "{{count}} различных полей"
   },
+  "cookieSnapshots": {
+    "takeNow": "Сделать снимок cookies сейчас",
+    "manage": "Управление снимками cookies",
+    "promptLabel": "Метка снимка (например, «после входа»):",
+    "takeSuccess": "Снимок cookies сохранён.",
+    "takeFailed": "Не удалось создать снимок: {{error}}",
+    "none": "Снимков cookies для этого профиля пока нет.",
+    "pickPrompt": "Введите номер снимка:",
+    "actionPrompt": "Введите 'restore' для отката к «{{label}}» или 'delete' для удаления:",
+    "restoreSuccess": "Cookies восстановлены. Следующий запуск браузера использует снимок.",
+    "deleteSuccess": "Снимок удалён.",
+    "manageFailed": "Операция не удалась: {{error}}"
+  },
   "savedViews": {
     "label": "Сохранённые виды",
     "saveCurrent": "Сохранить текущий как вид…",

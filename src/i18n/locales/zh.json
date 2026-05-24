@@ -1937,6 +1937,19 @@
     "field": "字段",
     "diffCount": "{{count}} 个不同字段"
   },
+  "cookieSnapshots": {
+    "takeNow": "立即拍 Cookie 快照",
+    "manage": "管理 Cookie 快照",
+    "promptLabel": "快照标签（例如「登录后」）:",
+    "takeSuccess": "Cookie 快照已保存。",
+    "takeFailed": "创建快照失败: {{error}}",
+    "none": "此配置文件尚无 Cookie 快照。",
+    "pickPrompt": "请输入要操作的快照编号：",
+    "actionPrompt": "输入 'restore' 回滚到「{{label}}」或 'delete' 删除：",
+    "restoreSuccess": "Cookie 已恢复，下次启动浏览器生效。",
+    "deleteSuccess": "快照已删除。",
+    "manageFailed": "操作失败: {{error}}"
+  },
   "savedViews": {
     "label": "已保存视图",
     "saveCurrent": "保存当前为视图…",

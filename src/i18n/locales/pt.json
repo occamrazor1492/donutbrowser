@@ -1937,6 +1937,19 @@
     "field": "Campo",
     "diffCount": "{{count}} campos diferentes"
   },
+  "cookieSnapshots": {
+    "takeNow": "Criar snapshot de cookies agora",
+    "manage": "Gerenciar snapshots de cookies",
+    "promptLabel": "Rótulo do snapshot (ex.: \"após login\"):",
+    "takeSuccess": "Snapshot de cookies salvo.",
+    "takeFailed": "Falha ao criar snapshot: {{error}}",
+    "none": "Ainda não há snapshots de cookies para este perfil.",
+    "pickPrompt": "Digite o número do snapshot:",
+    "actionPrompt": "Digite 'restore' para reverter para \"{{label}}\" ou 'delete' para remover:",
+    "restoreSuccess": "Cookies restaurados. O próximo lançamento usará o snapshot.",
+    "deleteSuccess": "Snapshot removido.",
+    "manageFailed": "Operação falhou: {{error}}"
+  },
   "savedViews": {
     "label": "Visualizações salvas",
     "saveCurrent": "Salvar atual como visualização…",

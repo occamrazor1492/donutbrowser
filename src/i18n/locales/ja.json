@@ -1937,6 +1937,19 @@
     "field": "フィールド",
     "diffCount": "{{count}} 個の異なるフィールド"
   },
+  "cookieSnapshots": {
+    "takeNow": "Cookie をスナップショット",
+    "manage": "Cookie スナップショットを管理",
+    "promptLabel": "スナップショットのラベル（例: 「ログイン後」）:",
+    "takeSuccess": "Cookie スナップショットを保存しました。",
+    "takeFailed": "スナップショット作成に失敗: {{error}}",
+    "none": "このプロファイルにはまだ Cookie スナップショットがありません。",
+    "pickPrompt": "操作するスナップショットの番号を入力:",
+    "actionPrompt": "「{{label}}」に戻すには 'restore'、削除するには 'delete' と入力:",
+    "restoreSuccess": "Cookie を復元しました。次回起動時に反映されます。",
+    "deleteSuccess": "スナップショットを削除しました。",
+    "manageFailed": "操作に失敗: {{error}}"
+  },
   "savedViews": {
     "label": "保存したビュー",
     "saveCurrent": "現在の状態をビューとして保存…",

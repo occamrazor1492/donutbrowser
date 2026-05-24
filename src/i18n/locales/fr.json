@@ -1937,6 +1937,19 @@
     "field": "Champ",
     "diffCount": "{{count}} champs différents"
   },
+  "cookieSnapshots": {
+    "takeNow": "Capturer les cookies maintenant",
+    "manage": "Gérer les captures de cookies",
+    "promptLabel": "Libellé de la capture (ex. « après login ») :",
+    "takeSuccess": "Capture de cookies enregistrée.",
+    "takeFailed": "Échec de la capture : {{error}}",
+    "none": "Aucune capture de cookies pour ce profil.",
+    "pickPrompt": "Entrez le numéro de la capture :",
+    "actionPrompt": "Tapez 'restore' pour revenir à « {{label}} » ou 'delete' pour la supprimer :",
+    "restoreSuccess": "Cookies restaurés. Le prochain lancement utilisera la capture.",
+    "deleteSuccess": "Capture supprimée.",
+    "manageFailed": "Opération échouée : {{error}}"
+  },
   "savedViews": {
     "label": "Vues enregistrées",
     "saveCurrent": "Enregistrer la vue actuelle…",
