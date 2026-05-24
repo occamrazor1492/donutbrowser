@@ -420,10 +420,31 @@ pub async fn acquire_team_lock_if_needed(
   }
   let is_self_hosted = crate::self_hosted_auth::cached_user().is_some();
   if is_self_hosted {
-    crate::self_hosted_team::register_team_profile(app_handle, profile).await?;
-    return PROFILE_LOCK
+    // Self-hosted team registration + lock acquisition is best-effort:
+    // if the sync server is down, the user's auth token can't be
+    // decrypted (vault-password drift across builds), or the network is
+    // off, we must NOT block the local browser launch. Pre-fix, any
+    // failure here propagated up and the user was stuck staring at
+    // "Failed to load self-hosted token: Decryption failed" with no
+    // path forward. Now we log + degrade to "launched without a team
+    // lock" — sync will retry next time the user authenticates.
+    if let Err(e) = crate::self_hosted_team::register_team_profile(app_handle, profile).await {
+      log::warn!(
+        "Self-hosted team register failed for profile {} ({e}); launching anyway without a team lock.",
+        profile.id
+      );
+      return Ok(());
+    }
+    if let Err(e) = PROFILE_LOCK
       .acquire_self_hosted_lock(app_handle, &profile.id.to_string())
-      .await;
+      .await
+    {
+      log::warn!(
+        "Self-hosted team lock acquire failed for profile {} ({e}); launching anyway.",
+        profile.id
+      );
+    }
+    return Ok(());
   }
   if !CLOUD_AUTH.has_active_paid_subscription().await {
     return Ok(());

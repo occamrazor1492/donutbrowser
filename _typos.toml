@@ -9,3 +9,8 @@ extend-exclude = [
 [default.extend-words]
 DBE = "DBE"
 nd = "nd"
+# "PN" — fragment that typos extracts from the plural "PNGs" (image
+# format) in a comment. lint-staged passes each staged *.rs file
+# directly to typos which bypasses the `extend-exclude` glob for
+# build.rs, so we have to whitelist the fragment instead.
+PN = "PN"

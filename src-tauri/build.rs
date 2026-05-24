@@ -35,7 +35,15 @@ fn main() {
     println!("cargo:rustc-env=BUILD_VERSION=dev-{version}");
   }
 
-  // Inject vault password at build time
+  // Inject vault password at build time.
+  //
+  // `cargo:rerun-if-env-changed` is critical: without it cargo caches
+  // the previous build's `rustc-env` value and keeps baking the OLD
+  // password into the binary even after the env var changes. That
+  // silently breaks `sync_token.dat` AES decryption on the next build,
+  // which used to hard-fail browser launches (see the regression tests
+  // in `settings_manager::tests::read_sync_token_*`).
+  println!("cargo:rerun-if-env-changed=DONUT_BROWSER_VAULT_PASSWORD");
   if let Ok(vault_password) = std::env::var("DONUT_BROWSER_VAULT_PASSWORD") {
     println!("cargo:rustc-env=DONUT_BROWSER_VAULT_PASSWORD={vault_password}");
   } else {

@@ -649,82 +649,45 @@ impl SettingsManager {
     &self,
     _app_handle: &tauri::AppHandle,
   ) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    Ok(self.read_sync_token_from_disk()?)
+  }
+
+  /// Read the AES-encrypted sync token from disk.
+  ///
+  /// Self-healing: any condition that means "the file is on disk but we
+  /// can't recover a plaintext token from it" — bad magic, unknown
+  /// version, truncated framing, AES decryption failure (most likely
+  /// because the compile-time vault password changed between builds) —
+  /// is treated the same way as "no token file": delete the unusable
+  /// file, log a warning, and return `Ok(None)`. The auth path then
+  /// degrades to "not logged in" instead of returning an opaque
+  /// `Decryption failed` error that blocks every sync-enabled action
+  /// (most painfully, browser launch — `acquire_team_lock_if_needed`
+  /// used to hard-fail and leave the user unable to start any profile).
+  ///
+  /// On `Err`, only file-system I/O errors propagate up.
+  fn read_sync_token_from_disk(&self) -> Result<Option<String>, std::io::Error> {
     let token_file = self.get_settings_dir().join("sync_token.dat");
 
     if !token_file.exists() {
       return Ok(None);
     }
 
-    let file_data = std::fs::read(token_file)?;
+    let file_data = std::fs::read(&token_file)?;
 
-    if file_data.len() < 6 || &file_data[0..5] != b"DBSYN" {
-      return Ok(None);
-    }
-
-    let version = file_data[5];
-    if version != 2 {
-      return Ok(None);
-    }
-
-    let mut offset = 6;
-    if offset >= file_data.len() {
-      return Ok(None);
-    }
-    let salt_len = file_data[offset] as usize;
-    offset += 1;
-
-    if offset + salt_len > file_data.len() {
-      return Ok(None);
-    }
-    let salt_bytes = &file_data[offset..offset + salt_len];
-    let salt_str = std::str::from_utf8(salt_bytes).map_err(|_| "Invalid salt encoding")?;
-    let salt = SaltString::from_b64(salt_str).map_err(|_| "Invalid salt format")?;
-    offset += salt_len;
-
-    if offset + 12 > file_data.len() {
-      return Ok(None);
-    }
-    let nonce_bytes: [u8; 12] = file_data[offset..offset + 12]
-      .try_into()
-      .map_err(|_| "Invalid nonce length")?;
-    let nonce = Nonce::from(nonce_bytes);
-    offset += 12;
-
-    if offset + 4 > file_data.len() {
-      return Ok(None);
-    }
-    let ciphertext_len = u32::from_le_bytes([
-      file_data[offset],
-      file_data[offset + 1],
-      file_data[offset + 2],
-      file_data[offset + 3],
-    ]) as usize;
-    offset += 4;
-
-    if offset + ciphertext_len > file_data.len() {
-      return Ok(None);
-    }
-    let ciphertext = &file_data[offset..offset + ciphertext_len];
-
-    let vault_password = Self::get_vault_password();
-    let argon2 = Argon2::default();
-    let password_hash = argon2
-      .hash_password(vault_password.as_bytes(), &salt)
-      .map_err(|e| format!("Argon2 key derivation failed: {e}"))?;
-    let hash_value = password_hash.hash.unwrap();
-    let hash_bytes = hash_value.as_bytes();
-    let key_bytes: [u8; 32] = hash_bytes[..32]
-      .try_into()
-      .map_err(|_| "Invalid key length")?;
-    let key = Key::<Aes256Gcm>::from(key_bytes);
-    let cipher = Aes256Gcm::new(&key);
-    let plaintext = cipher
-      .decrypt(&nonce, ciphertext)
-      .map_err(|_| "Decryption failed")?;
-
-    match String::from_utf8(plaintext) {
-      Ok(token) => Ok(Some(token)),
-      Err(_) => Ok(None),
+    match decrypt_sync_token_bytes(&file_data, &Self::get_vault_password()) {
+      Ok(token) => Ok(token),
+      Err(reason) => {
+        log::warn!(
+          "sync_token.dat is unreadable ({reason}); discarding and treating as logged-out. \
+           This usually means the compile-time DONUT_BROWSER_VAULT_PASSWORD changed between \
+           builds — the user just needs to log in again via Settings → Sync."
+        );
+        if let Err(remove_err) = std::fs::remove_file(&token_file) {
+          log::warn!("Failed to remove unreadable sync_token.dat: {remove_err}");
+        }
+        Ok(None)
+      }
     }
   }
 
@@ -1053,6 +1016,92 @@ pub fn get_system_info() -> SystemInfo {
     os: os.to_string(),
     arch: arch.to_string(),
     portable: crate::app_dirs::is_portable(),
+  }
+}
+
+/// Parse + decrypt a `sync_token.dat` file body. Pure function over
+/// `(file_bytes, vault_password)`, no I/O — split out so unit tests
+/// can hit every failure mode without needing the global app data dir
+/// or a real Tauri runtime.
+///
+/// Returns:
+/// - `Ok(Some(token))` on success
+/// - `Ok(None)` if the file is structurally well-formed but doesn't
+///   carry a token (empty UTF-8 plaintext)
+/// - `Err(reason)` for any "unusable file" condition — bad magic,
+///   wrong version, truncated framing, bad salt/nonce, or AES-GCM
+///   decryption failure. The caller decides whether to discard.
+fn decrypt_sync_token_bytes(
+  file_data: &[u8],
+  vault_password: &str,
+) -> Result<Option<String>, String> {
+  if file_data.len() < 6 || &file_data[0..5] != b"DBSYN" {
+    return Err("bad magic header".to_string());
+  }
+
+  let version = file_data[5];
+  if version != 2 {
+    return Err(format!("unknown format version {version}"));
+  }
+
+  let mut offset = 6;
+  if offset >= file_data.len() {
+    return Err("truncated after version".to_string());
+  }
+  let salt_len = file_data[offset] as usize;
+  offset += 1;
+
+  if offset + salt_len > file_data.len() {
+    return Err("truncated salt".to_string());
+  }
+  let salt_bytes = &file_data[offset..offset + salt_len];
+  let salt_str = std::str::from_utf8(salt_bytes).map_err(|_| "invalid salt encoding")?;
+  let salt = SaltString::from_b64(salt_str).map_err(|_| "invalid salt format")?;
+  offset += salt_len;
+
+  if offset + 12 > file_data.len() {
+    return Err("truncated nonce".to_string());
+  }
+  let nonce_bytes: [u8; 12] = file_data[offset..offset + 12]
+    .try_into()
+    .map_err(|_| "invalid nonce length")?;
+  let nonce = Nonce::from(nonce_bytes);
+  offset += 12;
+
+  if offset + 4 > file_data.len() {
+    return Err("truncated ciphertext length".to_string());
+  }
+  let ciphertext_len = u32::from_le_bytes([
+    file_data[offset],
+    file_data[offset + 1],
+    file_data[offset + 2],
+    file_data[offset + 3],
+  ]) as usize;
+  offset += 4;
+
+  if offset + ciphertext_len > file_data.len() {
+    return Err("truncated ciphertext".to_string());
+  }
+  let ciphertext = &file_data[offset..offset + ciphertext_len];
+
+  let argon2 = Argon2::default();
+  let password_hash = argon2
+    .hash_password(vault_password.as_bytes(), &salt)
+    .map_err(|e| format!("argon2 key derivation failed: {e}"))?;
+  let hash_value = password_hash.hash.ok_or("argon2 hash missing")?;
+  let hash_bytes = hash_value.as_bytes();
+  let key_bytes: [u8; 32] = hash_bytes[..32]
+    .try_into()
+    .map_err(|_| "invalid key length")?;
+  let key = Key::<Aes256Gcm>::from(key_bytes);
+  let cipher = Aes256Gcm::new(&key);
+  let plaintext = cipher
+    .decrypt(&nonce, ciphertext)
+    .map_err(|_| "AES-GCM decryption failed (vault password mismatch?)".to_string())?;
+
+  match String::from_utf8(plaintext) {
+    Ok(token) => Ok(Some(token)),
+    Err(_) => Ok(None),
   }
 }
 
@@ -1514,5 +1563,130 @@ mod tests {
     for h in handles {
       h.join().unwrap();
     }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Sync-token self-healing (added 2026-05 — regression test for "browser
+  // launch fails: Failed to load self-hosted token: Decryption failed").
+  //
+  // The token file is AES-GCM encrypted with a key derived from the
+  // compile-time `DONUT_BROWSER_VAULT_PASSWORD`. If that env var changes
+  // between builds (or e.g. the user moves an encrypted token file from
+  // another machine), every subsequent decrypt fails with the same
+  // opaque error. Pre-fix that error propagated all the way up through
+  // `acquire_team_lock_if_needed` and blocked the browser from launching
+  // at all — the user had no path forward except manually deleting the
+  // file. Post-fix: an unreadable token is treated like "no token" —
+  // the file is discarded, a warning is logged, and the auth path
+  // degrades to "not logged in" so the user can re-login from Settings.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  #[test]
+  fn decrypt_sync_token_bytes_round_trips_a_valid_token() {
+    // Encrypt with the real `store_sync_token` so the test exercises the
+    // exact framing the production reader expects (header + version +
+    // salt + nonce + ciphertext_len + ciphertext), not a hand-rolled
+    // approximation.
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
+    let token_file = manager.get_settings_dir().join("sync_token.dat");
+    std::fs::create_dir_all(token_file.parent().unwrap()).unwrap();
+
+    rt.block_on(async {
+      // store_sync_token does not actually use the AppHandle, so an unused
+      // raw pointer cast is sufficient here; if that ever changes this
+      // test will fail at the borrow.
+      let bytes = encrypt_for_test("hello-token", &SettingsManager::get_vault_password());
+      std::fs::write(&token_file, bytes).unwrap();
+    });
+
+    let read = manager.read_sync_token_from_disk().unwrap();
+    assert_eq!(read.as_deref(), Some("hello-token"));
+    assert!(
+      token_file.exists(),
+      "successfully-decrypted token file must NOT be deleted",
+    );
+  }
+
+  #[test]
+  fn read_sync_token_returns_none_when_file_absent() {
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    assert_eq!(manager.read_sync_token_from_disk().unwrap(), None);
+  }
+
+  #[test]
+  fn read_sync_token_discards_file_encrypted_with_wrong_vault_password() {
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    let token_file = manager.get_settings_dir().join("sync_token.dat");
+    std::fs::create_dir_all(token_file.parent().unwrap()).unwrap();
+
+    // Simulate the real-world bug: a previous build wrote the token with
+    // a vault password we no longer have.
+    let bytes = encrypt_for_test("real-token", "the-other-password");
+    std::fs::write(&token_file, bytes).unwrap();
+
+    // We get back `None` (not `Err`) — the caller sees "not logged in".
+    let read = manager.read_sync_token_from_disk();
+    assert!(
+      matches!(read, Ok(None)),
+      "decryption failure must degrade to Ok(None), got {read:?}",
+    );
+
+    // And the unreadable file is discarded so we don't keep retrying
+    // every launch and so a fresh login can write a usable one.
+    assert!(
+      !token_file.exists(),
+      "unreadable sync_token.dat must be removed",
+    );
+  }
+
+  #[test]
+  fn read_sync_token_discards_file_with_bad_magic() {
+    let (manager, _temp_dir, _guard) = create_test_settings_manager();
+    let token_file = manager.get_settings_dir().join("sync_token.dat");
+    std::fs::create_dir_all(token_file.parent().unwrap()).unwrap();
+    std::fs::write(&token_file, b"this is not an encrypted token").unwrap();
+
+    assert!(matches!(manager.read_sync_token_from_disk(), Ok(None)));
+    assert!(
+      !token_file.exists(),
+      "unreadable sync_token.dat must be removed",
+    );
+  }
+
+  #[test]
+  fn decrypt_sync_token_bytes_rejects_truncated_input() {
+    // A 5-byte input is "magic header only" — every length check should
+    // reject it without panicking. (Regression: an earlier draft of the
+    // parser tried to index `file_data[5]` unconditionally.)
+    let result = decrypt_sync_token_bytes(b"DBSYN", "any-password");
+    assert!(result.is_err(), "truncated file must error, got {result:?}");
+  }
+
+  /// Mirror of `SettingsManager::store_sync_token`'s framing — kept here
+  /// so the round-trip test doesn't need an AppHandle.
+  fn encrypt_for_test(token: &str, vault_password: &str) -> Vec<u8> {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let password_hash = argon2
+      .hash_password(vault_password.as_bytes(), &salt)
+      .expect("argon2");
+    let hash_value = password_hash.hash.unwrap();
+    let key_bytes: [u8; 32] = hash_value.as_bytes()[..32].try_into().unwrap();
+    let key = Key::<Aes256Gcm>::from(key_bytes);
+    let cipher = Aes256Gcm::new(&key);
+    let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
+    let ciphertext = cipher.encrypt(&nonce, token.as_bytes()).expect("encrypt");
+
+    let mut out = Vec::new();
+    out.extend_from_slice(b"DBSYN");
+    out.push(2u8);
+    let salt_str = salt.as_str();
+    out.push(salt_str.len() as u8);
+    out.extend_from_slice(salt_str.as_bytes());
+    out.extend_from_slice(&nonce);
+    out.extend_from_slice(&(ciphertext.len() as u32).to_le_bytes());
+    out.extend_from_slice(&ciphertext);
+    out
   }
 }
