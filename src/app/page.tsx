@@ -11,7 +11,6 @@ import { CookieCopyDialog } from "@/components/cookie-copy-dialog";
 import { CookieManagementDialog } from "@/components/cookie-management-dialog";
 import { CreateProfileDialog } from "@/components/create-profile-dialog";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
-import { DeviceCodeVerifyDialog } from "@/components/device-code-verify-dialog";
 import { ExtensionGroupAssignmentDialog } from "@/components/extension-group-assignment-dialog";
 import { ExtensionManagementDialog } from "@/components/extension-management-dialog";
 import { GroupAssignmentDialog } from "@/components/group-assignment-dialog";
@@ -41,7 +40,6 @@ import { TemplateManagementDialog } from "@/components/template-management-dialo
 import { WayfernTermsDialog } from "@/components/wayfern-terms-dialog";
 import { WindowResizeWarningDialog } from "@/components/window-resize-warning-dialog";
 import { useAppUpdateNotifications } from "@/hooks/use-app-update-notifications";
-import { useCloudAuth } from "@/hooks/use-cloud-auth";
 import { useFailoverChains } from "@/hooks/use-failover-chains";
 import {
   focusGlobalSearch,
@@ -173,13 +171,12 @@ export default function Home() {
     checkTerms,
   } = useWayfernTerms();
 
-  // Cloud auth for cross-OS unlock
-  const { user: cloudUser } = useCloudAuth();
-  const crossOsUnlocked =
-    cloudUser?.plan !== "free" &&
-    (cloudUser?.subscriptionStatus === "active" ||
-      cloudUser?.planPeriod === "lifetime");
-
+  // The upstream Donut Browser gated cross-OS profile launch, encrypted
+  // sync, and team UI on a paid cloud subscription. This internal-use
+  // fork has no cloud control plane (cloud_auth is a stub), so every
+  // gated feature is unconditionally unlocked. Self-hosted sync still
+  // controls whether the sync settings dialog shows configured state.
+  const crossOsUnlocked = true;
   const [selfHostedSyncConfigured, setSelfHostedSyncConfigured] =
     useState(false);
   const [selfHostedUser, setSelfHostedUser] = useState<
@@ -195,17 +192,17 @@ export default function Home() {
       const hasConfig = Boolean(
         settings.sync_server_url && settings.sync_token,
       );
-      setSelfHostedSyncConfigured(hasConfig && !cloudUser);
-      setSelfHostedUser(!cloudUser ? (authState?.user ?? null) : null);
+      setSelfHostedSyncConfigured(hasConfig);
+      setSelfHostedUser(authState?.user ?? null);
     } catch {
       setSelfHostedSyncConfigured(false);
       setSelfHostedUser(null);
     }
-  }, [cloudUser]);
+  }, []);
 
   const syncUnlocked = crossOsUnlocked || selfHostedSyncConfigured;
-  const showTeamMenu = Boolean(selfHostedUser) && !cloudUser;
-  const showTeamAdmin = selfHostedUser?.role === "admin" && !cloudUser;
+  const showTeamMenu = Boolean(selfHostedUser);
+  const showTeamAdmin = selfHostedUser?.role === "admin";
 
   const [createProfileDialogOpen, setCreateProfileDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
@@ -278,7 +275,6 @@ export default function Home() {
     useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [syncConfigDialogOpen, setSyncConfigDialogOpen] = useState(false);
-  const [deviceCodeDialogOpen, setDeviceCodeDialogOpen] = useState(false);
   const [syncAllDialogOpen, setSyncAllDialogOpen] = useState(false);
   const [profileSyncDialogOpen, setProfileSyncDialogOpen] = useState(false);
   const [currentProfileForSync, setCurrentProfileForSync] =
@@ -1658,28 +1654,7 @@ export default function Home() {
             setSyncAllDialogOpen(true);
           }
         }}
-        onLoginStarted={() => {
-          // Hand the verify step off to its own dialog. We close this one
-          // first so the verify dialog isn't stacked on top of it (and
-          // can't end up stacked on top of the profile selector either).
-          setSyncConfigDialogOpen(false);
-          setDeviceCodeDialogOpen(true);
-        }}
       />
-
-      {/* Only render while no profile-selector flow is in progress, so the
-          verify dialog never lands on top of a deep-link-triggered selector. */}
-      {pendingUrls.length === 0 && (
-        <DeviceCodeVerifyDialog
-          isOpen={deviceCodeDialogOpen}
-          onClose={(loginOccurred) => {
-            setDeviceCodeDialogOpen(false);
-            if (loginOccurred) {
-              setSyncAllDialogOpen(true);
-            }
-          }}
-        />
-      )}
 
       <SyncAllDialog
         isOpen={syncAllDialogOpen}

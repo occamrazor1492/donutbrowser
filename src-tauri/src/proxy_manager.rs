@@ -146,6 +146,7 @@ impl StoredProxy {
   }
 
   /// Migrate legacy geo_state to geo_region
+  #[allow(dead_code)]
   pub fn migrate_geo_fields(&mut self) {
     if self.geo_region.is_none() && self.geo_state.is_some() {
       self.geo_region = self.geo_state.take();
@@ -426,13 +427,23 @@ impl ProxyManager {
     Ok(stored_proxy)
   }
 
-  // Check if a cloud-managed proxy exists
+  // Check if a cloud-managed proxy exists.
+  //
+  // Cloud-managed proxies are an artifact of the upstream commercial
+  // build. The internal fork stubs `cloud_auth.rs`, so nothing creates
+  // or asks about them at runtime — but the storage shape lives on
+  // (StoredProxy still has `is_cloud_managed` / `is_cloud_derived` /
+  // geo fields) so existing on-disk proxy JSON keeps deserializing
+  // correctly. Tagged dead_code rather than deleted so a future commit
+  // can rip the cloud_proxy data layer in one focused pass.
+  #[allow(dead_code)]
   pub fn has_cloud_proxy(&self) -> bool {
     let stored_proxies = self.stored_proxies.lock().unwrap();
     stored_proxies.contains_key(CLOUD_PROXY_ID)
   }
 
   // Upsert the cloud-managed proxy (create or update)
+  #[allow(dead_code)]
   pub fn upsert_cloud_proxy(&self, proxy_settings: ProxySettings) -> Result<StoredProxy, String> {
     let mut stored_proxies = self.stored_proxies.lock().unwrap();
 
@@ -479,6 +490,7 @@ impl ProxyManager {
   }
 
   // Remove the cloud-managed proxy
+  #[allow(dead_code)]
   pub fn remove_cloud_proxy(&self) {
     let removed = {
       let mut stored_proxies = self.stored_proxies.lock().unwrap();
@@ -495,6 +507,7 @@ impl ProxyManager {
     }
   }
 
+  #[allow(dead_code)]
   pub fn remove_cloud_proxies(&self) {
     let removed_ids: Vec<String> = {
       let mut stored_proxies = self.stored_proxies.lock().unwrap();
@@ -528,6 +541,7 @@ impl ProxyManager {
   // LP v2 format: username-country-{cc}[-region-{region}][-city-{city}][-isp-{isp}]
   // Note: sid and ttl are NOT included here — they are injected at browser launch time
   // per-profile via resolve_proxy_for_profile()
+  #[allow(dead_code)]
   fn build_geo_username(
     base_username: &str,
     country: &str,
@@ -599,6 +613,7 @@ impl ProxyManager {
   }
 
   // Create a cloud-derived location proxy from the base cloud proxy credentials
+  #[allow(dead_code)]
   pub fn create_cloud_location_proxy(
     &self,
     name: String,
@@ -674,6 +689,7 @@ impl ProxyManager {
   }
 
   // Update all cloud-derived proxies when base cloud proxy credentials change
+  #[allow(dead_code)]
   pub fn update_cloud_derived_proxies(&self) {
     let base_proxy = {
       let stored_proxies = self.stored_proxies.lock().unwrap();

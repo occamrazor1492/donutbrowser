@@ -195,7 +195,13 @@ impl<R: Runtime> WindowExt for WebviewWindow<R> {
   }
 }
 
-#[tauri::command]
+/// Handle a deep-link / startup URL.
+///
+/// No longer exposed as a Tauri command — the only frontend caller was
+/// the cloud device-code login flow that lived in `sync-config-dialog`,
+/// and the internal-use fork removed that. The function is still called
+/// directly from the deep-link plugin handler and the startup-URL path
+/// below as a plain async fn.
 async fn handle_url_open(app: tauri::AppHandle, url: String) -> Result<(), String> {
   log::info!("handle_url_open called with URL: {url}");
 
@@ -2123,21 +2129,9 @@ pub fn run() {
       disconnect_vpn,
       get_vpn_status,
       list_active_vpn_connections,
-      handle_url_open,
-      // Cloud auth commands
-      cloud_auth::cloud_exchange_device_code,
-      cloud_auth::cloud_get_user,
-      cloud_auth::cloud_refresh_profile,
-      cloud_auth::cloud_logout,
-      cloud_auth::cloud_get_proxy_usage,
-      cloud_auth::cloud_get_countries,
-      cloud_auth::cloud_get_regions,
-      cloud_auth::cloud_get_cities,
-      cloud_auth::cloud_get_isps,
-      cloud_auth::create_cloud_location_proxy,
-      cloud_auth::restart_sync_service,
-      cloud_auth::cloud_get_wayfern_token,
-      cloud_auth::cloud_refresh_wayfern_token,
+      // Cloud auth commands removed in the internal-use fork — auth is
+      // handled by self_hosted_auth.rs and there's no cloud control
+      // plane to call.
       cloakbrowser::cloak_get_runtime_status,
       cloakbrowser::cloak_validate_runtime,
       self_hosted_auth::save_self_hosted_auth_state,

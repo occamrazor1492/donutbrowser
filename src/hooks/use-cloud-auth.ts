@@ -1,86 +1,60 @@
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useState } from "react";
-import type { CloudAuthState, CloudUser } from "@/types";
+"use client";
+
+/**
+ * Cloud auth hook — STUBBED for the internal-use fork.
+ *
+ * Several existing components (`profile-data-table.tsx`,
+ * `profile-sync-dialog.tsx`, `settings-dialog.tsx`,
+ * `sync-config-dialog.tsx`) read the cloud user to decide whether to
+ * render upgrade prompts / Pro badges / locked-feature UI.
+ *
+ * In this fork there is no cloud control plane (cloud_auth.rs is a
+ * stub), so the hook always reports "not logged in / no user / not
+ * loading". Every consumer falls through to the self-hosted code path
+ * unchanged, and any Pro-feature gate that's gated on
+ * `cloudUser?.plan !== "free"` ends up evaluating "unlock".
+ *
+ * Returning the same shape the original hook returned keeps every call
+ * site working without edits — they just see a permanently-anonymous
+ * state.
+ */
+export interface CloudUser {
+  id: string;
+  email: string;
+  plan: string;
+  planPeriod?: string | null;
+  subscriptionStatus: string;
+  profileLimit: number;
+  cloudProfilesUsed: number;
+  proxyBandwidthLimitMb: number;
+  proxyBandwidthUsedMb: number;
+  proxyBandwidthExtraMb: number;
+  teamId?: string | null;
+  teamName?: string | null;
+  teamRole?: string | null;
+}
+
+export interface CloudAuthState {
+  user: CloudUser;
+  logged_in_at: string;
+}
 
 interface UseCloudAuthReturn {
   user: CloudUser | null;
-  isLoggedIn: boolean;
+  authState: CloudAuthState | null;
   isLoading: boolean;
-  exchangeDeviceCode: (code: string) => Promise<CloudAuthState>;
+  isLoggedIn: boolean;
+  refresh: () => Promise<void>;
   logout: () => Promise<void>;
-  refreshProfile: () => Promise<CloudUser>;
 }
 
 export function useCloudAuth(): UseCloudAuthReturn {
-  const [authState, setAuthState] = useState<CloudAuthState | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadUser = useCallback(async () => {
-    try {
-      const state = await invoke<CloudAuthState | null>("cloud_get_user");
-      setAuthState(state);
-    } catch (error) {
-      console.error("Failed to load cloud auth state:", error);
-      setAuthState(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadUser();
-
-    const unlistenExpired = listen("cloud-auth-expired", () => {
-      setAuthState(null);
-    });
-
-    const unlistenChanged = listen("cloud-auth-changed", () => {
-      void loadUser();
-    });
-
-    return () => {
-      void unlistenExpired.then((unlisten) => {
-        unlisten();
-      });
-      void unlistenChanged.then((unlisten) => {
-        unlisten();
-      });
-    };
-  }, [loadUser]);
-
-  const exchangeDeviceCode = useCallback(
-    async (code: string): Promise<CloudAuthState> => {
-      const state = await invoke<CloudAuthState>("cloud_exchange_device_code", {
-        code,
-      });
-      setAuthState(state);
-      return state;
-    },
-    [],
-  );
-
-  const logout = useCallback(async () => {
-    await invoke("cloud_logout");
-    setAuthState(null);
-  }, []);
-
-  const refreshProfile = useCallback(async (): Promise<CloudUser> => {
-    const user = await invoke<CloudUser>("cloud_refresh_profile");
-    setAuthState((prev) =>
-      prev
-        ? { ...prev, user }
-        : { user, logged_in_at: new Date().toISOString() },
-    );
-    return user;
-  }, []);
-
   return {
-    user: authState?.user ?? null,
-    isLoggedIn: authState !== null,
-    isLoading,
-    exchangeDeviceCode,
-    logout,
-    refreshProfile,
+    user: null,
+    authState: null,
+    isLoading: false,
+    isLoggedIn: false,
+    refresh: async () => {},
+    logout: async () => {},
   };
 }

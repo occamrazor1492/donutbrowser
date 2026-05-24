@@ -68,6 +68,7 @@ impl ProfileLockManager {
     self.start_heartbeat_loop().await;
   }
 
+  #[allow(dead_code)]
   pub async fn disconnect(&self) {
     log::info!("Disconnecting profile lock manager");
 
