@@ -8,6 +8,7 @@ import {
   LuLayoutTemplate,
   LuPlug,
   LuPuzzle,
+  LuScale,
   LuSearch,
   LuShare2,
   LuUsers,
@@ -173,6 +174,7 @@ interface Props {
   onProxyManagementDialogOpen: (open: boolean) => void;
   onGroupManagementDialogOpen: (open: boolean) => void;
   onTemplateManagementDialogOpen: (open: boolean) => void;
+  onCompareProfilesDialogOpen: (open: boolean) => void;
   onImportProfileDialogOpen: (open: boolean) => void;
   onCreateProfileDialogOpen: (open: boolean) => void;
   onSyncConfigDialogOpen: (open: boolean) => void;
@@ -192,6 +194,7 @@ const HomeHeader = ({
   onProxyManagementDialogOpen,
   onGroupManagementDialogOpen,
   onTemplateManagementDialogOpen,
+  onCompareProfilesDialogOpen,
   onImportProfileDialogOpen,
   onCreateProfileDialogOpen,
   onSyncConfigDialogOpen,
@@ -363,6 +366,14 @@ const HomeHeader = ({
             >
               <LuLayoutTemplate className="mr-2 w-4 h-4" />
               {t("header.menu.templates")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                onCompareProfilesDialogOpen(true);
+              }}
+            >
+              <LuScale className="mr-2 w-4 h-4" />
+              {t("header.menu.compareProfiles")}
             </DropdownMenuItem>
             {showExtensions && (
               <DropdownMenuItem

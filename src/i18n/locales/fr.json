@@ -196,6 +196,7 @@
       "proxies": "Proxys et VPNs",
       "groups": "Groupes",
       "templates": "Modèles de profil",
+      "compareProfiles": "Comparer les profils",
       "syncService": "Compte",
       "integrations": "Intégrations",
       "importProfile": "Importer un profil",
@@ -1903,6 +1904,18 @@
       "deleteFailed": "Échec de la suppression du modèle : {{error}}",
       "applyFailed": "Échec de l'application du modèle : {{error}}"
     }
+  },
+  "profileCompare": {
+    "title": "Comparer les profils",
+    "description": "Choisissez deux profils pour voir exactement quels champs diffèrent. Les champs d'identité (id, nom, dernier lancement, groupe) sont ignorés.",
+    "profileA": "Profil A",
+    "profileB": "Profil B",
+    "pickProfile": "Choisir un profil…",
+    "pickBoth": "Choisissez deux profils pour commencer la comparaison.",
+    "sameProfile": "Les deux sélections sont le même profil.",
+    "identical": "Ces deux profils ont une configuration identique.",
+    "field": "Champ",
+    "diffCount": "{{count}} champs différents"
   },
   "mcpTools": {
     "title": "Référence des outils MCP",

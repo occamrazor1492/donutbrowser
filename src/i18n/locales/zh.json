@@ -196,6 +196,7 @@
       "proxies": "代理和VPN",
       "groups": "分组",
       "templates": "配置文件模板",
+      "compareProfiles": "对比配置文件",
       "syncService": "账户",
       "integrations": "集成",
       "importProfile": "导入配置文件",
@@ -1903,6 +1904,18 @@
       "deleteFailed": "删除模板失败: {{error}}",
       "applyFailed": "应用模板失败: {{error}}"
     }
+  },
+  "profileCompare": {
+    "title": "对比配置文件",
+    "description": "选择两个配置文件查看具体差异。标识字段（id、名称、最后启动、分组）会被忽略。",
+    "profileA": "配置文件 A",
+    "profileB": "配置文件 B",
+    "pickProfile": "选择配置文件…",
+    "pickBoth": "请选择两个配置文件开始对比。",
+    "sameProfile": "两侧选择了同一个配置文件。",
+    "identical": "这两个配置文件配置完全相同。",
+    "field": "字段",
+    "diffCount": "{{count}} 个不同字段"
   },
   "mcpTools": {
     "title": "MCP 工具参考",

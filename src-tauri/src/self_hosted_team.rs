@@ -408,6 +408,48 @@ pub fn build_materialized_wayfern_profile(
   Ok(profile)
 }
 
+/// Materialize a team-shared Camoufox/Firefox profile so it can be launched
+/// like a regular local Camoufox profile. Mirrors the Wayfern path — the
+/// shared profile must have already completed at least one local sync so
+/// `existing_profile` carries the camoufox_config the user picked locally.
+/// Identity-y fields (id/name/sync mode) are reset to match the team record.
+pub fn build_materialized_camoufox_profile(
+  team_profile: &TeamProfileRecord,
+  existing_profile: Option<BrowserProfile>,
+) -> Result<BrowserProfile, String> {
+  if team_profile.engine != "camoufox" {
+    return Err("Only Camoufox team profiles can use this materializer".to_string());
+  }
+
+  let profile_id = Uuid::parse_str(&team_profile.id)
+    .map_err(|e| format!("Invalid team profile id {}: {e}", team_profile.id))?;
+  let mut profile = existing_profile.ok_or_else(|| {
+    "Shared Camoufox profile has not finished its first server sync yet".to_string()
+  })?;
+
+  profile.id = profile_id;
+  profile.name = team_profile.name.clone();
+  profile.browser = "camoufox".to_string();
+  profile.engine = Some("camoufox".to_string());
+  if profile.release_type.trim().is_empty() {
+    profile.release_type = "stable".to_string();
+  }
+  profile.sync_mode = SyncMode::Regular;
+  if profile.host_os.is_none() {
+    profile.host_os = Some(get_host_os());
+  }
+  profile.ephemeral = false;
+  // Keep camoufox_config (that's what makes a camoufox profile camoufox);
+  // null out the other engines' configs so a stale entry can't confuse
+  // the launcher.
+  profile.wayfern_config = None;
+  profile.botbrowser_config = None;
+  profile.cloak_config = None;
+  profile.process_id = None;
+
+  Ok(profile)
+}
+
 pub fn build_materialized_team_profile(
   team_profile: &TeamProfileRecord,
   existing_profile: Option<BrowserProfile>,
@@ -419,10 +461,7 @@ pub fn build_materialized_team_profile(
     }
     "wayfern" => build_materialized_wayfern_profile(team_profile, existing_profile),
     "cloak" => build_materialized_cloak_profile(team_profile, existing_profile),
-    "camoufox" => Err(
-      "Firefox/Camoufox shared profiles are saved for compatibility, but one-click shared launch is not enabled yet"
-        .to_string(),
-    ),
+    "camoufox" => build_materialized_camoufox_profile(team_profile, existing_profile),
     other => Err(format!("Unsupported shared profile engine: {other}")),
   }
 }

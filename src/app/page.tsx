@@ -23,6 +23,7 @@ import { ImportProfileDialog } from "@/components/import-profile-dialog";
 import { IntegrationsDialog } from "@/components/integrations-dialog";
 import { LaunchOnLoginDialog } from "@/components/launch-on-login-dialog";
 import { PermissionDialog } from "@/components/permission-dialog";
+import { ProfileCompareDialog } from "@/components/profile-compare-dialog";
 import { ProfilesDataTable } from "@/components/profile-data-table";
 import { ProfileSelectorDialog } from "@/components/profile-selector-dialog";
 import { ProfileSyncDialog } from "@/components/profile-sync-dialog";
@@ -181,6 +182,8 @@ export default function Home() {
   const [groupManagementDialogOpen, setGroupManagementDialogOpen] =
     useState(false);
   const [templateManagementDialogOpen, setTemplateManagementDialogOpen] =
+    useState(false);
+  const [compareProfilesDialogOpen, setCompareProfilesDialogOpen] =
     useState(false);
   const [extensionManagementDialogOpen, setExtensionManagementDialogOpen] =
     useState(false);
@@ -1266,6 +1269,7 @@ export default function Home() {
             onCreateProfileDialogOpen={setCreateProfileDialogOpen}
             onGroupManagementDialogOpen={setGroupManagementDialogOpen}
             onTemplateManagementDialogOpen={setTemplateManagementDialogOpen}
+            onCompareProfilesDialogOpen={setCompareProfilesDialogOpen}
             onImportProfileDialogOpen={setImportProfileDialogOpen}
             onProxyManagementDialogOpen={setProxyManagementDialogOpen}
             onSettingsDialogOpen={setSettingsDialogOpen}
@@ -1480,6 +1484,12 @@ export default function Home() {
           setGroupManagementDialogOpen(false);
         }}
         onGroupManagementComplete={handleGroupManagementComplete}
+      />
+
+      <ProfileCompareDialog
+        isOpen={compareProfilesDialogOpen}
+        onClose={() => setCompareProfilesDialogOpen(false)}
+        profiles={profiles}
       />
 
       <TemplateManagementDialog

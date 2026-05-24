@@ -196,6 +196,7 @@
       "proxies": "プロキシ & VPN",
       "groups": "グループ",
       "templates": "プロファイルテンプレート",
+      "compareProfiles": "プロファイルを比較",
       "syncService": "アカウント",
       "integrations": "統合",
       "importProfile": "プロファイルをインポート",
@@ -1903,6 +1904,18 @@
       "deleteFailed": "テンプレートの削除に失敗しました: {{error}}",
       "applyFailed": "テンプレートの適用に失敗しました: {{error}}"
     }
+  },
+  "profileCompare": {
+    "title": "プロファイルを比較",
+    "description": "2つのプロファイルを選択して、どのフィールドが異なるかを確認します。識別用フィールド（id、名前、最終起動、グループ）は無視されます。",
+    "profileA": "プロファイル A",
+    "profileB": "プロファイル B",
+    "pickProfile": "プロファイルを選択…",
+    "pickBoth": "比較を開始するには2つのプロファイルを選択してください。",
+    "sameProfile": "両方の選択が同じプロファイルです。",
+    "identical": "この2つのプロファイルの設定は同一です。",
+    "field": "フィールド",
+    "diffCount": "{{count}} 個の異なるフィールド"
   },
   "mcpTools": {
     "title": "MCP ツールリファレンス",

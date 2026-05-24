@@ -196,6 +196,7 @@
       "proxies": "Proxies & VPNs",
       "groups": "Groups",
       "templates": "Profile Templates",
+      "compareProfiles": "Compare Profiles",
       "syncService": "Account",
       "integrations": "Integrations",
       "importProfile": "Import Profile",
@@ -1903,6 +1904,18 @@
       "deleteFailed": "Failed to delete template: {{error}}",
       "applyFailed": "Failed to apply template: {{error}}"
     }
+  },
+  "profileCompare": {
+    "title": "Compare profiles",
+    "description": "Pick two profiles to see exactly which fields differ. Identity fields (id, name, last launch, group) are ignored.",
+    "profileA": "Profile A",
+    "profileB": "Profile B",
+    "pickProfile": "Pick a profile…",
+    "pickBoth": "Pick two profiles to start comparing.",
+    "sameProfile": "Both selections are the same profile.",
+    "identical": "These two profiles have identical configuration.",
+    "field": "Field",
+    "diffCount": "{{count}} differing fields"
   },
   "mcpTools": {
     "title": "MCP Tools Reference",
