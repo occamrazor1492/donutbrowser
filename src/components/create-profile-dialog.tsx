@@ -1,7 +1,14 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { BotAssetSelector } from "@/components/create-profile/bot-asset-selector";
 import { BrowserDownloadStatus } from "@/components/create-profile/browser-download-status";
@@ -90,6 +97,36 @@ interface BrowserOption {
   labelKey: string;
 }
 
+// Reducer for the Cloak engine's 6 text-input fields. They always
+// reset together (when the user switches engine away from Cloak, or
+// after a successful create), so collapsing them into one reducer is
+// both cleaner state-wise and lets sub-components consume the whole
+// `fields` object without per-field plumbing.
+const INITIAL_CLOAK_FIELDS: CloakConfigFields = {
+  executablePath: "",
+  fingerprintSeed: "",
+  locale: "",
+  timezone: "",
+  languages: "",
+  extraArgs: "",
+};
+
+type CloakAction =
+  | { type: "set"; field: keyof CloakConfigFields; value: string }
+  | { type: "reset" };
+
+function cloakReducer(
+  state: CloakConfigFields,
+  action: CloakAction,
+): CloakConfigFields {
+  switch (action.type) {
+    case "set":
+      return { ...state, [action.field]: action.value };
+    case "reset":
+      return INITIAL_CLOAK_FIELDS;
+  }
+}
+
 const browserOptions: BrowserOption[] = [
   {
     value: "camoufox",
@@ -148,12 +185,10 @@ export function CreateProfileDialog({
     useState<string>("__none__");
   const [botProfilePath, setBotProfilePath] = useState("");
   const [botExecutablePath, setBotExecutablePath] = useState("");
-  const [cloakExecutablePath, setCloakExecutablePath] = useState("");
-  const [cloakFingerprintSeed, setCloakFingerprintSeed] = useState("");
-  const [cloakLocale, setCloakLocale] = useState("");
-  const [cloakTimezone, setCloakTimezone] = useState("");
-  const [cloakLanguages, setCloakLanguages] = useState("");
-  const [cloakExtraArgs, setCloakExtraArgs] = useState("");
+  const [cloakFields, dispatchCloak] = useReducer(
+    cloakReducer,
+    INITIAL_CLOAK_FIELDS,
+  );
   const [cloakRuntimeStatus, setCloakRuntimeStatus] =
     useState<CloakRuntimeStatusValue | null>(null);
   const [isLoadingCloakRuntime, setIsLoadingCloakRuntime] = useState(false);
@@ -506,17 +541,17 @@ export function CreateProfileDialog({
             launchHook: launchHook.trim() || undefined,
           });
         } else if (selectedBrowser === "cloak") {
-          const fingerprintSeed = Number(cloakFingerprintSeed);
+          const fingerprintSeed = Number(cloakFields.fingerprintSeed);
           const cloakConfig: CloakConfig = {
-            executable_path: cloakExecutablePath.trim() || undefined,
+            executable_path: cloakFields.executablePath.trim() || undefined,
             fingerprint_seed:
               Number.isFinite(fingerprintSeed) && fingerprintSeed > 0
                 ? fingerprintSeed
                 : undefined,
-            locale: cloakLocale.trim() || undefined,
-            timezone: cloakTimezone.trim() || undefined,
-            languages: cloakLanguages.trim() || undefined,
-            extra_args: cloakExtraArgs
+            locale: cloakFields.locale.trim() || undefined,
+            timezone: cloakFields.timezone.trim() || undefined,
+            languages: cloakFields.languages.trim() || undefined,
+            extra_args: cloakFields.extraArgs
               .split(/\s+/)
               .map((arg) => arg.trim())
               .filter(Boolean),
@@ -638,12 +673,7 @@ export function CreateProfileDialog({
     setSelectedBotProfileAssetId("__none__");
     setBotProfilePath("");
     setBotExecutablePath("");
-    setCloakExecutablePath("");
-    setCloakFingerprintSeed("");
-    setCloakLocale("");
-    setCloakTimezone("");
-    setCloakLanguages("");
-    setCloakExtraArgs("");
+    dispatchCloak({ type: "reset" });
     setReleaseTypes({});
     setIsLoadingReleaseTypes(false);
     setReleaseTypesError(null);
@@ -666,47 +696,9 @@ export function CreateProfileDialog({
     setWayfernConfig((prev) => ({ ...prev, [key]: value }));
   };
 
-  const cloakFields = useMemo<CloakConfigFields>(
-    () => ({
-      executablePath: cloakExecutablePath,
-      fingerprintSeed: cloakFingerprintSeed,
-      locale: cloakLocale,
-      timezone: cloakTimezone,
-      languages: cloakLanguages,
-      extraArgs: cloakExtraArgs,
-    }),
-    [
-      cloakExecutablePath,
-      cloakFingerprintSeed,
-      cloakLocale,
-      cloakTimezone,
-      cloakLanguages,
-      cloakExtraArgs,
-    ],
-  );
-
   const setCloakField = useCallback(
     (field: keyof CloakConfigFields, value: string) => {
-      switch (field) {
-        case "executablePath":
-          setCloakExecutablePath(value);
-          break;
-        case "fingerprintSeed":
-          setCloakFingerprintSeed(value);
-          break;
-        case "locale":
-          setCloakLocale(value);
-          break;
-        case "timezone":
-          setCloakTimezone(value);
-          break;
-        case "languages":
-          setCloakLanguages(value);
-          break;
-        case "extraArgs":
-          setCloakExtraArgs(value);
-          break;
-      }
+      dispatchCloak({ type: "set", field, value });
     },
     [],
   );
