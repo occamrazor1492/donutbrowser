@@ -4,18 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FaChrome, FaFirefox } from "react-icons/fa";
-import { GoPlus } from "react-icons/go";
-import {
-  LuExternalLink,
-  LuPencil,
-  LuPuzzle,
-  LuTrash2,
-  LuUpload,
-} from "react-icons/lu";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { LuPuzzle } from "react-icons/lu";
 import {
   Dialog,
   DialogContent,
@@ -24,72 +13,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import type { Extension, ExtensionGroup } from "@/types";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
+import { ExtensionEditDialog } from "./extension-management/extension-edit-dialog";
+import { ExtensionGroupsTab } from "./extension-management/extension-groups-tab";
+import { ExtensionList } from "./extension-management/extension-list";
+import { type SyncStatus } from "./extension-management/sync-status";
 import { RippleButton } from "./ui/ripple";
-
-type SyncStatus = "disabled" | "syncing" | "synced" | "error" | "waiting";
-
-function getSyncStatusDot(
-  item: { sync_enabled?: boolean; last_sync?: number },
-  liveStatus: SyncStatus | undefined,
-  t: (key: string, options?: Record<string, unknown>) => string,
-): { color: string; tooltip: string; animate: boolean } {
-  const status = liveStatus ?? (item.sync_enabled ? "synced" : "disabled");
-
-  switch (status) {
-    case "syncing":
-      return {
-        color: "bg-warning",
-        tooltip: t("profileTable.syncTooltipSyncing"),
-        animate: true,
-      };
-    case "synced":
-      return {
-        color: "bg-success",
-        tooltip: item.last_sync
-          ? t("profileTable.syncTooltipSyncedAt", {
-              time: new Date(item.last_sync * 1000).toLocaleString(),
-            })
-          : t("profileTable.syncTooltipSynced"),
-        animate: false,
-      };
-    case "waiting":
-      return {
-        color: "bg-warning",
-        tooltip: t("profileTable.syncTooltipWaiting"),
-        animate: false,
-      };
-    case "error":
-      return {
-        color: "bg-destructive",
-        tooltip: t("profileTable.syncTooltipError"),
-        animate: false,
-      };
-    default:
-      return {
-        color: "bg-muted-foreground",
-        tooltip: t("profileTable.syncTooltipNotSynced"),
-        animate: false,
-      };
-  }
-}
 
 interface ExtensionManagementDialogProps {
   isOpen: boolean;
@@ -466,59 +398,6 @@ export function ExtensionManagementDialog({
     }
   }, [groupToDelete, loadData, t]);
 
-  const renderCompatIcons = (compat: string[]) => {
-    const hasChromium = compat.includes("chromium");
-    const hasFirefox = compat.includes("firefox");
-    if (!hasChromium && !hasFirefox) return null;
-    return (
-      <div className="flex items-center gap-1 shrink-0">
-        {hasChromium && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <FaChrome className="w-3.5 h-3.5 text-muted-foreground" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              {t("extensions.compatibility.chromium")}
-            </TooltipContent>
-          </Tooltip>
-        )}
-        {hasFirefox && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <FaFirefox className="w-3.5 h-3.5 text-muted-foreground" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              {t("extensions.compatibility.firefox")}
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
-    );
-  };
-
-  const renderExtensionIcon = (ext: Extension, size: "sm" | "md" = "md") => {
-    const sizeClass = size === "sm" ? "w-4 h-4" : "w-5 h-5";
-    if (extensionIcons[ext.id]) {
-      return (
-        // biome-ignore lint/performance/noImgElement: base64 data URI icons cannot use next/image
-        <img
-          src={extensionIcons[ext.id]}
-          alt=""
-          className={`${sizeClass} shrink-0 rounded-sm`}
-        />
-      );
-    }
-    return (
-      <LuPuzzle className={`${sizeClass} shrink-0 text-muted-foreground`} />
-    );
-  };
-
-  const MAX_VISIBLE_ICONS = 3;
-
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -570,387 +449,77 @@ export function ExtensionManagementDialog({
                 </div>
 
                 {activeTab === "extensions" && (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <Label>{t("extensions.extensionsTab")}</Label>
-                      <div>
-                        <label htmlFor="ext-file-input">
-                          <RippleButton
-                            size="sm"
-                            className="flex gap-2 items-center"
-                            onClick={() =>
-                              document.getElementById("ext-file-input")?.click()
-                            }
-                          >
-                            <LuUpload className="w-4 h-4" />
-                            {t("extensions.upload")}
-                          </RippleButton>
-                        </label>
-                        <input
-                          id="ext-file-input"
-                          type="file"
-                          accept=".xpi,.crx,.zip"
-                          className="hidden"
-                          onChange={handleFileSelect}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Upload form */}
-                    {showUploadForm && pendingFile && (
-                      <div className="space-y-3 rounded-md border p-3">
-                        <div className="text-sm text-muted-foreground">
-                          {t("extensions.selectedFile")}:{" "}
-                          <span className="font-medium text-foreground">
-                            {pendingFile.name}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <Input
-                            value={extensionName}
-                            onChange={(e) => {
-                              setExtensionName(e.target.value);
-                            }}
-                            placeholder={t("extensions.namePlaceholder")}
-                            className="flex-1"
-                          />
-                          <RippleButton
-                            size="sm"
-                            onClick={() => void handleUpload()}
-                            disabled={isUploading || !extensionName.trim()}
-                          >
-                            {isUploading
-                              ? t("common.buttons.loading")
-                              : t("common.buttons.add")}
-                          </RippleButton>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setShowUploadForm(false);
-                              setPendingFile(null);
-                              setExtensionName("");
-                            }}
-                          >
-                            {t("common.buttons.cancel")}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Extensions list */}
-                    {isLoading ? (
-                      <div className="text-sm text-muted-foreground">
-                        {t("common.buttons.loading")}
-                      </div>
-                    ) : extensions.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">
-                        {t("extensions.empty")}
-                      </div>
-                    ) : (
-                      <div className="border rounded-md max-h-[300px] overflow-y-auto">
-                        {extensions.map((ext) => {
-                          const syncDot = getSyncStatusDot(
-                            ext,
-                            extSyncStatus[ext.id],
-                            t,
-                          );
-                          return (
-                            <div
-                              key={ext.id}
-                              className="flex items-center gap-2 px-3 py-2 border-b last:border-b-0"
-                            >
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div
-                                    className={`w-2 h-2 rounded-full shrink-0 ${syncDot.color} ${
-                                      syncDot.animate ? "animate-pulse" : ""
-                                    }`}
-                                  />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{syncDot.tooltip}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              {renderExtensionIcon(ext, "sm")}
-                              <span className="text-sm font-medium truncate min-w-0 flex-1 max-w-[180px]">
-                                {ext.name}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className="shrink-0 text-xs"
-                              >
-                                .{ext.file_type}
-                              </Badge>
-                              {renderCompatIcons(ext.browser_compatibility)}
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex items-center shrink-0">
-                                    <Checkbox
-                                      checked={ext.sync_enabled}
-                                      onCheckedChange={() =>
-                                        void handleToggleExtSync(ext)
-                                      }
-                                      disabled={isTogglingExtSync[ext.id]}
-                                    />
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>
-                                    {ext.sync_enabled
-                                      ? t("extensions.syncDisableTooltip")
-                                      : t("extensions.syncEnableTooltip")}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <div className="flex gap-0.5 ml-auto shrink-0">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 w-7 p-0"
-                                      onClick={() => {
-                                        setEditingExtension(ext);
-                                        setEditExtensionName(ext.name);
-                                        setPendingUpdateFile(null);
-                                      }}
-                                    >
-                                      <LuPencil className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {t("extensions.editExtension")}
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 w-7 p-0"
-                                      onClick={() => {
-                                        setExtensionToDelete(ext);
-                                      }}
-                                    >
-                                      <LuTrash2 className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {t("extensions.delete")}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  <ExtensionList
+                    extensions={extensions}
+                    isLoading={isLoading}
+                    extensionIcons={extensionIcons}
+                    extSyncStatus={extSyncStatus}
+                    isTogglingExtSync={isTogglingExtSync}
+                    showUploadForm={showUploadForm}
+                    pendingFile={pendingFile}
+                    extensionName={extensionName}
+                    isUploading={isUploading}
+                    onFileSelect={handleFileSelect}
+                    onExtensionNameChange={setExtensionName}
+                    onUpload={() => void handleUpload()}
+                    onCancelUpload={() => {
+                      setShowUploadForm(false);
+                      setPendingFile(null);
+                      setExtensionName("");
+                    }}
+                    onToggleSync={(ext) => void handleToggleExtSync(ext)}
+                    onEdit={(ext) => {
+                      setEditingExtension(ext);
+                      setEditExtensionName(ext.name);
+                      setPendingUpdateFile(null);
+                    }}
+                    onDelete={(ext) => {
+                      setExtensionToDelete(ext);
+                    }}
+                  />
                 )}
 
                 {activeTab === "groups" && (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <Label>{t("extensions.groupsTab")}</Label>
-                      <RippleButton
-                        size="sm"
-                        onClick={() => {
-                          setShowCreateGroup(true);
-                        }}
-                        className="flex gap-2 items-center"
-                      >
-                        <GoPlus className="w-4 h-4" />
-                        {t("extensions.createGroup")}
-                      </RippleButton>
-                    </div>
-
-                    {/* Create group form */}
-                    {showCreateGroup && (
-                      <div className="flex gap-2 items-center">
-                        <Input
-                          value={newGroupName}
-                          onChange={(e) => {
-                            setNewGroupName(e.target.value);
-                          }}
-                          placeholder={t("extensions.groupNamePlaceholder")}
-                          className="flex-1"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") void handleCreateGroup();
-                          }}
-                        />
-                        <RippleButton
-                          size="sm"
-                          onClick={() => void handleCreateGroup()}
-                          disabled={!newGroupName.trim()}
-                        >
-                          {t("common.buttons.create")}
-                        </RippleButton>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setShowCreateGroup(false);
-                            setNewGroupName("");
-                          }}
-                        >
-                          {t("common.buttons.cancel")}
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Groups list */}
-                    {extensionGroups.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">
-                        {t("extensions.noGroups")}
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {extensionGroups.map((group) => {
-                          const groupExts = group.extension_ids
-                            .map((id) => extensions.find((e) => e.id === id))
-                            .filter(Boolean) as Extension[];
-                          const visibleExts = groupExts.slice(
-                            0,
-                            MAX_VISIBLE_ICONS,
-                          );
-                          const overflowCount =
-                            groupExts.length - MAX_VISIBLE_ICONS;
-                          const groupSyncDot = getSyncStatusDot(
-                            group,
-                            extSyncStatus[group.id],
-                            t,
-                          );
-
-                          return (
-                            <div
-                              key={group.id}
-                              className="flex items-center gap-3 rounded-md border px-3 py-2"
-                            >
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div
-                                    className={`w-2 h-2 rounded-full shrink-0 ${groupSyncDot.color} ${
-                                      groupSyncDot.animate
-                                        ? "animate-pulse"
-                                        : ""
-                                    }`}
-                                  />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{groupSyncDot.tooltip}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <span className="font-medium text-sm truncate min-w-0">
-                                {group.name}
-                              </span>
-
-                              <div className="flex items-center gap-1 shrink-0">
-                                {visibleExts.map((ext) => (
-                                  <Tooltip key={ext.id}>
-                                    <TooltipTrigger asChild>
-                                      <span className="inline-flex">
-                                        {renderExtensionIcon(ext, "sm")}
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>{ext.name}</TooltipContent>
-                                  </Tooltip>
-                                ))}
-                                {overflowCount > 0 && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Badge
-                                        variant="secondary"
-                                        className="text-xs h-5 px-1.5 shrink-0"
-                                      >
-                                        +{overflowCount}
-                                      </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <div className="space-y-0.5">
-                                        {groupExts
-                                          .slice(MAX_VISIBLE_ICONS)
-                                          .map((ext) => (
-                                            <p key={ext.id} className="text-xs">
-                                              {ext.name}
-                                            </p>
-                                          ))}
-                                      </div>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )}
-                                {groupExts.length === 0 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {t("extensions.noExtensionsInGroup")}
-                                  </span>
-                                )}
-                              </div>
-
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex items-center shrink-0">
-                                    <Checkbox
-                                      checked={group.sync_enabled}
-                                      onCheckedChange={() =>
-                                        void handleToggleGroupSync(group)
-                                      }
-                                      disabled={isTogglingGroupSync[group.id]}
-                                    />
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>
-                                    {group.sync_enabled
-                                      ? t("extensions.syncDisableTooltip")
-                                      : t("extensions.syncEnableTooltip")}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-
-                              <div className="flex gap-1 ml-auto shrink-0">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setEditingGroup(group);
-                                        setEditGroupName(group.name);
-                                        setEditGroupExtensionIds([
-                                          ...group.extension_ids,
-                                        ]);
-                                      }}
-                                    >
-                                      <LuPencil className="w-4 h-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {t("common.buttons.edit")}
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setGroupToDelete(group);
-                                      }}
-                                    >
-                                      <LuTrash2 className="w-4 h-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {t("extensions.deleteGroup")}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  <ExtensionGroupsTab
+                    extensions={extensions}
+                    extensionGroups={extensionGroups}
+                    extensionIcons={extensionIcons}
+                    extSyncStatus={extSyncStatus}
+                    isTogglingGroupSync={isTogglingGroupSync}
+                    showCreateGroup={showCreateGroup}
+                    newGroupName={newGroupName}
+                    editingGroup={editingGroup}
+                    editGroupName={editGroupName}
+                    editGroupExtensionIds={editGroupExtensionIds}
+                    onShowCreateGroup={() => {
+                      setShowCreateGroup(true);
+                    }}
+                    onNewGroupNameChange={setNewGroupName}
+                    onCreateGroup={() => void handleCreateGroup()}
+                    onCancelCreateGroup={() => {
+                      setShowCreateGroup(false);
+                      setNewGroupName("");
+                    }}
+                    onEditGroup={(group) => {
+                      setEditingGroup(group);
+                      setEditGroupName(group.name);
+                      setEditGroupExtensionIds([...group.extension_ids]);
+                    }}
+                    onEditGroupNameChange={setEditGroupName}
+                    onEditGroupExtensionIdsChange={setEditGroupExtensionIds}
+                    onCloseEditGroup={() => {
+                      setEditingGroup(null);
+                      setEditGroupName("");
+                      setEditGroupExtensionIds([]);
+                    }}
+                    onSaveGroupEdits={() => void handleSaveGroupEdits()}
+                    onToggleGroupSync={(group) =>
+                      void handleToggleGroupSync(group)
+                    }
+                    onDeleteGroup={(group) => {
+                      setGroupToDelete(group);
+                    }}
+                  />
                 )}
               </div>
             </div>
@@ -964,291 +533,19 @@ export function ExtensionManagementDialog({
         </DialogContent>
       </Dialog>
 
-      {/* Group editing dialog */}
-      <Dialog
-        open={editingGroup !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingGroup(null);
-            setEditGroupName("");
-            setEditGroupExtensionIds([]);
-          }
+      <ExtensionEditDialog
+        extension={editingExtension}
+        editName={editExtensionName}
+        pendingUpdateFile={pendingUpdateFile}
+        onEditNameChange={setEditExtensionName}
+        onFileSelect={handleEditFileSelect}
+        onSave={() => void handleUpdateExtension()}
+        onClose={() => {
+          setEditingExtension(null);
+          setEditExtensionName("");
+          setPendingUpdateFile(null);
         }}
-      >
-        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{t("extensions.editGroup")}</DialogTitle>
-            <DialogDescription>
-              {t("extensions.editGroupDescription")}
-            </DialogDescription>
-          </DialogHeader>
-
-          <ScrollArea className="overflow-y-auto flex-1 -mx-6 px-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>{t("common.labels.name")}</Label>
-                <Input
-                  value={editGroupName}
-                  onChange={(e) => {
-                    setEditGroupName(e.target.value);
-                  }}
-                  placeholder={t("extensions.groupNamePlaceholder")}
-                />
-              </div>
-
-              {extensions.filter((e) => !editGroupExtensionIds.includes(e.id))
-                .length > 0 && (
-                <div className="space-y-2">
-                  <Label>{t("extensions.addToGroup")}</Label>
-                  <Select
-                    value=""
-                    onValueChange={(extId) => {
-                      setEditGroupExtensionIds((prev) => [...prev, extId]);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("extensions.addToGroup")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {extensions
-                        .filter((e) => !editGroupExtensionIds.includes(e.id))
-                        .map((ext) => (
-                          <SelectItem key={ext.id} value={ext.id}>
-                            <div className="flex items-center gap-2">
-                              {renderExtensionIcon(ext, "sm")}
-                              {ext.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label>{t("extensions.groupExtensions")}</Label>
-                {editGroupExtensionIds.length === 0 ? (
-                  <div className="text-sm text-muted-foreground py-2">
-                    {t("extensions.noExtensionsInGroup")}
-                  </div>
-                ) : (
-                  <div className="space-y-1 max-h-[200px] overflow-y-auto">
-                    {editGroupExtensionIds.map((extId) => {
-                      const ext = extensions.find((e) => e.id === extId);
-                      if (!ext) return null;
-                      return (
-                        <div
-                          key={extId}
-                          className="flex items-center gap-2 rounded-md border px-2 py-1.5"
-                        >
-                          {renderExtensionIcon(ext, "sm")}
-                          <span className="text-sm flex-1 truncate min-w-0">
-                            {ext.name}
-                          </span>
-                          {renderCompatIcons(ext.browser_compatibility)}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 shrink-0"
-                            onClick={() => {
-                              setEditGroupExtensionIds((prev) =>
-                                prev.filter((id) => id !== extId),
-                              );
-                            }}
-                          >
-                            <LuTrash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </ScrollArea>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setEditingGroup(null);
-                setEditGroupName("");
-                setEditGroupExtensionIds([]);
-              }}
-            >
-              {t("common.buttons.cancel")}
-            </Button>
-            <RippleButton
-              onClick={() => void handleSaveGroupEdits()}
-              disabled={!editGroupName.trim()}
-            >
-              {t("common.buttons.save")}
-            </RippleButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Extension editing dialog */}
-      <Dialog
-        open={editingExtension !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingExtension(null);
-            setEditExtensionName("");
-            setPendingUpdateFile(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{t("extensions.editExtension")}</DialogTitle>
-            <DialogDescription>
-              {t("extensions.editExtensionDescription")}
-            </DialogDescription>
-          </DialogHeader>
-
-          <ScrollArea className="overflow-y-auto flex-1 -mx-6 px-6">
-            {editingExtension && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>{t("common.labels.name")}</Label>
-                  <Input
-                    value={editExtensionName}
-                    onChange={(e) => {
-                      setEditExtensionName(e.target.value);
-                    }}
-                    placeholder={t("extensions.namePlaceholder")}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") void handleUpdateExtension();
-                    }}
-                  />
-                </div>
-
-                {/* Metadata from manifest.json */}
-                <div className="rounded-md border p-3 space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    {t("extensions.metadata")}
-                  </Label>
-                  <div className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1.5 text-sm">
-                    {editingExtension.version && (
-                      <>
-                        <span className="text-muted-foreground">
-                          {t("extensions.version")}
-                        </span>
-                        <span>{editingExtension.version}</span>
-                      </>
-                    )}
-                    {editingExtension.author && (
-                      <>
-                        <span className="text-muted-foreground">
-                          {t("extensions.author")}
-                        </span>
-                        <span>{editingExtension.author}</span>
-                      </>
-                    )}
-                    {editingExtension.description && (
-                      <>
-                        <span className="text-muted-foreground">
-                          {t("common.labels.description")}
-                        </span>
-                        <span className="line-clamp-3">
-                          {editingExtension.description}
-                        </span>
-                      </>
-                    )}
-                    <span className="text-muted-foreground">
-                      {t("extensions.compatibility.label")}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {renderCompatIcons(
-                        editingExtension.browser_compatibility,
-                      )}
-                    </div>
-                    <span className="text-muted-foreground">
-                      {t("common.labels.type")}
-                    </span>
-                    <span>.{editingExtension.file_type}</span>
-                    {editingExtension.homepage_url && (
-                      <>
-                        <span className="text-muted-foreground">
-                          {t("extensions.homepage")}
-                        </span>
-                        <a
-                          href={editingExtension.homepage_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1 truncate"
-                        >
-                          <span className="truncate">
-                            {editingExtension.homepage_url}
-                          </span>
-                          <LuExternalLink className="w-3 h-3 shrink-0" />
-                        </a>
-                      </>
-                    )}
-                    {!editingExtension.version &&
-                      !editingExtension.author &&
-                      !editingExtension.description &&
-                      !editingExtension.homepage_url && (
-                        <span className="col-span-2 text-muted-foreground text-xs">
-                          {t("extensions.noMetadata")}
-                        </span>
-                      )}
-                  </div>
-                </div>
-
-                {/* Re-upload */}
-                <div className="space-y-2">
-                  <Label>{t("extensions.reupload")}</Label>
-                  <div className="flex gap-2 items-center">
-                    <RippleButton
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        document.getElementById("ext-edit-file-input")?.click()
-                      }
-                    >
-                      <LuUpload className="w-3 h-3 mr-1" />
-                      {t("extensions.selectFile")}
-                    </RippleButton>
-                    <input
-                      id="ext-edit-file-input"
-                      type="file"
-                      accept=".xpi,.crx,.zip"
-                      className="hidden"
-                      onChange={handleEditFileSelect}
-                    />
-                    {pendingUpdateFile && (
-                      <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                        {pendingUpdateFile.name}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </ScrollArea>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setEditingExtension(null);
-                setEditExtensionName("");
-                setPendingUpdateFile(null);
-              }}
-            >
-              {t("common.buttons.cancel")}
-            </Button>
-            <RippleButton
-              onClick={() => void handleUpdateExtension()}
-              disabled={!editExtensionName.trim()}
-            >
-              {t("common.buttons.save")}
-            </RippleButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      />
 
       {/* Delete extension confirmation */}
       <DeleteConfirmationDialog
