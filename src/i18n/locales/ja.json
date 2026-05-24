@@ -158,13 +158,6 @@
       "passwordTooShort": "パスワードは8文字以上である必要があります",
       "requiresProOrOwner": "プロファイルの暗号化はProユーザーとチームオーナーのみ利用できます。"
     },
-    "commercial": {
-      "title": "商用ライセンス",
-      "trialActive": "トライアル: 残り {{days}} 日 {{hours}} 時間",
-      "trialActiveDescription": "トライアル期間中は商用利用が無料です。期間が終了してもすべての機能はそのまま使用できます — 個人利用は引き続き無料で、商用利用のみライセンスが必要になります。",
-      "trialExpired": "トライアル期限切れ",
-      "trialExpiredDescription": "個人利用は引き続き無料です。商用利用にはライセンスが必要です。"
-    },
     "advanced": {
       "title": "詳細設定",
       "clearCache": "すべてのバージョンキャッシュをクリア",
@@ -1616,14 +1609,6 @@
     "acceptButton": "同意します",
     "acceptSuccess": "規約に同意しました",
     "acceptFailed": "規約への同意に失敗しました",
-    "tryAgain": "もう一度お試しください"
-  },
-  "commercialTrial": {
-    "title": "商用試用期間が終了しました",
-    "description": "2 週間の商用試用期間が終了しました。",
-    "body": "商用目的で Donut Browser を使用する場合は、続行するために商用ライセンスを購入する必要があります。個人利用は引き続き無料でお使いいただけます。",
-    "understandButton": "了解しました",
-    "failed": "確認の保存に失敗しました",
     "tryAgain": "もう一度お試しください"
   },
   "permissionDialog": {

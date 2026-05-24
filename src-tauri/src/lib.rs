@@ -49,7 +49,6 @@ mod wayfern_terms;
 mod backup_manager;
 mod cloakbrowser;
 pub mod cloud_auth;
-mod commercial_license;
 mod cookie_manager;
 mod cookie_snapshot;
 pub mod daemon;
@@ -403,27 +402,6 @@ async fn accept_wayfern_terms() -> Result<(), String> {
   wayfern_terms::WayfernTermsManager::instance()
     .accept_terms()
     .await
-}
-
-#[tauri::command]
-async fn get_commercial_trial_status(
-  app_handle: tauri::AppHandle,
-) -> Result<commercial_license::TrialStatus, String> {
-  commercial_license::CommercialLicenseManager::instance()
-    .get_trial_status(&app_handle)
-    .await
-}
-
-#[tauri::command]
-async fn acknowledge_trial_expiration(app_handle: tauri::AppHandle) -> Result<(), String> {
-  commercial_license::CommercialLicenseManager::instance()
-    .acknowledge_expiration(&app_handle)
-    .await
-}
-
-#[tauri::command]
-fn has_acknowledged_trial_expiration(app_handle: tauri::AppHandle) -> Result<bool, String> {
-  commercial_license::CommercialLicenseManager::instance().has_acknowledged(&app_handle)
 }
 
 #[tauri::command]
@@ -2123,9 +2101,6 @@ pub fn run() {
       check_wayfern_terms_accepted,
       check_wayfern_downloaded,
       accept_wayfern_terms,
-      get_commercial_trial_status,
-      acknowledge_trial_expiration,
-      has_acknowledged_trial_expiration,
       start_mcp_server,
       stop_mcp_server,
       get_mcp_server_status,

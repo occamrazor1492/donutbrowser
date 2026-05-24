@@ -158,13 +158,6 @@
       "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
       "requiresProOrOwner": "El cifrado de perfiles está disponible para usuarios Pro y propietarios de equipos."
     },
-    "commercial": {
-      "title": "Licencia Comercial",
-      "trialActive": "Prueba: {{days}} días, {{hours}} horas restantes",
-      "trialActiveDescription": "El uso comercial es gratuito durante la prueba. Al finalizar, todas las funciones siguen funcionando — el uso personal sigue siendo gratuito, solo el uso comercial requerirá una licencia.",
-      "trialExpired": "Prueba expirada",
-      "trialExpiredDescription": "El uso personal sigue siendo gratuito. El uso comercial requiere una licencia."
-    },
     "advanced": {
       "title": "Avanzado",
       "clearCache": "Limpiar Toda la Caché de Versiones",
@@ -1616,14 +1609,6 @@
     "acceptButton": "Acepto",
     "acceptSuccess": "Términos aceptados correctamente",
     "acceptFailed": "Error al aceptar los términos",
-    "tryAgain": "Por favor, inténtalo de nuevo"
-  },
-  "commercialTrial": {
-    "title": "Periodo de prueba comercial expirado",
-    "description": "Tu periodo de prueba comercial de 2 semanas ha terminado.",
-    "body": "Si usas Donut Browser con fines comerciales, debes adquirir una licencia comercial para continuar. Puedes seguir usándolo de forma personal gratis.",
-    "understandButton": "Entendido",
-    "failed": "Error al guardar el reconocimiento",
     "tryAgain": "Por favor, inténtalo de nuevo"
   },
   "permissionDialog": {
