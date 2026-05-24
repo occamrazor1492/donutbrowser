@@ -46,15 +46,6 @@ export function ExtensionManagementDialog({
     data: number[];
   } | null>(null);
 
-  // Group state
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [newGroupName, setNewGroupName] = useState("");
-  const [editingGroup, setEditingGroup] = useState<ExtensionGroup | null>(null);
-  const [editGroupName, setEditGroupName] = useState("");
-  const [editGroupExtensionIds, setEditGroupExtensionIds] = useState<string[]>(
-    [],
-  );
-
   // Delete state
   const [extensionToDelete, setExtensionToDelete] = useState<Extension | null>(
     null,
@@ -327,61 +318,53 @@ export function ExtensionManagementDialog({
     }
   }, [extensionToDelete, loadData, t]);
 
-  const handleCreateGroup = useCallback(async () => {
-    if (!newGroupName.trim()) return;
-    try {
-      await invoke("create_extension_group", { name: newGroupName.trim() });
-      showSuccessToast(t("extensions.groupCreateSuccess"));
-      setShowCreateGroup(false);
-      setNewGroupName("");
-      void loadData();
-    } catch (err) {
-      showErrorToast(err instanceof Error ? err.message : String(err));
-    }
-  }, [newGroupName, loadData, t]);
-
-  const handleSaveGroupEdits = useCallback(async () => {
-    if (!editingGroup || !editGroupName.trim()) return;
-    try {
-      // Update group name
-      await invoke("update_extension_group", {
-        groupId: editingGroup.id,
-        name: editGroupName.trim(),
-      });
-
-      // Compute diff of extensions
-      const originalIds = new Set(editingGroup.extension_ids);
-      const newIds = new Set(editGroupExtensionIds);
-
-      // Add new extensions
-      for (const extId of editGroupExtensionIds) {
-        if (!originalIds.has(extId)) {
-          await invoke("add_extension_to_group", {
-            groupId: editingGroup.id,
-            extensionId: extId,
-          });
-        }
+  const handleCreateGroup = useCallback(
+    async (name: string) => {
+      try {
+        await invoke("create_extension_group", { name });
+        showSuccessToast(t("extensions.groupCreateSuccess"));
+        void loadData();
+      } catch (err) {
+        showErrorToast(err instanceof Error ? err.message : String(err));
       }
+    },
+    [loadData, t],
+  );
 
-      // Remove removed extensions
-      for (const extId of editingGroup.extension_ids) {
-        if (!newIds.has(extId)) {
-          await invoke("remove_extension_from_group", {
-            groupId: editingGroup.id,
-            extensionId: extId,
-          });
+  const handleSaveGroupEdits = useCallback(
+    async (group: ExtensionGroup, name: string, extensionIds: string[]) => {
+      try {
+        await invoke("update_extension_group", { groupId: group.id, name });
+
+        const originalIds = new Set(group.extension_ids);
+        const newIds = new Set(extensionIds);
+
+        for (const extId of extensionIds) {
+          if (!originalIds.has(extId)) {
+            await invoke("add_extension_to_group", {
+              groupId: group.id,
+              extensionId: extId,
+            });
+          }
         }
-      }
 
-      showSuccessToast(t("extensions.groupUpdateSuccess"));
-      setEditingGroup(null);
-      setEditGroupName("");
-      setEditGroupExtensionIds([]);
-      void loadData();
-    } catch (err) {
-      showErrorToast(err instanceof Error ? err.message : String(err));
-    }
-  }, [editingGroup, editGroupName, editGroupExtensionIds, loadData, t]);
+        for (const extId of group.extension_ids) {
+          if (!newIds.has(extId)) {
+            await invoke("remove_extension_from_group", {
+              groupId: group.id,
+              extensionId: extId,
+            });
+          }
+        }
+
+        showSuccessToast(t("extensions.groupUpdateSuccess"));
+        void loadData();
+      } catch (err) {
+        showErrorToast(err instanceof Error ? err.message : String(err));
+      }
+    },
+    [loadData, t],
+  );
 
   const handleDeleteGroup = useCallback(async () => {
     if (!groupToDelete) return;
@@ -486,33 +469,8 @@ export function ExtensionManagementDialog({
                     extensionIcons={extensionIcons}
                     extSyncStatus={extSyncStatus}
                     isTogglingGroupSync={isTogglingGroupSync}
-                    showCreateGroup={showCreateGroup}
-                    newGroupName={newGroupName}
-                    editingGroup={editingGroup}
-                    editGroupName={editGroupName}
-                    editGroupExtensionIds={editGroupExtensionIds}
-                    onShowCreateGroup={() => {
-                      setShowCreateGroup(true);
-                    }}
-                    onNewGroupNameChange={setNewGroupName}
-                    onCreateGroup={() => void handleCreateGroup()}
-                    onCancelCreateGroup={() => {
-                      setShowCreateGroup(false);
-                      setNewGroupName("");
-                    }}
-                    onEditGroup={(group) => {
-                      setEditingGroup(group);
-                      setEditGroupName(group.name);
-                      setEditGroupExtensionIds([...group.extension_ids]);
-                    }}
-                    onEditGroupNameChange={setEditGroupName}
-                    onEditGroupExtensionIdsChange={setEditGroupExtensionIds}
-                    onCloseEditGroup={() => {
-                      setEditingGroup(null);
-                      setEditGroupName("");
-                      setEditGroupExtensionIds([]);
-                    }}
-                    onSaveGroupEdits={() => void handleSaveGroupEdits()}
+                    onCreateGroup={handleCreateGroup}
+                    onSaveGroupEdits={handleSaveGroupEdits}
                     onToggleGroupSync={(group) =>
                       void handleToggleGroupSync(group)
                     }

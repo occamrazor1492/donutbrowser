@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GoPlus } from "react-icons/go";
 import { LuPencil, LuTrash2 } from "react-icons/lu";
@@ -42,48 +43,80 @@ interface ExtensionGroupsTabProps {
   extensionIcons: Record<string, string>;
   extSyncStatus: Record<string, SyncStatus>;
   isTogglingGroupSync: Record<string, boolean>;
-  showCreateGroup: boolean;
-  newGroupName: string;
-  editingGroup: ExtensionGroup | null;
-  editGroupName: string;
-  editGroupExtensionIds: string[];
-  onShowCreateGroup: () => void;
-  onNewGroupNameChange: (name: string) => void;
-  onCreateGroup: () => void;
-  onCancelCreateGroup: () => void;
-  onEditGroup: (group: ExtensionGroup) => void;
-  onEditGroupNameChange: (name: string) => void;
-  onEditGroupExtensionIdsChange: (update: (prev: string[]) => string[]) => void;
-  onCloseEditGroup: () => void;
-  onSaveGroupEdits: () => void;
+  /** Backend op: create a new group. Should call invoke() + refresh data. */
+  onCreateGroup: (name: string) => Promise<void>;
+  /** Backend op: save name + member-id changes to an existing group. */
+  onSaveGroupEdits: (
+    group: ExtensionGroup,
+    name: string,
+    extensionIds: string[],
+  ) => Promise<void>;
   onToggleGroupSync: (group: ExtensionGroup) => void;
   onDeleteGroup: (group: ExtensionGroup) => void;
 }
 
+/**
+ * Groups tab body + edit-group dialog.
+ *
+ * The create-group form state (whether the inline create row is open,
+ * the in-progress name) and the edit-group dialog state (open group,
+ * draft name, draft member list) used to live in the parent
+ * `ExtensionManagementDialog` and flow back in through 14 props. That
+ * was the largest single contributor to the parent's bloat — none of
+ * that state ever escapes this tab. It's all owned locally here now;
+ * the parent only provides the two backend operations
+ * (`onCreateGroup`, `onSaveGroupEdits`) which still need to live there
+ * because they call `invoke()` and re-fetch the canonical data.
+ *
+ * Net: 22 props → 9.
+ */
 export function ExtensionGroupsTab({
   extensions,
   extensionGroups,
   extensionIcons,
   extSyncStatus,
   isTogglingGroupSync,
-  showCreateGroup,
-  newGroupName,
-  editingGroup,
-  editGroupName,
-  editGroupExtensionIds,
-  onShowCreateGroup,
-  onNewGroupNameChange,
   onCreateGroup,
-  onCancelCreateGroup,
-  onEditGroup,
-  onEditGroupNameChange,
-  onEditGroupExtensionIdsChange,
-  onCloseEditGroup,
   onSaveGroupEdits,
   onToggleGroupSync,
   onDeleteGroup,
 }: ExtensionGroupsTabProps) {
   const { t } = useTranslation();
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [editingGroup, setEditingGroup] = useState<ExtensionGroup | null>(null);
+  const [editGroupName, setEditGroupName] = useState("");
+  const [editGroupExtensionIds, setEditGroupExtensionIds] = useState<string[]>(
+    [],
+  );
+
+  const submitCreate = async () => {
+    const name = newGroupName.trim();
+    if (!name) return;
+    await onCreateGroup(name);
+    setNewGroupName("");
+    setShowCreateGroup(false);
+  };
+
+  const openEdit = (group: ExtensionGroup) => {
+    setEditingGroup(group);
+    setEditGroupName(group.name);
+    setEditGroupExtensionIds([...group.extension_ids]);
+  };
+
+  const closeEdit = () => {
+    setEditingGroup(null);
+    setEditGroupName("");
+    setEditGroupExtensionIds([]);
+  };
+
+  const submitEdit = async () => {
+    if (!editingGroup) return;
+    const name = editGroupName.trim();
+    if (!name) return;
+    await onSaveGroupEdits(editingGroup, name, editGroupExtensionIds);
+    closeEdit();
+  };
 
   return (
     <>
@@ -92,7 +125,9 @@ export function ExtensionGroupsTab({
           <Label>{t("extensions.groupsTab")}</Label>
           <RippleButton
             size="sm"
-            onClick={onShowCreateGroup}
+            onClick={() => {
+              setShowCreateGroup(true);
+            }}
             className="flex gap-2 items-center"
           >
             <GoPlus className="w-4 h-4" />
@@ -106,22 +141,29 @@ export function ExtensionGroupsTab({
             <Input
               value={newGroupName}
               onChange={(e) => {
-                onNewGroupNameChange(e.target.value);
+                setNewGroupName(e.target.value);
               }}
               placeholder={t("extensions.groupNamePlaceholder")}
               className="flex-1"
               onKeyDown={(e) => {
-                if (e.key === "Enter") onCreateGroup();
+                if (e.key === "Enter") void submitCreate();
               }}
             />
             <RippleButton
               size="sm"
-              onClick={() => onCreateGroup()}
+              onClick={() => void submitCreate()}
               disabled={!newGroupName.trim()}
             >
               {t("common.buttons.create")}
             </RippleButton>
-            <Button size="sm" variant="outline" onClick={onCancelCreateGroup}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setShowCreateGroup(false);
+                setNewGroupName("");
+              }}
+            >
               {t("common.buttons.cancel")}
             </Button>
           </div>
@@ -235,7 +277,7 @@ export function ExtensionGroupsTab({
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            onEditGroup(group);
+                            openEdit(group);
                           }}
                         >
                           <LuPencil className="w-4 h-4" />
@@ -273,7 +315,7 @@ export function ExtensionGroupsTab({
       <Dialog
         open={editingGroup !== null}
         onOpenChange={(open) => {
-          if (!open) onCloseEditGroup();
+          if (!open) closeEdit();
         }}
       >
         <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
@@ -291,7 +333,7 @@ export function ExtensionGroupsTab({
                 <Input
                   value={editGroupName}
                   onChange={(e) => {
-                    onEditGroupNameChange(e.target.value);
+                    setEditGroupName(e.target.value);
                   }}
                   placeholder={t("extensions.groupNamePlaceholder")}
                 />
@@ -304,7 +346,7 @@ export function ExtensionGroupsTab({
                   <Select
                     value=""
                     onValueChange={(extId) => {
-                      onEditGroupExtensionIdsChange((prev) => [...prev, extId]);
+                      setEditGroupExtensionIds((prev) => [...prev, extId]);
                     }}
                   >
                     <SelectTrigger>
@@ -360,7 +402,7 @@ export function ExtensionGroupsTab({
                             size="sm"
                             className="h-6 w-6 p-0 shrink-0"
                             onClick={() => {
-                              onEditGroupExtensionIdsChange((prev) =>
+                              setEditGroupExtensionIds((prev) =>
                                 prev.filter((id) => id !== extId),
                               );
                             }}
@@ -377,11 +419,11 @@ export function ExtensionGroupsTab({
           </ScrollArea>
 
           <DialogFooter>
-            <Button variant="outline" onClick={onCloseEditGroup}>
+            <Button variant="outline" onClick={closeEdit}>
               {t("common.buttons.cancel")}
             </Button>
             <RippleButton
-              onClick={() => onSaveGroupEdits()}
+              onClick={() => void submitEdit()}
               disabled={!editGroupName.trim()}
             >
               {t("common.buttons.save")}
