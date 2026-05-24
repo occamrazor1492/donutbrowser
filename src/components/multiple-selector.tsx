@@ -5,6 +5,7 @@
 import { Command as CommandPrimitive, useCommandState } from "cmdk";
 import * as React from "react";
 import { forwardRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { LuX } from "react-icons/lu";
 import { cn } from "../lib/utils";
 import { Badge } from "./ui/badge";
@@ -192,6 +193,7 @@ const MultipleSelector = React.forwardRef<
     }: MultipleSelectorProps,
     ref: React.Ref<MultipleSelectorRef>,
   ) => {
+    const { t } = useTranslation();
     const inputRef = React.useRef<HTMLInputElement>(null);
     const [open, setOpen] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -433,6 +435,7 @@ const MultipleSelector = React.forwardRef<
                     onClick={() => {
                       handleUnselect(option);
                     }}
+                    aria-label={t("common.aria.removeTag")}
                   >
                     <LuX className="w-3 h-3 text-muted-foreground hover:text-foreground" />
                   </button>

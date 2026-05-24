@@ -326,6 +326,7 @@ export const ColorPickerEyeDropper = ({
   className,
   ...props
 }: ColorPickerEyeDropperProps) => {
+  const { t } = useTranslation();
   const { setHue, setSaturation, setLightness, setAlpha } = useColorPicker();
 
   const handleEyeDropper = async () => {
@@ -352,6 +353,7 @@ export const ColorPickerEyeDropper = ({
       size="icon"
       variant="outline"
       type="button"
+      aria-label={t("common.aria.pickColor")}
       {...props}
     >
       <LuPipette size={16} />

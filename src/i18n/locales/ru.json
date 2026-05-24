@@ -77,7 +77,14 @@
       "copy": "Скопировать в буфер обмена",
       "copied": "Скопировано",
       "showToken": "Показать токен",
-      "hideToken": "Скрыть токен"
+      "hideToken": "Скрыть токен",
+      "removeTag": "Удалить тег",
+      "homeLogo": "Логотип Donut",
+      "copyId": "Скопировать ID",
+      "removeRule": "Удалить правило",
+      "bandwidthDetails": "Подробности по полосе пропускания",
+      "browseFolder": "Выбрать папку",
+      "pickColor": "Выбрать цвет с экрана"
     },
     "keys": {
       "escape": "Esc"

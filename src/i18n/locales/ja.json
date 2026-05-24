@@ -77,7 +77,14 @@
       "copy": "クリップボードにコピー",
       "copied": "コピーしました",
       "showToken": "トークンを表示",
-      "hideToken": "トークンを非表示"
+      "hideToken": "トークンを非表示",
+      "removeTag": "タグを削除",
+      "homeLogo": "Donut ロゴ",
+      "copyId": "ID をコピー",
+      "removeRule": "ルールを削除",
+      "bandwidthDetails": "帯域幅の詳細を表示",
+      "browseFolder": "フォルダを参照",
+      "pickColor": "画面から色を選択"
     },
     "keys": {
       "escape": "Esc"

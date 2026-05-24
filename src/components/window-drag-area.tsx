@@ -99,14 +99,14 @@ export function WindowDragArea() {
             void handleMinimize();
           }}
           className="flex items-center justify-center w-12 h-full hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+          aria-label={t("common.buttons.minimize")}
         >
           <svg
             width="10"
             height="1"
             viewBox="0 0 10 1"
             fill="currentColor"
-            role="img"
-            aria-label={t("common.window.minimize")}
+            aria-hidden="true"
           >
             <rect width="10" height="1" />
           </svg>
@@ -117,6 +117,7 @@ export function WindowDragArea() {
             void handleClose();
           }}
           className="flex items-center justify-center w-12 h-full hover:bg-destructive/90 transition-colors text-muted-foreground hover:text-destructive-foreground"
+          aria-label={t("common.buttons.close")}
         >
           <svg
             width="10"
@@ -125,8 +126,7 @@ export function WindowDragArea() {
             fill="none"
             stroke="currentColor"
             strokeWidth="1.2"
-            role="img"
-            aria-label={t("common.buttons.close")}
+            aria-hidden="true"
           >
             <line x1="1" y1="1" x2="9" y2="9" />
             <line x1="9" y1="1" x2="1" y2="9" />

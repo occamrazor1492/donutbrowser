@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
 import type { BandwidthDataPoint } from "@/types";
@@ -18,6 +19,7 @@ export function BandwidthMiniChart({
   onClick,
   className,
 }: BandwidthMiniChartProps) {
+  const { t } = useTranslation();
   // Transform data for the chart - combine sent and received for total bandwidth
   const chartData = React.useMemo(() => {
     // Fill in missing seconds with zeros for smooth chart
@@ -66,6 +68,7 @@ export function BandwidthMiniChart({
         "relative flex items-center gap-1.5 px-2 rounded cursor-pointer hover:bg-accent/50 transition-colors min-w-[120px] border-none bg-transparent",
         className,
       )}
+      aria-label={t("common.aria.bandwidthDetails")}
     >
       <div className="flex-1 h-3 pointer-events-none">
         <ResponsiveContainer

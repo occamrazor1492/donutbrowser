@@ -93,6 +93,8 @@ function DataTableActionBarAction({
   children,
   ...props
 }: DataTableActionBarActionProps) {
+  const ariaLabel =
+    props["aria-label"] ?? (size === "icon" ? tooltip : undefined);
   const trigger = (
     <Button
       variant="secondary"
@@ -103,6 +105,7 @@ function DataTableActionBarAction({
         className,
       )}
       disabled={disabled || isPending}
+      aria-label={ariaLabel}
       {...props}
     >
       {isPending ? (
@@ -155,6 +158,7 @@ function DataTableActionBarSelection<TData>({
             size="icon"
             className="size-5"
             onClick={onClearSelection}
+            aria-label={t("dataTableActionBar.clearSelection")}
           >
             <LuX className="size-3.5" />
           </Button>

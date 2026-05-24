@@ -500,6 +500,7 @@ export function ImportProfileDialog({
                           size="icon"
                           onClick={() => void handleBrowseFolder()}
                           title={t("importProfile.browseFolderTitle")}
+                          aria-label={t("common.aria.browseFolder")}
                         >
                           <FaFolder className="w-4 h-4" />
                         </Button>

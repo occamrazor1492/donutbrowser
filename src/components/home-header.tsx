@@ -240,6 +240,7 @@ const HomeHeader = ({
             onPointerLeave={() => {
               setIsPressed(false);
             }}
+            aria-label={t("common.aria.homeLogo")}
           >
             <Logo
               key={wobbleKey}

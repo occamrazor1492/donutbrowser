@@ -77,7 +77,14 @@
       "copy": "Copy to clipboard",
       "copied": "Copied",
       "showToken": "Show token",
-      "hideToken": "Hide token"
+      "hideToken": "Hide token",
+      "removeTag": "Remove tag",
+      "homeLogo": "Donut logo",
+      "copyId": "Copy ID",
+      "removeRule": "Remove rule",
+      "bandwidthDetails": "View bandwidth details",
+      "browseFolder": "Browse for folder",
+      "pickColor": "Pick a color from the screen"
     },
     "keys": {
       "escape": "Escape"

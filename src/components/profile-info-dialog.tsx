@@ -599,6 +599,7 @@ export function ProfileInfoDialog({
                     type="button"
                     onClick={() => void handleCopyId()}
                     className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    aria-label={t("common.aria.copyId")}
                   >
                     {copied ? (
                       <LuClipboardCheck className="w-3.5 h-3.5" />
@@ -1024,6 +1025,7 @@ export function ProfileBypassRulesDialog({
                         handleRemoveRule(rule);
                       }}
                       className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                      aria-label={t("common.aria.removeRule")}
                     >
                       <LuX className="w-3.5 h-3.5" />
                     </button>

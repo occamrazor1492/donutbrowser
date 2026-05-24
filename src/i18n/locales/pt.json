@@ -77,7 +77,14 @@
       "copy": "Copiar para a área de transferência",
       "copied": "Copiado",
       "showToken": "Mostrar token",
-      "hideToken": "Ocultar token"
+      "hideToken": "Ocultar token",
+      "removeTag": "Remover etiqueta",
+      "homeLogo": "Logotipo do Donut",
+      "copyId": "Copiar ID",
+      "removeRule": "Remover regra",
+      "bandwidthDetails": "Ver detalhes de largura de banda",
+      "browseFolder": "Procurar pasta",
+      "pickColor": "Escolher uma cor na tela"
     },
     "keys": {
       "escape": "Esc"

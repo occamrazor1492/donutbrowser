@@ -77,7 +77,14 @@
       "copy": "Copiar al portapapeles",
       "copied": "Copiado",
       "showToken": "Mostrar token",
-      "hideToken": "Ocultar token"
+      "hideToken": "Ocultar token",
+      "removeTag": "Quitar etiqueta",
+      "homeLogo": "Logotipo de Donut",
+      "copyId": "Copiar ID",
+      "removeRule": "Quitar regla",
+      "bandwidthDetails": "Ver detalles de ancho de banda",
+      "browseFolder": "Buscar carpeta",
+      "pickColor": "Seleccionar un color de la pantalla"
     },
     "keys": {
       "escape": "Escape"
