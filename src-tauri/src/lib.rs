@@ -1990,6 +1990,7 @@ pub fn run() {
       template_manager::delete_profile_template,
       backup_manager::export_backup_archive,
       backup_manager::import_backup_archive,
+      mcp_server::list_mcp_tools,
       fetch_browser_versions_with_count,
       fetch_browser_versions_cached_first,
       fetch_browser_versions_with_count_cached_first,

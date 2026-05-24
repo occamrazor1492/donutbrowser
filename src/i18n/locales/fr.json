@@ -769,6 +769,7 @@
     "mcp": {
       "title": "Serveur MCP",
       "description": "Activez le serveur MCP (Model Context Protocol) pour les intégrations avec les assistants IA.",
+      "openToolsReference": "Voir les outils disponibles…",
       "enabled": "MCP activé",
       "disabled": "MCP désactivé",
       "port": "Port",
@@ -1902,5 +1903,14 @@
       "deleteFailed": "Échec de la suppression du modèle : {{error}}",
       "applyFailed": "Échec de l'application du modèle : {{error}}"
     }
+  },
+  "mcpTools": {
+    "title": "Référence des outils MCP",
+    "description": "Tous les outils exposés par le serveur MCP ({{count}} au total). Cliquez sur un outil pour inspecter son JSON Schema.",
+    "searchPlaceholder": "Rechercher des outils par nom ou description…",
+    "empty": "Le serveur MCP n'a enregistré aucun outil.",
+    "noMatch": "Aucun outil ne correspond à la recherche.",
+    "expandSchema": "afficher le schéma",
+    "collapseSchema": "masquer le schéma"
   }
 }

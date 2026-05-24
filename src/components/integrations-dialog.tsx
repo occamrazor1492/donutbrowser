@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWayfernTerms } from "@/hooks/use-wayfern-terms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
+import { McpToolsReferenceDialog } from "./mcp-tools-reference-dialog";
 import { CopyToClipboard } from "./ui/copy-to-clipboard";
 
 interface AppSettings {
@@ -56,6 +57,7 @@ export function IntegrationsDialog({
   const [, setMcpRunning] = useState(false);
   const [showApiToken, setShowApiToken] = useState(false);
   const [showMcpToken, setShowMcpToken] = useState(false);
+  const [mcpToolsDialogOpen, setMcpToolsDialogOpen] = useState(false);
   const [isApiStarting, setIsApiStarting] = useState(false);
   const [isMcpStarting, setIsMcpStarting] = useState(false);
   const [mcpInClaudeDesktop, setMcpInClaudeDesktop] = useState(false);
@@ -522,12 +524,27 @@ export function IntegrationsDialog({
                       </Button>
                     )}
                   </div>
+
+                  <div className="pt-1 border-t">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setMcpToolsDialogOpen(true)}
+                    >
+                      {t("integrations.mcp.openToolsReference")}
+                    </Button>
+                  </div>
                 </div>
               )}
             </TabsContent>
           </Tabs>
         </div>
       </DialogContent>
+      <McpToolsReferenceDialog
+        isOpen={mcpToolsDialogOpen}
+        onClose={() => setMcpToolsDialogOpen(false)}
+      />
     </Dialog>
   );
 }

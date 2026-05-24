@@ -769,6 +769,7 @@
     "mcp": {
       "title": "MCP 服务器",
       "description": "启用 MCP（模型上下文协议）服务器以与 AI 助手集成。",
+      "openToolsReference": "查看可用工具…",
       "enabled": "MCP 已启用",
       "disabled": "MCP 已禁用",
       "port": "端口",
@@ -1902,5 +1903,14 @@
       "deleteFailed": "删除模板失败: {{error}}",
       "applyFailed": "应用模板失败: {{error}}"
     }
+  },
+  "mcpTools": {
+    "title": "MCP 工具参考",
+    "description": "MCP 服务器暴露的所有工具（共 {{count}} 个）。点击工具查看其 JSON Schema。",
+    "searchPlaceholder": "按名称或描述搜索工具…",
+    "empty": "MCP 服务器尚未注册任何工具。",
+    "noMatch": "没有匹配的工具。",
+    "expandSchema": "查看 Schema",
+    "collapseSchema": "隐藏 Schema"
   }
 }

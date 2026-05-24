@@ -769,6 +769,7 @@
     "mcp": {
       "title": "MCP Server",
       "description": "Enable the MCP (Model Context Protocol) server for AI assistant integrations.",
+      "openToolsReference": "View available tools…",
       "enabled": "MCP Enabled",
       "disabled": "MCP Disabled",
       "port": "Port",
@@ -1902,5 +1903,14 @@
       "deleteFailed": "Failed to delete template: {{error}}",
       "applyFailed": "Failed to apply template: {{error}}"
     }
+  },
+  "mcpTools": {
+    "title": "MCP Tools Reference",
+    "description": "Every tool the MCP server exposes ({{count}} total). Click a tool to inspect its JSON Schema.",
+    "searchPlaceholder": "Search tools by name or description…",
+    "empty": "The MCP server hasn't registered any tools.",
+    "noMatch": "No tools match the search.",
+    "expandSchema": "show schema",
+    "collapseSchema": "hide schema"
   }
 }

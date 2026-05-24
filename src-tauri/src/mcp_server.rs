@@ -4457,6 +4457,26 @@ lazy_static::lazy_static! {
   static ref MCP_SERVER: McpServer = McpServer::new();
 }
 
+/// Read-only listing of every tool the MCP server advertises. Used by the
+/// Integrations dialog so a user (or an LLM operator looking at the
+/// settings UI) can see what's wired up without having to start the
+/// server first. The runtime tool registry is built fresh per call to
+/// guarantee the UI reflects the current build.
+#[tauri::command]
+pub fn list_mcp_tools() -> Vec<McpTool> {
+  McpServer::instance_sync().get_tools()
+}
+
+impl McpServer {
+  /// Cheap synchronous accessor (no lock) for callers like the Tauri
+  /// command above that only need the static tool list. The async
+  /// `instance()` variant elsewhere returns `Arc<AsyncMutex<…>>` for
+  /// session management.
+  pub fn instance_sync() -> &'static McpServer {
+    &MCP_SERVER
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

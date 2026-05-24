@@ -769,6 +769,7 @@
     "mcp": {
       "title": "MCPサーバー",
       "description": "AIアシスタント統合用のMCP（モデルコンテキストプロトコル）サーバーを有効にします。",
+      "openToolsReference": "利用可能なツールを表示…",
       "enabled": "MCP有効",
       "disabled": "MCP無効",
       "port": "ポート",
@@ -1902,5 +1903,14 @@
       "deleteFailed": "テンプレートの削除に失敗しました: {{error}}",
       "applyFailed": "テンプレートの適用に失敗しました: {{error}}"
     }
+  },
+  "mcpTools": {
+    "title": "MCP ツールリファレンス",
+    "description": "MCP サーバーが公開するすべてのツール（合計 {{count}}）。ツールをクリックすると JSON Schema を確認できます。",
+    "searchPlaceholder": "名前または説明でツールを検索…",
+    "empty": "MCP サーバーにはツールが登録されていません。",
+    "noMatch": "検索に一致するツールはありません。",
+    "expandSchema": "スキーマを表示",
+    "collapseSchema": "スキーマを隠す"
   }
 }

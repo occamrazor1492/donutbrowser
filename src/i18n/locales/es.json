@@ -769,6 +769,7 @@
     "mcp": {
       "title": "Servidor MCP",
       "description": "Habilita el servidor MCP (Protocolo de Contexto de Modelo) para integraciones con asistentes de IA.",
+      "openToolsReference": "Ver herramientas disponibles…",
       "enabled": "MCP Habilitado",
       "disabled": "MCP Deshabilitado",
       "port": "Puerto",
@@ -1902,5 +1903,14 @@
       "deleteFailed": "No se pudo eliminar la plantilla: {{error}}",
       "applyFailed": "No se pudo aplicar la plantilla: {{error}}"
     }
+  },
+  "mcpTools": {
+    "title": "Referencia de herramientas MCP",
+    "description": "Todas las herramientas que expone el servidor MCP ({{count}} en total). Haz clic en una herramienta para inspeccionar su JSON Schema.",
+    "searchPlaceholder": "Buscar herramientas por nombre o descripción…",
+    "empty": "El servidor MCP no ha registrado ninguna herramienta.",
+    "noMatch": "Ninguna herramienta coincide con la búsqueda.",
+    "expandSchema": "ver esquema",
+    "collapseSchema": "ocultar esquema"
   }
 }

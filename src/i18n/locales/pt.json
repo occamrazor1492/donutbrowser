@@ -769,6 +769,7 @@
     "mcp": {
       "title": "Servidor MCP",
       "description": "Ative o servidor MCP (Protocolo de Contexto de Modelo) para integrações com assistentes de IA.",
+      "openToolsReference": "Ver ferramentas disponíveis…",
       "enabled": "MCP Ativado",
       "disabled": "MCP Desativado",
       "port": "Porta",
@@ -1902,5 +1903,14 @@
       "deleteFailed": "Falha ao excluir o modelo: {{error}}",
       "applyFailed": "Falha ao aplicar o modelo: {{error}}"
     }
+  },
+  "mcpTools": {
+    "title": "Referência de ferramentas MCP",
+    "description": "Todas as ferramentas expostas pelo servidor MCP ({{count}} no total). Clique em uma ferramenta para inspecionar seu JSON Schema.",
+    "searchPlaceholder": "Buscar ferramentas por nome ou descrição…",
+    "empty": "O servidor MCP não registrou nenhuma ferramenta.",
+    "noMatch": "Nenhuma ferramenta corresponde à busca.",
+    "expandSchema": "ver esquema",
+    "collapseSchema": "ocultar esquema"
   }
 }
