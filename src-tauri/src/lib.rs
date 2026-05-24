@@ -60,6 +60,7 @@ pub mod daemon_ws;
 pub mod events;
 mod health_check;
 mod mcp_server;
+mod proxy_failover;
 mod proxy_leak_test;
 mod tag_manager;
 mod task_scheduler;
@@ -2000,6 +2001,9 @@ pub fn run() {
       webhook_dispatcher::set_webhook_url,
       webhook_dispatcher::get_webhook_url,
       proxy_leak_test::run_proxy_leak_test,
+      proxy_failover::list_failover_chains,
+      proxy_failover::get_failover_chain,
+      proxy_failover::set_failover_chain,
       cookie_snapshot::take_cookie_snapshot,
       cookie_snapshot::list_cookie_snapshots,
       cookie_snapshot::restore_cookie_snapshot,

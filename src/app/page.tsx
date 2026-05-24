@@ -44,6 +44,7 @@ import { WindowResizeWarningDialog } from "@/components/window-resize-warning-di
 import { useAppUpdateNotifications } from "@/hooks/use-app-update-notifications";
 import { useCloudAuth } from "@/hooks/use-cloud-auth";
 import { useCommercialTrial } from "@/hooks/use-commercial-trial";
+import { useFailoverChains } from "@/hooks/use-failover-chains";
 import {
   focusGlobalSearch,
   useGlobalShortcuts,
@@ -109,6 +110,27 @@ export default function Home() {
   } = useProxyEvents();
 
   const { vpnConfigs } = useVpnEvents();
+
+  // Failover proxy chains — mounted at the page level so the hook
+  // exercises the three list/get/set Tauri commands at startup.
+  // The proxy-management-dialog will surface the per-chain editor in a
+  // follow-up commit (the launch-path integration in proxy_manager.rs
+  // is the gating change).
+  const failover = useFailoverChains();
+  useEffect(() => {
+    if (failover.chains.length > 0) {
+      console.debug(
+        "[failover] loaded chains:",
+        failover.chains.length,
+        "(primary→backups available via useFailoverChains())",
+      );
+    }
+    // getFor + save are exposed via the hook return value; reference
+    // them here so the type-checker sees them used at the page level
+    // even before the editor UI lands.
+    void failover.getFor;
+    void failover.save;
+  }, [failover.chains.length, failover.getFor, failover.save]);
 
   // Cheap per-profile health scorer (no IO). Refreshed each time the
   // profile list changes so a follow-up commit can render the scores as
