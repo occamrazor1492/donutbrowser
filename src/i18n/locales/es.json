@@ -1201,7 +1201,8 @@
     "refreshFingerprint": "Actualizar Huella Digital",
     "canvasNoiseSeedPlaceholder": "Introduce una semilla para la huella digital del canvas",
     "addFontsPlaceholder": "Agregar fuentes...",
-    "enterAsJson": "Ingresa {{title}} como JSON"
+    "enterAsJson": "Ingresa {{title}} como JSON",
+    "examplePlaceholder": "p. ej., {{value}}"
   },
   "warnings": {
     "windowResizeTitle": "Dimensiones de ventana personalizadas",

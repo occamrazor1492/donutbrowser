@@ -962,10 +962,6 @@ export function CreateProfileDialog({
                                 isVersionAvailable={Boolean(
                                   isBrowserVersionAvailable(selectedBrowser),
                                 )}
-                                fetchingLabel={t(
-                                  "createProfile.version.fetching",
-                                )}
-                                retryLabel="Retry"
                                 onRetry={() => {
                                   if (selectedBrowser) {
                                     void loadReleaseTypes(selectedBrowser);
@@ -1123,8 +1119,6 @@ export function CreateProfileDialog({
                               isVersionAvailable={Boolean(
                                 isBrowserVersionAvailable(selectedBrowser),
                               )}
-                              fetchingLabel="Fetching available versions..."
-                              retryLabel={t("common.buttons.retry")}
                               onRetry={() => {
                                 if (selectedBrowser) {
                                   void loadReleaseTypes(selectedBrowser);

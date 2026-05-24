@@ -417,7 +417,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., MacIntel, Win32"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "MacIntel, Win32",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -433,7 +435,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., 5.0 (Macintosh)"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "5.0 (Macintosh)",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -468,7 +472,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 8"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "8",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -485,7 +491,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 0"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "0",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -530,7 +538,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., en-US"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "en-US",
+                  })}
                 />
               </div>
             </div>
@@ -554,7 +564,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1920"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1920",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -571,7 +583,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1080"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1080",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -588,7 +602,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1920"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1920",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -605,7 +621,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1055"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1055",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -622,7 +640,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 30"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "30",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -639,7 +659,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 30"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "30",
+                  })}
                 />
               </div>
             </div>
@@ -663,7 +685,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1512"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1512",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -680,7 +704,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 886"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "886",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -697,7 +723,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1512"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1512",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -714,7 +742,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 886"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "886",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -729,7 +759,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 0"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "0",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -744,7 +776,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 0"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "0",
+                  })}
                 />
               </div>
             </div>
@@ -767,7 +801,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseFloat(e.target.value) : undefined,
                     );
                   }}
-                  placeholder="e.g., 41.0019"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "41.0019",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -783,7 +819,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseFloat(e.target.value) : undefined,
                     );
                   }}
-                  placeholder="e.g., 28.9645"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "28.9645",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -798,7 +836,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., America/New_York"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "America/New_York",
+                  })}
                 />
               </div>
             </div>
@@ -821,7 +861,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., tr"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "tr",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -835,7 +877,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., TR"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "TR",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -849,7 +893,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., Latn"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "Latn",
+                  })}
                 />
               </div>
             </div>
@@ -872,7 +918,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., Mesa"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "Mesa",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -1034,7 +1082,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseFloat(e.target.value) : undefined,
                     );
                   }}
-                  placeholder="e.g., 0"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "0",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -1052,7 +1102,9 @@ export function SharedCamoufoxConfigForm({
                       e.target.value ? parseFloat(e.target.value) : undefined,
                     );
                   }}
-                  placeholder="e.g., 0"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "0",
+                  })}
                 />
               </div>
             </div>
@@ -1191,7 +1243,9 @@ export function SharedCamoufoxConfigForm({
                             : undefined,
                         );
                       }}
-                      placeholder="e.g., 1920"
+                      placeholder={t("fingerprint.examplePlaceholder", {
+                        value: "1920",
+                      })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1210,7 +1264,9 @@ export function SharedCamoufoxConfigForm({
                             : undefined,
                         );
                       }}
-                      placeholder="e.g., 1080"
+                      placeholder={t("fingerprint.examplePlaceholder", {
+                        value: "1080",
+                      })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1229,7 +1285,9 @@ export function SharedCamoufoxConfigForm({
                             : undefined,
                         );
                       }}
-                      placeholder="e.g., 800"
+                      placeholder={t("fingerprint.examplePlaceholder", {
+                        value: "800",
+                      })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1248,7 +1306,9 @@ export function SharedCamoufoxConfigForm({
                             : undefined,
                         );
                       }}
-                      placeholder="e.g., 600"
+                      placeholder={t("fingerprint.examplePlaceholder", {
+                        value: "600",
+                      })}
                     />
                   </div>
                 </div>

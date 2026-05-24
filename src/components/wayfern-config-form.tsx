@@ -313,7 +313,9 @@ export function WayfernConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., 10.0.0"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "10.0.0",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -327,7 +329,9 @@ export function WayfernConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., Google Chrome"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "Google Chrome",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -343,7 +347,9 @@ export function WayfernConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., 143"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "143",
+                  })}
                 />
               </div>
             </div>
@@ -367,7 +373,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 8"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "8",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -384,7 +392,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 0"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "0",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -401,7 +411,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 8"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "8",
+                  })}
                 />
               </div>
             </div>
@@ -425,7 +437,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1920"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1920",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -442,7 +456,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1080"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1080",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -460,7 +476,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseFloat(e.target.value) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1.0"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1.0",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -477,7 +495,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1920"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1920",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -494,7 +514,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1040"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1040",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -511,7 +533,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 24"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "24",
+                  })}
                 />
               </div>
             </div>
@@ -535,7 +559,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1920"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1920",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -552,7 +578,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1040"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1040",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -569,7 +597,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 1920"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "1920",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -586,7 +616,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 940"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "940",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -601,7 +633,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 0"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "0",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -616,7 +650,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 0"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "0",
+                  })}
                 />
               </div>
             </div>
@@ -639,7 +675,9 @@ export function WayfernConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., en-US"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "en-US",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -719,7 +757,9 @@ export function WayfernConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., America/New_York"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "America/New_York",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -754,7 +794,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseFloat(e.target.value) : undefined,
                     );
                   }}
-                  placeholder="e.g., 40.7128"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "40.7128",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -770,7 +812,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseFloat(e.target.value) : undefined,
                     );
                   }}
-                  placeholder="e.g., -74.0060"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "-74.0060",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -785,7 +829,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseFloat(e.target.value) : undefined,
                     );
                   }}
-                  placeholder="e.g., 100"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "100",
+                  })}
                 />
               </div>
             </div>
@@ -808,7 +854,9 @@ export function WayfernConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., Intel"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "Intel",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -905,7 +953,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 48000"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "48000",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -922,7 +972,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseInt(e.target.value, 10) : undefined,
                     );
                   }}
-                  placeholder="e.g., 2"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "2",
+                  })}
                 />
               </div>
             </div>
@@ -966,7 +1018,9 @@ export function WayfernConfigForm({
                       e.target.value ? parseFloat(e.target.value) : undefined,
                     );
                   }}
-                  placeholder="e.g., 0.85"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "0.85",
+                  })}
                 />
               </div>
             </div>
@@ -987,7 +1041,9 @@ export function WayfernConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., Google Inc."
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "Google Inc.",
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -1017,7 +1073,9 @@ export function WayfernConfigForm({
                       e.target.value || undefined,
                     );
                   }}
-                  placeholder="e.g., 20030107"
+                  placeholder={t("fingerprint.examplePlaceholder", {
+                    value: "20030107",
+                  })}
                 />
               </div>
             </div>
@@ -1146,7 +1204,9 @@ export function WayfernConfigForm({
                             : undefined,
                         );
                       }}
-                      placeholder="e.g., 1920"
+                      placeholder={t("fingerprint.examplePlaceholder", {
+                        value: "1920",
+                      })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1165,7 +1225,9 @@ export function WayfernConfigForm({
                             : undefined,
                         );
                       }}
-                      placeholder="e.g., 1080"
+                      placeholder={t("fingerprint.examplePlaceholder", {
+                        value: "1080",
+                      })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1184,7 +1246,9 @@ export function WayfernConfigForm({
                             : undefined,
                         );
                       }}
-                      placeholder="e.g., 800"
+                      placeholder={t("fingerprint.examplePlaceholder", {
+                        value: "800",
+                      })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1203,7 +1267,9 @@ export function WayfernConfigForm({
                             : undefined,
                         );
                       }}
-                      placeholder="e.g., 600"
+                      placeholder={t("fingerprint.examplePlaceholder", {
+                        value: "600",
+                      })}
                     />
                   </div>
                 </div>

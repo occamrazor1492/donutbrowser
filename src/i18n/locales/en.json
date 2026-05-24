@@ -1200,7 +1200,8 @@
     "refreshFingerprint": "Refresh Fingerprint",
     "canvasNoiseSeedPlaceholder": "Enter a seed string for canvas fingerprint",
     "addFontsPlaceholder": "Add fonts...",
-    "enterAsJson": "Enter {{title}} as JSON"
+    "enterAsJson": "Enter {{title}} as JSON",
+    "examplePlaceholder": "e.g., {{value}}"
   },
   "warnings": {
     "windowResizeTitle": "Custom Window Dimensions",

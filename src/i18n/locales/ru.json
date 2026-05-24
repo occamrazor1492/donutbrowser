@@ -1201,7 +1201,8 @@
     "refreshFingerprint": "Обновить отпечаток",
     "canvasNoiseSeedPlaceholder": "Введите строку-семя для отпечатка canvas",
     "addFontsPlaceholder": "Добавить шрифты...",
-    "enterAsJson": "Введите {{title}} в формате JSON"
+    "enterAsJson": "Введите {{title}} в формате JSON",
+    "examplePlaceholder": "напр., {{value}}"
   },
   "warnings": {
     "windowResizeTitle": "Пользовательские размеры окна",

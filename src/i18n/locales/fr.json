@@ -1201,7 +1201,8 @@
     "refreshFingerprint": "Actualiser l'empreinte",
     "canvasNoiseSeedPlaceholder": "Entrez une graine pour l'empreinte canvas",
     "addFontsPlaceholder": "Ajouter des polices...",
-    "enterAsJson": "Entrez {{title}} en JSON"
+    "enterAsJson": "Entrez {{title}} en JSON",
+    "examplePlaceholder": "p. ex., {{value}}"
   },
   "warnings": {
     "windowResizeTitle": "Dimensions de fenêtre personnalisées",

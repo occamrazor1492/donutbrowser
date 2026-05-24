@@ -1201,7 +1201,8 @@
     "refreshFingerprint": "Atualizar Impressão Digital",
     "canvasNoiseSeedPlaceholder": "Insira uma string seed para a impressão digital do canvas",
     "addFontsPlaceholder": "Adicionar fontes...",
-    "enterAsJson": "Insira {{title}} como JSON"
+    "enterAsJson": "Insira {{title}} como JSON",
+    "examplePlaceholder": "ex., {{value}}"
   },
   "warnings": {
     "windowResizeTitle": "Dimensões de janela personalizadas",

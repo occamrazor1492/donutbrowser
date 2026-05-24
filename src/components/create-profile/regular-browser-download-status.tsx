@@ -10,15 +10,6 @@ interface RegularBrowserDownloadStatusProps {
   releaseTypesError: string | null;
   isDownloading: boolean;
   isVersionAvailable: boolean;
-  /**
-   * Loading-message label. Intentionally a prop (not a constant) because the
-   * two call sites in the create-profile dialog historically render it
-   * differently — one via i18n, one as raw English. Preserved verbatim to
-   * avoid silently changing user-visible text.
-   */
-  fetchingLabel: string;
-  /** Same caveat as `fetchingLabel` — preserved per call site. */
-  retryLabel: string;
   onRetry: () => void;
   onDownload: () => void;
 }
@@ -35,8 +26,6 @@ export function RegularBrowserDownloadStatus({
   releaseTypesError,
   isDownloading,
   isVersionAvailable,
-  fetchingLabel,
-  retryLabel,
   onRetry,
   onDownload,
 }: RegularBrowserDownloadStatusProps) {
@@ -47,14 +36,16 @@ export function RegularBrowserDownloadStatus({
       {isLoadingReleaseTypes && (
         <div className="flex gap-3 items-center">
           <div className="w-4 h-4 rounded-full border-2 animate-spin border-muted/40 border-t-primary" />
-          <p className="text-sm text-muted-foreground">{fetchingLabel}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("createProfile.version.fetching")}
+          </p>
         </div>
       )}
       {!isLoadingReleaseTypes && releaseTypesError && (
         <div className="flex gap-3 items-center p-3 rounded-md border border-destructive/50 bg-destructive/10">
           <p className="flex-1 text-sm text-destructive">{releaseTypesError}</p>
           <RippleButton onClick={onRetry} size="sm" variant="outline">
-            {retryLabel}
+            {t("common.buttons.retry")}
           </RippleButton>
         </div>
       )}

@@ -1201,7 +1201,8 @@
     "refreshFingerprint": "刷新指纹",
     "canvasNoiseSeedPlaceholder": "输入用于 canvas 指纹的种子字符串",
     "addFontsPlaceholder": "添加字体...",
-    "enterAsJson": "以 JSON 格式输入 {{title}}"
+    "enterAsJson": "以 JSON 格式输入 {{title}}",
+    "examplePlaceholder": "例如: {{value}}"
   },
   "warnings": {
     "windowResizeTitle": "自定义窗口尺寸",

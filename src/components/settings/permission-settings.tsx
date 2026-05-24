@@ -153,7 +153,7 @@ export function PermissionSettings() {
                     );
                   }}
                 >
-                  Grant
+                  {t("common.buttons.grant")}
                 </LoadingButton>
               )}
             </div>
@@ -162,9 +162,7 @@ export function PermissionSettings() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        These permissions allow browsers launched from Donut Browser to access
-        system resources. Each website will still ask for your permission
-        individually.
+        {t("settings.permissions.description")}
       </p>
     </div>
   );
